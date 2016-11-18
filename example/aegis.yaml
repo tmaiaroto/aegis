@@ -1,0 +1,17 @@
+app:
+  name: Example Aegis App
+  keepBuildFiles: true
+aws:
+  region: us-east-1
+lambda:
+  description: An example Aegis app
+  functionName: aegis_example
+  # role: arn:aws:iam::12345:role/aegis_lambda_function
+api:
+  name: Example Aegis API
+  description: An example API
+  # stages:
+  #   prod:
+  #     name: prod
+  #     variables:
+  #       foo: Bar
