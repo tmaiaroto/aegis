@@ -6,10 +6,37 @@ var child_process = require('child_process'),
   done = console.log.bind(console),
   fails = 0;
 
+// Debug
+var fs = require('fs');
+items = fs.readdirSync('./');
+for (var i=0; i<items.length; i++) {
+    console.log("");
+    console.log("");
+    console.log("FILE: " + items[i]);
+    var stats = fs.statSync(items[i]);
+    console.log("------------------------");
+    console.log(stats);
+    console.log();
+ 
+    if (stats.isFile()) {
+        console.log('    file');
+    }
+    if (stats.isDirectory()) {
+        console.log('    directory');
+    }
+ 
+    console.log('    size: ' + stats["size"]);
+    console.log('    mode: ' + stats["mode"]);
+}
+
 (function new_go_proc() {
+  // TODO: Try to avoid this? I can't imagin copying, not moving, this app over each time is great for performance.
+  // To avoid permission issues...
+  // Really hate to copy this file each time (and mv didn't work).
+  child_process.execSync('cp aegis_app /tmp/aegis_app && chmod +x /tmp/aegis_app');
 
   // pipe stdin/out, blind passthru stderr
-  go_proc = child_process.spawn('./aegis_app', { stdio: ['pipe', 'pipe', process.stderr] });
+  go_proc = child_process.spawn('/tmp/aegis_app', { stdio: ['pipe', 'pipe', process.stderr] });
 
   go_proc.on('error', function(err) {
     process.stderr.write("go_proc errored: "+JSON.stringify(err)+"\n");

@@ -4,11 +4,16 @@ app:
 aws:
   region: us-east-1
 lambda:
-  description: An example Aegis app
-  functionName: aegis_example
+  description: Foo does foo
+  functionName: foo
+  # sourceZip: Archive.zip 
+  # ^ works. so it's something in the go app.
+  # permissions on the aegis_app file in AWS were 33204 = 100664 (664)
+  # rw-rw-r--  booooo
+  # 
   # role: arn:aws:iam::12345:role/aegis_lambda_function
 api:
-  name: Example Aegis API
+  name: Foo API
   description: An example API
   # stages:
   #   prod:

@@ -125,12 +125,12 @@ func initConfig() {
 	viper.SetDefault("aws.region", "us-east-1")
 	// Default Lambda config values
 	viper.SetDefault("lambda.functionName", "aegis_example")
-	// Valid runtimes (avoid version numbers when possible, they update):
+	// Valid runtimes:
 	// nodejs
 	// nodejs4.3
 	// java8
 	// python2.7
-	viper.SetDefault("lambda.runtime", lambda.RuntimeNodejs)
+	viper.SetDefault("lambda.runtime", lambda.RuntimeNodejs43)
 	viper.SetDefault("lambda.wrapper", "index_stdio.js") // TODO: allow multiple wrappers
 	viper.SetDefault("lambda.handler", "index.handler")
 	viper.SetDefault("lambda.alias", "current")

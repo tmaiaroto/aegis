@@ -15,6 +15,7 @@
 package cmd
 
 import (
+	"archive/zip"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -34,6 +35,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"time"
 )
 
@@ -55,11 +57,18 @@ var upCmd = &cobra.Command{
 				os.Exit(-1)
 			}
 			// Ensure it's executable.
-			err = os.Chmod(appPath, 0777)
+			err = os.Chmod(appPath, os.FileMode(int(0777)))
 			if err != nil {
 				fmt.Println("Warning, executable permissions could not be set on Go binary. It may fail to run in AWS.")
 				fmt.Println(err.Error())
 			}
+
+			// Adjust timestamp?
+			// err = os.Chtimes(appPath, time.Now(), time.Now())
+			// if err != nil {
+			// 	fmt.Println("Warning, executable permissions could not be set on Go binary. It may fail to run in AWS.")
+			// 	fmt.Println(err.Error())
+			// }
 
 			cfg.Lambda.SourceZip = compress()
 			// If something went wrong, exit
@@ -87,7 +96,7 @@ var upCmd = &cobra.Command{
 			// Assigning it to the Lambda too soon could result in an error:
 			// InvalidParameterValueException: The role defined for the function cannot be assumed by Lambda.
 			// Apparently it needs a few seconds ¯\_(ツ)_/¯
-			time.Sleep(5 * time.Second)
+			time.Sleep(4 * time.Second)
 		}
 
 		// Create (or update) the function
@@ -107,6 +116,9 @@ var upCmd = &cobra.Command{
 		// to solve those annoyances though.
 		apiID := importAPI(*lambdaArn)
 		// fmt.Printf("API ID: %s\n", apiID)
+
+		// Ensure the API can access the Lambda
+		addAPIPermission(apiID, *lambdaArn)
 
 		// Deploy for each stage (defaults to just one "prod" stage).
 		// However, this can be changed over time (cache settings, etc.) and is relatively harmless to re-deploy
@@ -173,6 +185,16 @@ func build() (string, error) {
 func compress() string {
 	zipper := new(archivex.ZipFile)
 	zipper.Create("aegis_function.zip")
+
+	// Create a header for aegis_app to retain permissions?
+	header := &zip.FileHeader{
+		Name:         "aegis_app",
+		Method:       zip.Store,
+		ModifiedTime: uint16(time.Now().UnixNano()),
+		ModifiedDate: uint16(time.Now().UnixNano()),
+	}
+	header.SetMode(os.FileMode(int(0777)))
+	_, _ = zipper.Writer.CreateHeader(header)
 
 	// Add the AWS Lambda shim for Go
 	// TODO: Allow multiple wrappers
@@ -405,7 +427,7 @@ func createAegisRole() string {
 	}
 
 	roleArn := *role.Role.Arn
-	fmt.Printf("%v %v\n", "Created a execution role for Lambda:", color.GreenString(roleArn))
+	fmt.Printf("%v %v\n", "Created an execution role for Lambda:", color.GreenString(roleArn))
 	return roleArn
 }
 
@@ -504,6 +526,67 @@ func deployAPI(apiId string, stage deploymentStage) string {
 	buffer.Reset()
 
 	return invokeUrl
+}
+
+func addAPIPermission(apiId string, lambdaArn string) {
+	// http://stackoverflow.com/questions/39905255/how-can-i-grant-permission-to-api-gateway-to-invoke-lambda-functions-through-clo
+	// Glue together this weird SourceArn: arn:aws:execute-api:us-east-1:ACCOUNT_ID:API_ID/*/METHOD/ENDPOINT
+	// Not sure if some API call can get it?
+	accountId, region := getAccountInfoFromLambdaArn(lambdaArn)
+
+	var buffer bytes.Buffer
+	buffer.WriteString("arn:aws:execute-api:")
+	buffer.WriteString(region)
+	buffer.WriteString(":")
+	buffer.WriteString(accountId)
+	buffer.WriteString(":")
+	buffer.WriteString(apiId)
+	// What if ENDPOINT is / ?  ¯\_(ツ)_/¯ will * work?
+	buffer.WriteString("/*/ANY/*")
+	sourceArn := buffer.String()
+	buffer.Reset()
+
+	svc := lambda.New(session.New(&awsCfg))
+
+	// There's no list permissions? So remove first and add.
+	// _, err := svc.RemovePermission(&lambda.RemovePermissionInput{
+	// 	FunctionName: aws.String("FunctionName"), // Required
+	// 	StatementId:  aws.String("StatementId"),  // Required
+	// 	Qualifier:    aws.String("Qualifier"),
+	// })
+
+	_, err := svc.AddPermission(&lambda.AddPermissionInput{
+		Action:       aws.String("lambda:InvokeFunction"),           // Required
+		FunctionName: aws.String(cfg.Lambda.FunctionName),           // Required
+		Principal:    aws.String("apigateway.amazonaws.com"),        // Required
+		StatementId:  aws.String("aegis-api-gateway-invoke-lambda"), // Required
+		// EventSourceToken: aws.String("EventSourceToken"),
+		// Qualifier:        aws.String("Qualifier"),
+		// SourceAccount:    aws.String("SourceOwner"),
+		SourceArn: aws.String(sourceArn),
+	})
+	if err != nil {
+		// Ignore "already exists" errors, that's fine. No apparent way to look up permissions before making the add call?
+		match, _ := regexp.MatchString("already exists", err.Error())
+		if !match {
+			fmt.Println("There was a problem setting permissions for API Gateway to invoke the Lambda. Try again or go into AWS console and choose the Lambda function for the integration. It'll be selected already, but re-selecting it again will create this permission behind the scenes. You can not see or set this permission from AWS console manually.\n")
+			fmt.Println(err.Error())
+		}
+	}
+}
+
+// getAccountInfoFromArn will extract the account ID and region from a given ARN
+func getAccountInfoFromLambdaArn(lambdaArn string) (string, string) {
+	r, _ := regexp.Compile("arn:aws:lambda:(.+):([0-9]+):function")
+	matches := r.FindStringSubmatch(lambdaArn)
+	accountId := ""
+	region := ""
+	if len(matches) == 3 {
+		region = matches[1]
+		accountId = matches[2]
+	}
+
+	return accountId, region
 }
 
 // getExecPath returns the full path to a passed binary in $PATH.
