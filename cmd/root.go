@@ -53,17 +53,19 @@ type deploymentConfig struct {
 		Region string
 	}
 	Lambda struct {
-		Wrapper      string
-		Runtime      string
-		Handler      string
-		FunctionName string
-		Alias        string
-		Description  string
-		MemorySize   int64
-		Role         string
-		Timeout      int64
-		SourceZip    string
-		VPC          struct {
+		Wrapper              string
+		Runtime              string
+		Handler              string
+		FunctionName         string
+		Alias                string
+		Description          string
+		MemorySize           int64
+		Role                 string
+		Timeout              int64
+		SourceZip            string
+		EnvironmentVariables map[string]*string
+		KMSKeyArn            string
+		VPC                  struct {
 			SecurityGroups []string
 			Subnets        []string
 		}

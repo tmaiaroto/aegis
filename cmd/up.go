@@ -241,6 +241,10 @@ func createFunction(zipBytes []byte) *string {
 			Role:         aws.String(cfg.Lambda.Role),
 			Runtime:      aws.String(cfg.Lambda.Runtime),
 			Timeout:      aws.Int64(int64(cfg.Lambda.Timeout)),
+			Environment: &lambda.Environment{
+				Variables: cfg.Lambda.EnvironmentVariables,
+			},
+			KMSKeyArn: aws.String(cfg.Lambda.KMSKeyArn),
 			VpcConfig: &lambda.VpcConfig{
 				SecurityGroupIds: aws.StringSlice(cfg.Lambda.VPC.SecurityGroups),
 				SubnetIds:        aws.StringSlice(cfg.Lambda.VPC.Subnets),
@@ -279,6 +283,10 @@ func updateFunction(zipBytes []byte) *string {
 		Role:         aws.String(cfg.Lambda.Role),
 		Runtime:      aws.String(cfg.Lambda.Runtime),
 		Timeout:      aws.Int64(int64(cfg.Lambda.Timeout)),
+		Environment: &lambda.Environment{
+			Variables: cfg.Lambda.EnvironmentVariables,
+		},
+		KMSKeyArn: aws.String(cfg.Lambda.KMSKeyArn),
 		VpcConfig: &lambda.VpcConfig{
 			SecurityGroupIds: aws.StringSlice(cfg.Lambda.VPC.SecurityGroups),
 			SubnetIds:        aws.StringSlice(cfg.Lambda.VPC.Subnets),

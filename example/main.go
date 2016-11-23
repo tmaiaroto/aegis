@@ -17,32 +17,25 @@ package main
 import (
 	"encoding/json"
 	"github.com/tmaiaroto/aegis/lambda"
-	//"github.com/labstack/echo"
 	//"log"
 	//"net/http"
 )
 
 func main() {
-	lambda.HandleProxy(func(context *lambda.Context, eventJSON json.RawMessage) (interface{}, error) {
 
-		var v map[string]interface{}
-		if err := json.Unmarshal(eventJSON, &v); err != nil {
-			return nil, err
+	// Handle the Lambda Proxy directly
+	lambda.HandleProxy(func(ctx *lambda.Context, evt *lambda.Event) *lambda.ProxyResponse {
+
+		event, err := json.Marshal(evt)
+		if err != nil {
+			return lambda.NewProxyResponse(500, map[string]string{}, "", err)
 		}
-		//log.Println(v)
-		vStr, _ := json.Marshal(v)
-		return string(vStr), nil
-		// return v, nil
 
+		return lambda.NewProxyResponse(200, map[string]string{}, string(event), nil)
 	})
 
-	// e := echo.New()
-	// e.GET("/", func(c echo.Context) error {
+	// Handle with a URL reqeust path Router
+	// TODO
+	//lambda.NewRouter()
 
-	// 	return c.JSON(http.StatusCreated, map[string]string{"foo": "bar"})
-	// })
-
-	// if err := e.Start(":9500"); err != nil {
-	// 	e.Logger.Fatal(err.Error())
-	// }
 }

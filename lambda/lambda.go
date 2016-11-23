@@ -21,40 +21,81 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net/http"
 	"os"
+	"strconv"
 )
 
 type (
-	Handler func(*Context, json.RawMessage) (interface{}, error)
+	// Handler returns int (HTTP status for statusCode), map[string]string (headers), string (body), error (error, which gets placed into the body)
+	Handler func(*Context, *Event) *ProxyResponse
 
 	// Context for the AWS Lambda
 	Context struct {
-		AwsRequestID             string `json:"awsRequestId"`
-		FunctionName             string `json:"functionName"`
-		FunctionVersion          string `json:"functionVersion"`
-		Invokeid                 string `json:"invokeid"`
-		IsDefaultFunctionVersion bool   `json:"isDefaultFunctionVersion"`
-		LogGroupName             string `json:"logGroupName"`
-		LogStreamName            string `json:"logStreamName"`
-		MemoryLimitInMB          string `json:"memoryLimitInMB"`
+		AwsRequestID                   string `json:"awsRequestId"`
+		CallbackWaitsForEmptyEventLoop bool   `json:"callbackWaitsForEmptyEventLoop"`
+		FunctionName                   string `json:"functionName"`
+		FunctionVersion                string `json:"functionVersion"`
+		InvokedFunctionArn             string `json:"invokedFunctionArn"`
+		Invokeid                       string `json:"invokeid"`
+		IsDefaultFunctionVersion       bool   `json:"isDefaultFunctionVersion"`
+		LogGroupName                   string `json:"logGroupName"`
+		LogStreamName                  string `json:"logStreamName"`
+		MemoryLimitInMB                string `json:"memoryLimitInMB"`
+	}
+
+	// Event from the API Gateway passed to the AWS Lambda
+	Event struct {
+		Body            interface{}       `json:"body"`
+		Headers         map[string]string `json:"headers"`
+		HttpMethod      string            `json:"httpMethod"`
+		IsBase64Encoded bool              `json:"isBase64Encoded"`
+		Path            string            `json:"path"`
+		// Will be {"proxy": "path/parts"} if set.
+		// Almost redundant in this case with Path because the API Gateway has this catch all proxy path.
+		PathParameters        map[string]string `json:"pathParameters"`
+		QueryStringParameters map[string]string `json:"queryStringParameters"`
+		RequestContext        RequestContext    `json:"requestContext"`
+		// Always `/` or `/{proxy+}` in this case
+		Resource       string            `json:"resource"`
+		StageVariables map[string]string `json:"stageVariables"`
+	}
+
+	// RequestContext for the API Gateway request (different than the Lambda function context itself)
+	RequestContext struct {
+		AccountID  string   `json:"accountId"`
+		ApiID      string   `json:"apiId"`
+		HttpMethod string   `json:"httpMethod"`
+		Identity   Identity `json:"identity"`
+		RequestId  string   `json:"requestId"`
+		ResourceId string   `json:"resourceId"`
+		// Always `/` or `/{proxy+}` in this case
+		ResourcePath string `json:"resourcePath"`
+		Stage        string `json:"stage"`
+	}
+
+	// Identity for the API Gateway request
+	Identity struct {
+		AccessKey                     string `json:"accessKey"`
+		AccountId                     string `json:"accountId"`
+		ApiKey                        string `json:"apiKey"`
+		Caller                        string `json:"caller"`
+		CognitoAuthenticationProvider string `json:"cognitoAuthenticationProvider"`
+		CognitoAuthenticationType     string `json:"cognitoAuthenticationType"`
+		CognitoIdentityId             string `json:"cognitoIdentityId"`
+		CognitoIdentityPoolId         string `json:"cognitoIdentityPoolId"`
+		SourceIp                      string `json:"sourceIp"`
+		User                          string `json:"user"`
+		UserAgent                     string `json:"userAgent"`
+		UserArn                       string `json:"userArn"`
 	}
 
 	// Payload sent to the AWS Lambda handler
 	Payload struct {
 		// custom event fields
-		Event json.RawMessage `json:"event"`
-
+		Event *Event `json:"event"`
 		// default context object
 		Context *Context `json:"context"`
-	}
-
-	// Response is a typical AWS Lambda return format (error, data)
-	Response struct {
-		// Any errors that occur during processing
-		// or are returned by handlers are returned
-		Error *string `json:"error"`
-		// General purpose output data
-		Data interface{} `json:"data"`
 	}
 
 	// ProxyResponse needs to be a specific format
@@ -69,44 +110,27 @@ type (
 		StatusCode string            `json:"statusCode"`
 		Headers    map[string]string `json:"headers"`
 		Body       string            `json:"body"`
+		err        error             `json:"-"`
 	}
 )
 
-// NewErrorResponse returns the typical AWS Lambda format for a failure
-func NewErrorResponse(err error) *Response {
-	e := err.Error()
-	return &Response{
-		Error: &e,
-	}
-}
-
-// NewResponse returns the typical AWS Lambda format for success
-func NewResponse(data interface{}) *Response {
-	return &Response{
-		Data: data,
-	}
-}
-
 // NewProxyResponse returns a response in the required format for using AWS API Gateway with a Lambda Proxy
-func NewProxyResponse(c string, h map[string]string, b string) *ProxyResponse {
+func NewProxyResponse(c int, h map[string]string, b string, e error) *ProxyResponse {
+	status := strconv.Itoa(c)
+	// If there's an error, use that as the body if body is empty.
+	if e != nil && b == "" {
+		b = e.Error()
+	}
 	return &ProxyResponse{
-		StatusCode: c,
+		StatusCode: status,
 		Headers:    h,
 		Body:       b,
+		err:        e,
 	}
 }
 
-// Handle a normal AWS Lambda function
-func Handle(handler Handler) {
-	RunStream(handler, os.Stdin, os.Stdout, false)
-}
-
-// HandleProxy handles an AWS Lambda function as proxy via API Gateway
-func HandleProxy(handler Handler) {
-	RunStream(handler, os.Stdin, os.Stdout, true)
-}
-
-func RunStream(handler Handler, Stdin io.Reader, Stdout io.Writer, proxy bool) {
+// RunStream will take the input passed to the Lambda (wrapper script) from stdio, call the handler (user Go code), and then pipe back a response (suitable for Lambda Proxy)
+func RunStream(handler Handler, Stdin io.Reader, Stdout io.Writer) {
 
 	stdin := json.NewDecoder(Stdin)
 	stdout := json.NewEncoder(Stdout)
@@ -118,35 +142,48 @@ func RunStream(handler Handler, Stdin io.Reader, Stdout io.Writer, proxy bool) {
 			}
 		}()
 		var payload Payload
+		// If there's a problem with the data coming in...
 		if err := stdin.Decode(&payload); err != nil {
-			// Would be nice to use net/http constants for status code here but AWS Lambda Proxy wants a string.
-			// return err
-			if proxy {
-				return stdout.Encode(NewProxyResponse("500", map[string]string{}, ""))
-			}
-			return err
+			return stdout.Encode(NewProxyResponse(http.StatusInternalServerError, map[string]string{}, "", err))
 		}
 
 		// Call the handler.
-		data, err := handler(payload.Context, payload.Event)
+		// status, headers, body, err := handler(payload.Context, payload.Event)
+		resp := handler(payload.Context, payload.Event)
+
 		if err != nil {
-			if proxy {
-				return stdout.Encode(NewProxyResponse("500", map[string]string{}, err.Error()))
+			// If thre's an error, the statusCode has to be in the 500's.
+			// If it isn't, use generic 500.
+			if resp.StatusCode == "" {
+				resp.StatusCode = strconv.Itoa(http.StatusInternalServerError)
 			}
-			return err
+			// return stdout.Encode(NewProxyResponse(status, headers, body, err))
+			return stdout.Encode(resp)
 		}
 
-		// Remember data is an interface{}, but needs to be a string for ProxyResponse.
-		// For a regular Lambda Response it can be a map.
-		if proxy {
-			return stdout.Encode(NewProxyResponse("500", map[string]string{}, data.(string)))
-		}
-		return stdout.Encode(NewResponse(data))
+		// return stdout.Encode(NewProxyResponse(status, headers, body, nil))
+		return stdout.Encode(resp)
 	}(); err != nil {
-		if encErr := stdout.Encode(NewErrorResponse(err)); encErr != nil {
+		if encErr := stdout.Encode(NewProxyResponse(http.StatusInternalServerError, map[string]string{}, "", err)); encErr != nil {
 			// bad times
 			log.Println("Failed to encode err response!", encErr.Error())
 		}
 	}
 
+}
+
+// HandleProxy handles an AWS Lambda function as proxy via API Gateway directly
+func HandleProxy(handler Handler) {
+	RunStream(handler, os.Stdin, os.Stdout)
+}
+
+// RouteProxy handles an AWS Lambda function as proxy via API Gateway by passing it off to any HTTP router
+func RouteProxy() {
+	RunStream(func(ctx *Context, evt *Event) *ProxyResponse {
+
+		return NewProxyResponse(200, map[string]string{}, "foo", nil)
+
+		//return NewProxyResponse(res.StatusCode, map[string]string{}, string(body), nil)
+
+	}, os.Stdin, os.Stdout)
 }

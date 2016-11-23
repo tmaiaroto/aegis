@@ -6,6 +6,8 @@ aws:
 lambda:
   description: An example Aegis app
   functionName: aegis_example
+  # environmentVariables:
+  #   foo: bar
   # sourceZip: Archive.zip
   # role: arn:aws:iam::12345:role/aegis_lambda_function
 api:
