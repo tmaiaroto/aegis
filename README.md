@@ -34,23 +34,24 @@ like your typical Lambda response. It's basically a JSON response with `statusCo
 and `body` keys.
 
 So when building your Go Lambda, use the `HandleProxy` function from this package and return an 
-`int`, `map`, `string` and `error`. The error will prompt a 500 response and will automatically 
-fill in the body with the error message if no body is provided.
+`*lambda.ProxyResponse` struct which includes a statusCode `int`, headers `map`, body `string` 
+and optional `error`. The error will prompt a 500 response and will automatically fill in the body 
+with the error message if no body is provided.
 
 ```
-lambda.HandleProxy(func(ctx *lambda.Context, evt *lambda.Event) (int, map[string]string, string, error) {
+lambda.HandleProxy(func(ctx *lambda.Context, evt *lambda.Event) *lambda.ProxyResponse {
 
 	event, err := json.Marshal(evt)
 	if err != nil {
 		// If this body string is empty, the error message will be used.
-		return 500, map[string]string{}, "", err
+		return lambda.NewProxyResponse(500, map[string]string{}, "", err)
 	}
 
 	// This will simply return the event JSON that was passed in.
 	// Note: It will contain more than just what was passed in the HTTP request.
 	// API Gateway is configured to pass everything for your use. HTTP request type, request body,
 	// path, querystring parameters, as well as API Gateway stage variables and other configuration info.
-	return 200, map[string]string{}, string(event), nil
+	return lambda.NewProxyResponse(200, map[string]string{}, string(event), nil)
 
 })
 ```
@@ -70,7 +71,7 @@ If you don't define a handler for a specific path or method, it will automatical
 ```
 aegis := lambda.NewRouter()
 
-aegis.GET("/", func(ctx *lambda.Context, evt *lambda.Event) (int, map[string]string, string, error) {
+aegis.GET("/", func(ctx *lambda.Context, evt *lambda.Event) *lambda.ProxyResponse {
 	// ... same old code here ...
 })
 ```
