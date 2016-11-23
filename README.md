@@ -36,7 +36,8 @@ and `body` keys.
 So when building your Go Lambda, use the `HandleProxy` function from this package and return an 
 `*lambda.ProxyResponse` struct which includes a statusCode `int`, headers `map`, body `string` 
 and optional `error`. The error will prompt a 500 response and will automatically fill in the body 
-with the error message if no body is provided.
+with the error message if no body is provided, though no error key is returend in the actual API
+HTTP response.
 
 ```
 lambda.HandleProxy(func(ctx *lambda.Context, evt *lambda.Event) *lambda.ProxyResponse {
