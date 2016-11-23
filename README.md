@@ -91,8 +91,8 @@ as follows:
 }
 ```
 
-NOTE: The `body` must be a string. If it's JSON then you'll need to escape it. API Gateway will return
-this as JSON. Also note the `Content-Type` header.
+NOTE: The `body` must be a string. API Gateway will return this as JSON if the `Content-Type` header 
+is set appropriately.
 
 If you want to use another Lambda function, you'll need to configure `aegis.yaml` appropriately.
 It's under `lambda.sourceZip` config key, for example:
