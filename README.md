@@ -65,16 +65,24 @@ less than pretty.
 
 So to make this even nicer, Aegis has a handler that will act as a router of the sorts. It will let you 
 register a function to handle incoming requests for any path and HTTP method. It isn't an HTTP router
-per se, as it doesn't work with HTTP requests, but it reads very much the same way.
+per se, as it doesn't work with HTTP requests/responses, but it reads very much the same way.
+Again, all information your functions will need will be in the Lambda Event struct.
 
-If you don't define a handler for a specific path or method, it will automatically return a 404 for you.
+The router also supports middleware.
 
 ```
-aegis := lambda.NewRouter()
+router := lambda.NewRouter(fallThrough)
 
-aegis.GET("/", func(ctx *lambda.Context, evt *lambda.Event) *lambda.ProxyResponse {
-	// ... same old code here ...
-})
+router.Handle("GET", "/", root)
+
+func fallThrough(ctx *lambda.Context, evt *lambda.Event, res *lambda.ProxyResponse, params url.Values) {
+	res.StatusCode = 404
+}
+
+func root(ctx *lambda.Context, evt *lambda.Event, res *lambda.ProxyResponse, params url.Values) {
+	res.Body = "body for root path"
+	res.Headers = map[string]string{"Content-Type": "text/plain"}
+}
 ```
 
 #### Not Using Aegis Handler for your Lambda

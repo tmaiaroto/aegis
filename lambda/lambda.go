@@ -176,14 +176,3 @@ func RunStream(handler Handler, Stdin io.Reader, Stdout io.Writer) {
 func HandleProxy(handler Handler) {
 	RunStream(handler, os.Stdin, os.Stdout)
 }
-
-// RouteProxy handles an AWS Lambda function as proxy via API Gateway by passing it off to any HTTP router
-func RouteProxy() {
-	RunStream(func(ctx *Context, evt *Event) *ProxyResponse {
-
-		return NewProxyResponse(200, map[string]string{}, "foo", nil)
-
-		//return NewProxyResponse(res.StatusCode, map[string]string{}, string(body), nil)
-
-	}, os.Stdin, os.Stdout)
-}
