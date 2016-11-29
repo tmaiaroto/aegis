@@ -42,22 +42,19 @@ func main() {
 	router.Handle("GET", "/", root)
 	router.Handle("GET", "/blah/:thing", somepath, fooMiddleware, barMiddleware)
 
-	// This will be ServeLambdaProxy (or just Serve) or something I don't know. Not HTTP... But basically it will take
-	// the Lambda event (maybe context too) and look at the Lambda event to pull out the path field.
-	// Run that path through the trie to find the handler set by the user (set here in this code).
-	// ...and if not found, the fallThrough will catch all. Perhaps define a catch all fall through
-	// in lambda package to let the user use it instead. That can save a little bit of time. It'll
-	// basically just return a 404.
+	router.Handle("POST", "/", root)
+
 	router.Listen()
 }
 
 func fallThrough(ctx *lambda.Context, evt *lambda.Event, res *lambda.ProxyResponse, params url.Values) {
-	res.StatusCode = "404"
+	res.SetStatus(404)
 }
 
 func root(ctx *lambda.Context, evt *lambda.Event, res *lambda.ProxyResponse, params url.Values) {
-	res.Body = "body for /"
-	res.Headers = map[string]string{"Content-Type": "application/json"}
+	//form, _ := evt.ReadForm()
+	//res.JSON(200, form)
+	res.JSON(200, evt)
 }
 
 func somepath(ctx *lambda.Context, evt *lambda.Event, res *lambda.ProxyResponse, params url.Values) {
