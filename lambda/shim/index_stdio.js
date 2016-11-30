@@ -1,10 +1,18 @@
 
 const MAX_FAILS = 4;
 
+process.env['PATH'] = process.env['PATH'] + ':' + process.env['LAMBDA_TASK_ROOT'] + ':' + __dirname;
+// console.log(process.env['PATH']);
+
 var child_process = require('child_process'),
   go_proc = null,
   done = console.log.bind(console),
   fails = 0;
+
+// TODO: Try to avoid this? I can't imagine copying, not moving, this app over each time is great for performance.
+// To avoid permission issues...
+// Really hate to copy this file each time (and mv didn't work).
+child_process.execSync('cp aegis_app /tmp/aegis_app && chmod +x /tmp/aegis_app'); 
 
 // Debug
 // var fs = require('fs');
@@ -30,13 +38,11 @@ var child_process = require('child_process'),
 // }
 
 (function new_go_proc() {
-  // TODO: Try to avoid this? I can't imagine copying, not moving, this app over each time is great for performance.
-  // To avoid permission issues...
-  // Really hate to copy this file each time (and mv didn't work).
-  child_process.execSync('cp aegis_app /tmp/aegis_app && chmod +x /tmp/aegis_app');
-
   // pipe stdin/out, blind passthru stderr
   go_proc = child_process.spawn('/tmp/aegis_app', { stdio: ['pipe', 'pipe', process.stderr] });
+  
+  //child_process.execSync('chmod +x aegis_app'); // can't do this, operation not permitted
+  // go_proc = child_process.spawn('./aegis_app', { stdio: ['pipe', 'pipe', process.stderr] }); // this used to work, why not now? ¯\_(ツ)_/¯
 
   go_proc.on('error', function(err) {
     process.stderr.write("go_proc errored: "+JSON.stringify(err)+"\n");

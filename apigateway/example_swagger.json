@@ -60,5 +60,6 @@
         }
       }
     }
-  }
+  },
+  "x-amazon-apigateway-binary-media-types" : ["application/octet-stream", "image/jpeg"]
 }

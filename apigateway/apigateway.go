@@ -25,12 +25,13 @@ import (
 )
 
 type Swagger struct {
-	Swagger  string             `json:"swagger"`
-	Info     APIInfo            `json:"info"`
-	Host     string             `json:"host"`
-	BasePath string             `json:"basePath"`
-	Schemes  []string           `json:"schemes"`
-	Paths    map[string]APIPath `json:"paths"`
+	Swagger                           string             `json:"swagger"`
+	Info                              APIInfo            `json:"info"`
+	Host                              string             `json:"host"`
+	BasePath                          string             `json:"basePath"`
+	Schemes                           []string           `json:"schemes"`
+	Paths                             map[string]APIPath `json:"paths"`
+	XAmazonApiGatewayBinaryMediaTypes []string           `json:"x-amazon-apigateway-binary-media-types"`
 }
 
 type APIInfo struct {
@@ -61,10 +62,11 @@ type APIIntegration struct {
 
 // SwaggerConfig holds configuration values for NewSwagger()
 type SwaggerConfig struct {
-	Title          string
-	LambdaURI      string
-	CacheNamespace string
-	Version        string
+	Title            string
+	LambdaURI        string
+	CacheNamespace   string
+	Version          string
+	BinaryMediaTypes []string
 }
 
 func NewSwagger(cfg *SwaggerConfig) Swagger {
@@ -153,6 +155,7 @@ func NewSwagger(cfg *SwaggerConfig) Swagger {
 				XAmazonApiGatwayAnyMethod: proxyAnyMethod,
 			},
 		},
+		XAmazonApiGatewayBinaryMediaTypes: cfg.BinaryMediaTypes,
 	}
 }
 

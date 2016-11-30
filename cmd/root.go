@@ -71,11 +71,12 @@ type deploymentConfig struct {
 		}
 	}
 	API struct {
-		Name        string
-		Description string
-		Cache       bool
-		CacheSize   string
-		Stages      map[string]deploymentStage
+		Name             string
+		Description      string
+		Cache            bool
+		CacheSize        string
+		Stages           map[string]deploymentStage
+		BinaryMediaTypes []*string
 	}
 }
 

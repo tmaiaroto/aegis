@@ -42,7 +42,7 @@ func main() {
 	router.Handle("GET", "/", root)
 	router.Handle("GET", "/blah/:thing", somepath, fooMiddleware, barMiddleware)
 
-	router.Handle("POST", "/", root)
+	router.Handle("POST", "/", postExample)
 
 	router.Listen()
 }
@@ -52,9 +52,16 @@ func fallThrough(ctx *lambda.Context, evt *lambda.Event, res *lambda.ProxyRespon
 }
 
 func root(ctx *lambda.Context, evt *lambda.Event, res *lambda.ProxyResponse, params url.Values) {
-	//form, _ := evt.ReadForm()
-	//res.JSON(200, form)
 	res.JSON(200, evt)
+}
+
+func postExample(ctx *lambda.Context, evt *lambda.Event, res *lambda.ProxyResponse, params url.Values) {
+	form, err := evt.GetForm()
+	if err != nil {
+		res.JSON(500, err.Error())
+	} else {
+		res.JSON(200, form)
+	}
 }
 
 func somepath(ctx *lambda.Context, evt *lambda.Event, res *lambda.ProxyResponse, params url.Values) {

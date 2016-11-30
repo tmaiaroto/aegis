@@ -101,7 +101,6 @@ var upCmd = &cobra.Command{
 
 		// Create (or update) the function
 		lambdaArn := createFunction(zipBytes)
-		// fmt.Printf("Created/updated Lambda function: %s\n", *lambdaArn)
 
 		// Create the API Gateway API with proxy resource.
 		// This only needs to be done once as it shouldn't change and additional resources can't be configured.
@@ -115,6 +114,9 @@ var upCmd = &cobra.Command{
 		// But a prompt on each "up" command after the first? Maybe too annoying. Could pass an "--ignore" flag or force
 		// to solve those annoyances though.
 		apiID := importAPI(*lambdaArn)
+		// TODO: Allow updates...this isn't quite working yet
+		// updateAPI(apiID, *lambdaArn)
+
 		// fmt.Printf("API ID: %s\n", apiID)
 
 		// Ensure the API can access the Lambda
@@ -490,6 +492,39 @@ func importAPI(lambdaArn string) string {
 	}
 
 	return *resp.Id
+}
+
+// updatAPI will update an API's settings that are not configured in the demployment/stage.
+// There is no real need to update the resources or integrations of course, but things like
+// the description, name, binary content types, etc. will need to be updated if changed.
+func updateAPI(apiId string, lambdaArn string) {
+	svc := apigateway.New(session.New(&awsCfg))
+
+	// Build Swagger
+	swaggerDefinition := swagger.NewSwagger(&swagger.SwaggerConfig{
+		Title:     cfg.API.Name,
+		LambdaURI: swagger.GetLambdaUri(lambdaArn),
+	})
+
+	swaggerBytes, err := json.Marshal(swaggerDefinition)
+	if err != nil {
+		fmt.Println("There was a problem creating the API.")
+		fmt.Println(err.Error())
+		os.Exit(-1)
+	}
+
+	_, err = svc.PutRestApi(&apigateway.PutRestApiInput{
+		Body:           swaggerBytes,
+		RestApiId:      aws.String(apiId),
+		FailOnWarnings: aws.Bool(false),
+		// FailOnWarnings: aws.Bool(true),
+		Mode: aws.String("overwrite"),
+	})
+
+	if err != nil {
+		fmt.Printf("%v %v\n", color.YellowString("Warning: "), "There may have been a problem updating the API.")
+		fmt.Println(err.Error())
+	}
 }
 
 // deployAPI will create a stage and deploy the API

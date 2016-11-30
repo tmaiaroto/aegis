@@ -11,8 +11,10 @@ lambda:
   # sourceZip: Archive.zip
   # role: arn:aws:iam::12345:role/aegis_lambda_function
 api:
-  name: Example Aegis API
+  name: Example Aegis API update
   description: An example API
+  binaryMediaTypes:
+    - image/png
   # stages:
   #   prod:
   #     name: prod
