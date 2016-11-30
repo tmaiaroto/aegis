@@ -21,6 +21,7 @@ import (
 	//"net/http"
 	"bytes"
 	"net/url"
+	"time"
 )
 
 func main() {
@@ -52,7 +53,13 @@ func fallThrough(ctx *lambda.Context, evt *lambda.Event, res *lambda.ProxyRespon
 }
 
 func root(ctx *lambda.Context, evt *lambda.Event, res *lambda.ProxyResponse, params url.Values) {
-	res.JSON(200, evt)
+	lambda.Log.Info("logging to CloudWatch")
+
+	// nowMs := time.Now().UnixNano() / int64(time.Millisecond)
+	now := time.Now().UnixNano()
+	handleTime := (now - evt.HandlerStartTime)
+
+	res.JSON(200, map[string]interface{}{"handleTime": handleTime, "event": evt})
 }
 
 func postExample(ctx *lambda.Context, evt *lambda.Event, res *lambda.ProxyResponse, params url.Values) {

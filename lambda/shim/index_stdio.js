@@ -89,6 +89,12 @@ child_process.execSync('cp aegis_app /tmp/aegis_app && chmod +x /tmp/aegis_app')
 })();
 
 exports.handler = function(event, context) {
+  // add to event the invoke time (oddly not present in context or event)
+  // I wish it was from when API Gateway received the request...not sure if there's a way to pass that info.
+  var hrTime = process.hrtime();
+  event.handlerStartHrTime = hrTime;
+  // and normal JavaScript milliseconds
+  event.handlerStartTimeMs = new Date().getTime();
 
   // always output to current context's done
   done = context.done.bind(context);

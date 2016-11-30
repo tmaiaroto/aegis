@@ -19,7 +19,11 @@ package lambda
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/Sirupsen/logrus"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/tmaiaroto/logrus-cloudwatchlogs"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -57,8 +61,11 @@ type (
 		QueryStringParameters map[string]string `json:"queryStringParameters"`
 		RequestContext        RequestContext    `json:"requestContext"`
 		// Always `/` or `/{proxy+}` in this case
-		Resource       string            `json:"resource"`
-		StageVariables map[string]string `json:"stageVariables"`
+		Resource           string            `json:"resource"`
+		StageVariables     map[string]string `json:"stageVariables"`
+		HandlerStartHrTime []int64           `json:"handlerStartHrTime"`
+		HandlerStartTimeMs int64             `json:"handlerStartTimeMs"`
+		HandlerStartTime   int64             `json:"handlerStartTime"`
 	}
 
 	// RequestContext for the API Gateway request (different than the Lambda function context itself)
@@ -114,6 +121,9 @@ type (
 	}
 )
 
+// Log uses Logrus for logging and will hook to CloudWatch...But could also be used to hook to other centralized logging services.
+var Log = logrus.New()
+
 // NewProxyResponse returns a response in the required format for using AWS API Gateway with a Lambda Proxy
 func NewProxyResponse(c int, h map[string]string, b string, e error) *ProxyResponse {
 	status := strconv.Itoa(c)
@@ -149,6 +159,20 @@ func RunStream(handler Handler, Stdin io.Reader, Stdout io.Writer) {
 
 		// Call the handler.
 		// status, headers, body, err := handler(payload.Context, payload.Event)
+
+		// Set up logging through logrus since normal logging via stdout won't work.
+		cfg := aws.NewConfig()
+		hook, err := logrus_cloudwatchlogs.NewHook(payload.Context.LogGroupName, payload.Context.LogStreamName, cfg)
+		if err != nil {
+			log.Println("Error setting up logrus hook for CloudWatch")
+			log.Fatal(err)
+		}
+		Log.Hooks.Add(hook)
+		Log.Out = ioutil.Discard
+		Log.Formatter = logrus_cloudwatchlogs.NewProdFormatter()
+
+		// nanosecond format the millisconds for now
+		payload.Event.HandlerStartTime = payload.Event.HandlerStartTimeMs * 1000000
 		resp := handler(payload.Context, payload.Event)
 
 		if err != nil {
