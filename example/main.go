@@ -16,10 +16,9 @@ package main
 
 import (
 	//"encoding/json"
+	"bytes"
 	"github.com/tmaiaroto/aegis/lambda"
 	"log"
-	//"net/http"
-	"bytes"
 	"net/url"
 	"time"
 )
@@ -54,6 +53,7 @@ func fallThrough(ctx *lambda.Context, evt *lambda.Event, res *lambda.ProxyRespon
 
 func root(ctx *lambda.Context, evt *lambda.Event, res *lambda.ProxyResponse, params url.Values) {
 	lambda.Log.Info("logging to CloudWatch")
+	log.Println("normal go logging (also goes to cloudwatch)")
 
 	// nowMs := time.Now().UnixNano() / int64(time.Millisecond)
 	now := time.Now().UnixNano()

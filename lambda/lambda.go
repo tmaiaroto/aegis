@@ -160,7 +160,7 @@ func RunStream(handler Handler, Stdin io.Reader, Stdout io.Writer) {
 		// Call the handler.
 		// status, headers, body, err := handler(payload.Context, payload.Event)
 
-		// Set up logging through logrus since normal logging via stdout won't work.
+		// Set up logging through logrus.
 		cfg := aws.NewConfig()
 		hook, err := logrus_cloudwatchlogs.NewHook(payload.Context.LogGroupName, payload.Context.LogStreamName, cfg)
 		if err != nil {

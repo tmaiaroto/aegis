@@ -85,6 +85,11 @@ func root(ctx *lambda.Context, evt *lambda.Event, res *lambda.ProxyResponse, par
 }
 ```
 
+#### Logging
+
+Go's normal logging will work and end up in CloudWatch. Additionally, logrus is available under `lambda.Log`
+and a hook has been added for CloudWatch. Additional hooks can be added for other centralized logging solutions.
+
 #### Not Using Aegis Handler for your Lambda
 
 What if you want to use another Lambda function? You can! Just keep mind it's a Lambda Proxy. This means
@@ -137,8 +142,3 @@ I've tried to leave hlepful comments. So you can certainly read through it and l
 Special thanks to [@tj](https://github.com/tj) and [@mweagle](https://github.com/mweagle) for their
 help with this. There were a few things that weren't clear along the way and they really took the 
 time to help me out. Thanks to the other people and projects out there too.
-
-Curious why the name Aegis? The "shield" metaphore comes from putting up an application that's 
-protected from downtime as Lambda and API Gateway scale very well. It's also Athena's shield who 
-is the goddess of crafts and wisdom. Honestly, I needed a name quick and while Aegis typically
-associates with security, I thought this fit too. Call the binary whatever you want =)
