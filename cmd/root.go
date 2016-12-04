@@ -20,7 +20,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/apigateway"
 	"github.com/aws/aws-sdk-go/service/lambda"
-	"github.com/fatih/color"
+	// "github.com/fatih/color"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"os"
@@ -32,13 +32,8 @@ var cfgFile string
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
 	Use:   "aegis",
-	Short: "A brief description of your application",
-	Long: `A longer description that spans multiple lines and likely contains
-examples and usage of using your application. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "Deploy RESTful serverless APIs ",
+	Long:  `A tool to deploy a RESTful serverless API using AWS Lambda and API Gateway with a Lambda Proxy and an API Gateway ANY request.`,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	//	Run: func(cmd *cobra.Command, args []string) { },
@@ -106,16 +101,7 @@ func Execute() {
 }
 
 func init() {
-	cobra.OnInitialize(initConfig)
-
-	// Here you will define your flags and configuration settings.
-	// Cobra supports Persistent Flags, which, if defined here,
-	// will be global for your application.
-
 	RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "aegis", "config file (default is aegis.yaml)")
-	// Cobra also supports local flags, which will only run
-	// when this action is called directly.
-	RootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 
 // initConfig reads in config file and ENV variables if set.
@@ -186,7 +172,7 @@ func initConfig() {
 		// fmt.Println("Using config file:", viper.ConfigFileUsed())
 	} else {
 		// Not strictly required given defaults? This prevents other commands such as `init` from working.
-		fmt.Printf("%v %v\n", color.YellowString("Warning: "), "Could not find aegis config file.")
+		// fmt.Printf("%v %v\n", color.YellowString("Warning:"), "Could not find aegis config file.")
 		// os.Exit(-1)
 	}
 
