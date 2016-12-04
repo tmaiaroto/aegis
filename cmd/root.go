@@ -20,6 +20,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/apigateway"
 	"github.com/aws/aws-sdk-go/service/lambda"
+	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"os"
@@ -184,8 +185,9 @@ func initConfig() {
 		// TODO verbose?
 		// fmt.Println("Using config file:", viper.ConfigFileUsed())
 	} else {
-		fmt.Println("Could not find aegis config file.")
-		os.Exit(-1)
+		// Not strictly required given defaults? This prevents other commands such as `init` from working.
+		fmt.Printf("%v %v\n", color.YellowString("Warning: "), "Could not find aegis config file.")
+		// os.Exit(-1)
 	}
 
 	err = viper.Unmarshal(&cfg)

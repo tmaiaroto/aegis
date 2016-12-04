@@ -6,6 +6,7 @@ aws:
 lambda:
   description: An example Aegis app
   functionName: aegis_example
+  memorySize: 1024
   # environmentVariables:
   #   foo: bar
   # sourceZip: Archive.zip

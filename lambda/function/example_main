@@ -15,23 +15,25 @@
 package main
 
 import (
-	"encoding/json"
 	"github.com/tmaiaroto/aegis/lambda"
 )
 
 func main() {
-	lambda.HandleProxy(func(context *lambda.Context, eventJSON json.RawMessage) (interface{}, error) {
-		// Just take the event message passed to this Lambda function and return it.
-		var v map[string]interface{}
-		if err := json.Unmarshal(eventJSON, &v); err != nil {
-			return nil, err
-		}
-		vStr, _ := json.Marshal(v)
+	// Handle with a URL reqeust path Router
+	router := lambda.NewRouter(fallThrough)
 
-		// Note: Return data as a string.
-		// An AWS API Gateway resource using Lamba Proxy needs the Lambda to return a response
-		// in a very specific format.
-		// This returned string value will be used as part of a JSON response as value for a "body" key.
-		return string(vStr), nil
-	})
+	router.Handle("GET", "/", root)
+
+	router.Listen()
+}
+
+func fallThrough(ctx *lambda.Context, evt *lambda.Event, res *lambda.ProxyResponse, params url.Values) {
+	res.SetStatus(404)
+}
+
+func root(ctx *lambda.Context, evt *lambda.Event, res *lambda.ProxyResponse, params url.Values) {
+	lambda.Log.Info("logging to CloudWatch via logrus")
+	// log.Println("normal Go logging (also goes to CloudWatch)")
+
+	res.JSON(200, evt)
 }

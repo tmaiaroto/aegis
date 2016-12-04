@@ -16,8 +16,15 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/fatih/color"
 	"github.com/spf13/cobra"
+	"github.com/tmaiaroto/aegis/lambda/function"
+	"io/ioutil"
+	"os"
 )
+
+const SrcPath = "./main.go"
+const YmlPath = "./aegis.yaml"
 
 // initCmd represents the init command
 var initCmd = &cobra.Command{
@@ -25,10 +32,23 @@ var initCmd = &cobra.Command{
 	Short: "Initialize app",
 	Long:  `Initializes your serverless application and creates a configuration file for you to alter as needed.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		// TODO: Work your own magic here
-		fmt.Println("init called")
-		// TODO: Copy the boilerplate example main.go app into the current directory along with an example aegis.yaml
-		// if the files don't exist already. Don't want to accidentally overwrite anyone's work =)
+		if _, err := os.Stat(YmlPath); err == nil {
+			fmt.Printf("%v %v\n", color.YellowString("Warning: "), "An aegis.yaml file already exists in this location. It has been left alone.")
+		} else {
+			ymlErr := ioutil.WriteFile(YmlPath, function.MustAsset("example_aegis"), 0644)
+			if ymlErr != nil {
+				fmt.Printf("%v %v\n", color.RedString("Error: "), ymlErr.Error())
+			}
+		}
+
+		if _, err := os.Stat(SrcPath); err == nil {
+			fmt.Printf("%v %v\n", color.YellowString("Warning: "), "A main.go file already exists in this location. It has been left alone.")
+		} else {
+			mainErr := ioutil.WriteFile(SrcPath, function.MustAsset("example_main"), 0644)
+			if mainErr != nil {
+				fmt.Printf("%v %v\n", color.RedString("Error: "), mainErr.Error())
+			}
+		}
 	},
 }
 
