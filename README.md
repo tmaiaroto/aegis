@@ -17,7 +17,13 @@ setup is probably easies by following AWS CLI instructions.
 Install Aegis, then create an `aegis.yaml` file and configure your Lambda. 
 Ensure your Go app uses the `HandleProxy` function from `"github.com/tmaiaroto/aegis/lambda"`.
 
-You can reference the `example` directory from this repo to help you out.
+You can reference the `example` directory from this repo to help you out. Or you can
+copy some example files to get you started with:
+
+```
+aegis init
+```
+
 Then in your Go project directory run:
 
 ```
