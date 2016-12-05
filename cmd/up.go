@@ -266,7 +266,12 @@ func createFunction(zipBytes []byte) *string {
 		// Maybe also allowing different stages of the API to use different Lambda versions if that's possible?
 		// createOrUpdateAlias(f)
 
-		return f.FunctionArn
+		// return f.FunctionArn
+		// Ensure the version number is stripped from the end
+		arn := stripLamdaVersionFromArn(*f.FunctionArn)
+
+		fmt.Printf("%v %v %v %v%v\n", "Updated Lambda function:", color.GreenString(arn), "(version ", *f.Version, ")")
+		return &arn
 	}
 
 	// Otherwise, update the Lambda function
@@ -311,12 +316,16 @@ func updateFunction(zipBytes []byte) *string {
 		fmt.Println(err.Error())
 		os.Exit(-1)
 	}
-	fmt.Printf("%v %v\n", "Updated Lambda function:", color.GreenString(*f.FunctionArn))
 
 	// Create or update alias
 	// createOrUpdateAlias(f)
 
-	return f.FunctionArn
+	// Remove the version number at the end.
+	arn := stripLamdaVersionFromArn(*f.FunctionArn)
+	fmt.Println(arn)
+
+	fmt.Printf("%v %v %v %v%v\n", "Updated Lambda function:", color.GreenString(arn), "(version ", *f.Version, ")")
+	return &arn
 }
 
 // createOrUpdateAlias will handle the Lambda function alias
@@ -630,6 +639,34 @@ func getAccountInfoFromLambdaArn(lambdaArn string) (string, string) {
 	}
 
 	return accountId, region
+}
+
+// stripLamdaVersionFromArn will remove the :123 version number from a given Lambda ARN, which indicates to use the latest version when used in AWS
+func stripLamdaVersionFromArn(lambdaArn string) string {
+	// arn:aws:lambda:us-east-1:1234567890:function:aegis_example:1
+	r, _ := regexp.Compile("arn:aws:lambda:(.+):([0-9]+):function:([A-z0-9\\-\\_]+)($|:[0-9]+)")
+	matches := r.FindStringSubmatch(lambdaArn)
+	accountId := ""
+	region := ""
+	functionName := ""
+	if len(matches) == 5 {
+		region = matches[1]
+		accountId = matches[2]
+		functionName = matches[3]
+		// functionVersion = matches[4]
+	}
+
+	var buffer bytes.Buffer
+	buffer.WriteString("arn:aws:lambda:")
+	buffer.WriteString(region)
+	buffer.WriteString(":")
+	buffer.WriteString(accountId)
+	buffer.WriteString(":function:")
+	buffer.WriteString(functionName)
+	arn := buffer.String()
+	buffer.Reset()
+
+	return arn
 }
 
 // getExecPath returns the full path to a passed binary in $PATH.
