@@ -16,6 +16,7 @@ package main
 
 import (
 	"github.com/tmaiaroto/aegis/lambda"
+	"net/url"
 )
 
 func main() {

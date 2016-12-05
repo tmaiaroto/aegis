@@ -101,6 +101,7 @@ func Execute() {
 }
 
 func init() {
+	cobra.OnInitialize(initConfig)
 	RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "aegis", "config file (default is aegis.yaml)")
 }
 
