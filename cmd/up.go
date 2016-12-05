@@ -322,7 +322,6 @@ func updateFunction(zipBytes []byte) *string {
 
 	// Remove the version number at the end.
 	arn := stripLamdaVersionFromArn(*f.FunctionArn)
-	fmt.Println(arn)
 
 	fmt.Printf("%v %v %v %v%v\n", "Updated Lambda function:", color.GreenString(arn), "(version ", *f.Version, ")")
 	return &arn
