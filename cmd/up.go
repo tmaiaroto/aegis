@@ -125,10 +125,10 @@ var upCmd = &cobra.Command{
 		// Deploy for each stage (defaults to just one "prod" stage).
 		// However, this can be changed over time (cache settings, etc.) and is relatively harmless to re-deploy
 		// on each run anyway. Plus, new stages can be added at any time.
-		for key, _ := range cfg.API.Stages {
-			invokeUrl := deployAPI(apiID, cfg.API.Stages[key])
-			// fmt.Printf("%s API Invoke URL: %s\n", key, invokeUrl)
-			fmt.Printf("%v %v %v\n", color.GreenString(key), "API Invoke URL:", color.GreenString(invokeUrl))
+		for key := range cfg.API.Stages {
+			invokeURL := deployAPI(apiID, cfg.API.Stages[key])
+			// fmt.Printf("%s API Invoke URL: %s\n", key, invokeURL)
+			fmt.Printf("%v %v %v\n", color.GreenString(key), "API Invoke URL:", color.GreenString(invokeURL))
 		}
 
 		// Clean up
@@ -478,7 +478,7 @@ func importAPI(lambdaArn string) string {
 	// Build Swagger
 	swaggerDefinition := swagger.NewSwagger(&swagger.SwaggerConfig{
 		Title:     cfg.API.Name,
-		LambdaURI: swagger.GetLambdaUri(lambdaArn),
+		LambdaURI: swagger.GetLambdaURI(lambdaArn),
 	})
 
 	swaggerBytes, err := json.Marshal(swaggerDefinition)
@@ -505,13 +505,13 @@ func importAPI(lambdaArn string) string {
 // updatAPI will update an API's settings that are not configured in the demployment/stage.
 // There is no real need to update the resources or integrations of course, but things like
 // the description, name, binary content types, etc. will need to be updated if changed.
-func updateAPI(apiId string, lambdaArn string) {
+func updateAPI(apiID string, lambdaArn string) {
 	svc := apigateway.New(session.New(&awsCfg))
 
 	// Build Swagger
 	swaggerDefinition := swagger.NewSwagger(&swagger.SwaggerConfig{
 		Title:     cfg.API.Name,
-		LambdaURI: swagger.GetLambdaUri(lambdaArn),
+		LambdaURI: swagger.GetLambdaURI(lambdaArn),
 	})
 
 	swaggerBytes, err := json.Marshal(swaggerDefinition)
@@ -523,7 +523,7 @@ func updateAPI(apiId string, lambdaArn string) {
 
 	_, err = svc.PutRestApi(&apigateway.PutRestApiInput{
 		Body:           swaggerBytes,
-		RestApiId:      aws.String(apiId),
+		RestApiId:      aws.String(apiID),
 		FailOnWarnings: aws.Bool(false),
 		// FailOnWarnings: aws.Bool(true),
 		Mode: aws.String("overwrite"),
@@ -536,7 +536,7 @@ func updateAPI(apiId string, lambdaArn string) {
 }
 
 // deployAPI will create a stage and deploy the API
-func deployAPI(apiId string, stage deploymentStage) string {
+func deployAPI(apiID string, stage deploymentStage) string {
 	svc := apigateway.New(session.New(&awsCfg))
 
 	// Must be one of: [58.2, 13.5, 28.4, 237, 0.5, 118, 6.1, 1.6]
@@ -546,11 +546,11 @@ func deployAPI(apiId string, stage deploymentStage) string {
 	}
 
 	if stage.Cache {
-		fmt.Println("A cache is set for API responses, this will incur additional charges. Cache size is %sGB\n", stage.CacheSize)
+		fmt.Printf("A cache is set for API responses, this will incur additional charges. Cache size is %sGB\n", stage.CacheSize)
 	}
 
 	_, err := svc.CreateDeployment(&apigateway.CreateDeploymentInput{
-		RestApiId:           aws.String(apiId),      // Required
+		RestApiId:           aws.String(apiID),      // Required
 		StageName:           aws.String(stage.Name), // Required
 		CacheClusterEnabled: aws.Bool(stage.Cache),
 		CacheClusterSize:    aws.String(stage.CacheSize),
@@ -568,30 +568,30 @@ func deployAPI(apiId string, stage deploymentStage) string {
 	// https://xxxxx.execute-api.us-east-1.amazonaws.com/prod
 	var buffer bytes.Buffer
 	buffer.WriteString("https://")
-	buffer.WriteString(apiId)
+	buffer.WriteString(apiID)
 	buffer.WriteString(".execute-api.")
 	buffer.WriteString(cfg.AWS.Region)
 	buffer.WriteString(".amazonaws.com/")
 	buffer.WriteString(stage.Name)
-	invokeUrl := buffer.String()
+	invokeURL := buffer.String()
 	buffer.Reset()
 
-	return invokeUrl
+	return invokeURL
 }
 
-func addAPIPermission(apiId string, lambdaArn string) {
+func addAPIPermission(apiID string, lambdaArn string) {
 	// http://stackoverflow.com/questions/39905255/how-can-i-grant-permission-to-api-gateway-to-invoke-lambda-functions-through-clo
 	// Glue together this weird SourceArn: arn:aws:execute-api:us-east-1:ACCOUNT_ID:API_ID/*/METHOD/ENDPOINT
 	// Not sure if some API call can get it?
-	accountId, region := getAccountInfoFromLambdaArn(lambdaArn)
+	accountID, region := getAccountInfoFromLambdaArn(lambdaArn)
 
 	var buffer bytes.Buffer
 	buffer.WriteString("arn:aws:execute-api:")
 	buffer.WriteString(region)
 	buffer.WriteString(":")
-	buffer.WriteString(accountId)
+	buffer.WriteString(accountID)
 	buffer.WriteString(":")
-	buffer.WriteString(apiId)
+	buffer.WriteString(apiID)
 	// What if ENDPOINT is / ?  ¯\_(ツ)_/¯ will * work?
 	buffer.WriteString("/*/ANY/*")
 	sourceArn := buffer.String()
@@ -620,7 +620,7 @@ func addAPIPermission(apiId string, lambdaArn string) {
 		// Ignore "already exists" errors, that's fine. No apparent way to look up permissions before making the add call?
 		match, _ := regexp.MatchString("already exists", err.Error())
 		if !match {
-			fmt.Println("There was a problem setting permissions for API Gateway to invoke the Lambda. Try again or go into AWS console and choose the Lambda function for the integration. It'll be selected already, but re-selecting it again will create this permission behind the scenes. You can not see or set this permission from AWS console manually.\n")
+			fmt.Println("There was a problem setting permissions for API Gateway to invoke the Lambda. Try again or go into AWS console and choose the Lambda function for the integration. It'll be selected already, but re-selecting it again will create this permission behind the scenes. You can not see or set this permission from AWS console manually.")
 			fmt.Println(err.Error())
 		}
 	}
@@ -630,14 +630,14 @@ func addAPIPermission(apiId string, lambdaArn string) {
 func getAccountInfoFromLambdaArn(lambdaArn string) (string, string) {
 	r, _ := regexp.Compile("arn:aws:lambda:(.+):([0-9]+):function")
 	matches := r.FindStringSubmatch(lambdaArn)
-	accountId := ""
+	accountID := ""
 	region := ""
 	if len(matches) == 3 {
 		region = matches[1]
-		accountId = matches[2]
+		accountID = matches[2]
 	}
 
-	return accountId, region
+	return accountID, region
 }
 
 // stripLamdaVersionFromArn will remove the :123 version number from a given Lambda ARN, which indicates to use the latest version when used in AWS
@@ -645,12 +645,12 @@ func stripLamdaVersionFromArn(lambdaArn string) string {
 	// arn:aws:lambda:us-east-1:1234567890:function:aegis_example:1
 	r, _ := regexp.Compile("arn:aws:lambda:(.+):([0-9]+):function:([A-z0-9\\-\\_]+)($|:[0-9]+)")
 	matches := r.FindStringSubmatch(lambdaArn)
-	accountId := ""
+	accountID := ""
 	region := ""
 	functionName := ""
 	if len(matches) == 5 {
 		region = matches[1]
-		accountId = matches[2]
+		accountID = matches[2]
 		functionName = matches[3]
 		// functionVersion = matches[4]
 	}
@@ -659,7 +659,7 @@ func stripLamdaVersionFromArn(lambdaArn string) string {
 	buffer.WriteString("arn:aws:lambda:")
 	buffer.WriteString(region)
 	buffer.WriteString(":")
-	buffer.WriteString(accountId)
+	buffer.WriteString(accountID)
 	buffer.WriteString(":function:")
 	buffer.WriteString(functionName)
 	arn := buffer.String()

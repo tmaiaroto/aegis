@@ -24,6 +24,7 @@ import (
 	"time"
 )
 
+// Swagger defines an AWS API Gateway Lambda Proxy swagger definition
 type Swagger struct {
 	Swagger                           string             `json:"swagger"`
 	Info                              APIInfo            `json:"info"`
@@ -31,30 +32,34 @@ type Swagger struct {
 	BasePath                          string             `json:"basePath"`
 	Schemes                           []string           `json:"schemes"`
 	Paths                             map[string]APIPath `json:"paths"`
-	XAmazonApiGatewayBinaryMediaTypes []string           `json:"x-amazon-apigateway-binary-media-types"`
+	XAmazonAPIGatewayBinaryMediaTypes []string           `json:"x-amazon-apigateway-binary-media-types"`
 }
 
+// APIInfo provides is a part of th API Gateway swagger
 type APIInfo struct {
 	Version string `json:"version"`
 	Title   string `json:"title"`
 }
 
+// APIPath provides is a part of th API Gateway swagger
 type APIPath struct {
-	XAmazonApiGatwayAnyMethod ANYMethod `json:"x-amazon-apigateway-any-method"`
+	XAmazonAPIGatwayAnyMethod ANYMethod `json:"x-amazon-apigateway-any-method"`
 }
 
+// ANYMethod provides is a part of th API Gateway swagger, it instructs the API to handle any HTTP method on an APIPath
 type ANYMethod struct {
 	Produces                     []string                 `json:"produces"`
 	Parameters                   []map[string]interface{} `json:"parameters"`
 	Responses                    map[string]string        `json:"responses"`
-	XAmazonApiGatewayIntegration APIIntegration           `json:"x-amazon-apigateway-integration"`
+	XAmazonAPIGatewayIntegration APIIntegration           `json:"x-amazon-apigateway-integration"`
 }
 
+// APIIntegration provides is a part of th API Gateway swagger
 type APIIntegration struct {
 	URI                 string                       `json:"uri"`
 	Responses           map[string]map[string]string `json:"responses"`
 	PassthroughBehavior string                       `json:"passthroughBehavior"`
-	HttpMethod          string                       `json:"httpMethod"`
+	HTTPMethod          string                       `json:"httpMethod"`
 	CacheNamespace      string                       `json:"cacheNamespace"`
 	CacheKeyParameters  []string                     `json:"cacheKeyParameters"`
 	Type                string                       `json:"type"`
@@ -69,6 +74,7 @@ type SwaggerConfig struct {
 	BinaryMediaTypes []string
 }
 
+// NewSwagger creates a new Swagger struct with some default values
 func NewSwagger(cfg *SwaggerConfig) Swagger {
 	if cfg.LambdaURI == "" {
 		fmt.Println("Invalid Lambda URI provided for Swagger definition.")
@@ -109,7 +115,7 @@ func NewSwagger(cfg *SwaggerConfig) Swagger {
 		Produces:   []string{"application/json"},
 		Parameters: params,
 		Responses:  map[string]string{},
-		XAmazonApiGatewayIntegration: APIIntegration{
+		XAmazonAPIGatewayIntegration: APIIntegration{
 			URI: cfg.LambdaURI,
 			Responses: map[string]map[string]string{
 				"default": map[string]string{
@@ -117,7 +123,7 @@ func NewSwagger(cfg *SwaggerConfig) Swagger {
 				},
 			},
 			PassthroughBehavior: "when_no_match",
-			HttpMethod:          "POST",
+			HTTPMethod:          "POST",
 			CacheNamespace:      cfg.CacheNamespace,
 			CacheKeyParameters:  []string{"method.request.path.proxy"},
 			Type:                "aws_proxy",
@@ -128,7 +134,7 @@ func NewSwagger(cfg *SwaggerConfig) Swagger {
 		Produces:   []string{"application/json"},
 		Parameters: params,
 		Responses:  map[string]string{},
-		XAmazonApiGatewayIntegration: APIIntegration{
+		XAmazonAPIGatewayIntegration: APIIntegration{
 			URI: cfg.LambdaURI,
 			Responses: map[string]map[string]string{
 				"default": map[string]string{
@@ -136,7 +142,7 @@ func NewSwagger(cfg *SwaggerConfig) Swagger {
 				},
 			},
 			PassthroughBehavior: "when_no_match",
-			HttpMethod:          "POST",
+			HTTPMethod:          "POST",
 			Type:                "aws_proxy",
 		},
 	}
@@ -149,18 +155,18 @@ func NewSwagger(cfg *SwaggerConfig) Swagger {
 		Schemes:  []string{"https"},
 		Paths: map[string]APIPath{
 			"/": APIPath{
-				XAmazonApiGatwayAnyMethod: rootAnyMethod,
+				XAmazonAPIGatwayAnyMethod: rootAnyMethod,
 			},
 			"/{proxy+}": APIPath{
-				XAmazonApiGatwayAnyMethod: proxyAnyMethod,
+				XAmazonAPIGatwayAnyMethod: proxyAnyMethod,
 			},
 		},
-		XAmazonApiGatewayBinaryMediaTypes: cfg.BinaryMediaTypes,
+		XAmazonAPIGatewayBinaryMediaTypes: cfg.BinaryMediaTypes,
 	}
 }
 
-// GetLambdaUri returns the Lambda URI
-func GetLambdaUri(lambdaArn string) string {
+// GetLambdaURI returns the Lambda URI
+func GetLambdaURI(lambdaArn string) string {
 	// lambdaArn won't work. It needs to be this format.
 	// arn:aws:apigateway:<aws-region>:lambda:path/2015-03-31/functions/arn:aws:lambda:<aws-region>:<aws-acct-id>:function:<your-lambda-function-name>/invocations
 	// ...but lambdaArn is in this string.
@@ -168,12 +174,12 @@ func GetLambdaUri(lambdaArn string) string {
 	// arn:aws:lambda:us-east-1:12345:function:aegis_example:6
 	r, _ := regexp.Compile("arn:aws:lambda:(.+):([0-9]+):function:(.+)($|:)")
 	matches := r.FindStringSubmatch(lambdaArn)
-	accountId := ""
+	accountID := ""
 	region := ""
 	functionName := ""
 	if len(matches) == 5 {
 		region = matches[1]
-		accountId = matches[2]
+		accountID = matches[2]
 		functionName = matches[3]
 	}
 
@@ -188,7 +194,7 @@ func GetLambdaUri(lambdaArn string) string {
 	//buffer.WriteString(cfg.AWS.Region)
 	buffer.WriteString(region)
 	buffer.WriteString(":")
-	buffer.WriteString(accountId)
+	buffer.WriteString(accountID)
 	buffer.WriteString(":function:")
 	//buffer.WriteString(cfg.Lambda.FunctionName)
 	buffer.WriteString(functionName)
@@ -196,10 +202,10 @@ func GetLambdaUri(lambdaArn string) string {
 	// Might not be able to use this...
 	// buffer.WriteString(lambdaArn)
 	buffer.WriteString("/invocations")
-	lambdaUri := buffer.String()
+	lambdaURI := buffer.String()
 	buffer.Reset()
 
-	return lambdaUri
+	return lambdaURI
 }
 
 // randomCacheNamespace creates a random string to use for cache namespace

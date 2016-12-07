@@ -37,12 +37,7 @@ type Router struct {
 	URIVersion     string
 }
 
-type Param struct {
-	Name     string
-	Required bool
-}
-
-// New creates a new router. Take the root/fall through route
+// NewRouter creates a new router. Take the root/fall through route
 // like how the default mux works. Only difference is in this case,
 // you have to specific one.
 func NewRouter(rootHandler RouteHandler) *Router {
@@ -113,9 +108,9 @@ func (r *Router) Listen() {
 		// New empty response with a 200 status code since nothing has gone wrong yet, it's just empty.
 		res := NewProxyResponse(200, map[string]string{}, "", nil)
 
-		// use the Path and HttpMethod from the event to figure out the route
+		// use the Path and HTTPMethod from the event to figure out the route
 		node, _ := r.tree.traverse(strings.Split(evt.Path, "/")[1:], params)
-		if handler := node.methods[evt.HttpMethod]; handler != nil {
+		if handler := node.methods[evt.HTTPMethod]; handler != nil {
 			// Middleware must return true in order to continue.
 			// If it returns false, it will catch and halt everything.
 			if !runMiddleware(ctx, evt, res, params, handler.middleware...) {

@@ -41,7 +41,7 @@ type (
 		FunctionName                   string `json:"functionName"`
 		FunctionVersion                string `json:"functionVersion"`
 		InvokedFunctionArn             string `json:"invokedFunctionArn"`
-		Invokeid                       string `json:"invokeid"`
+		InvokeID                       string `json:"invokeid"`
 		IsDefaultFunctionVersion       bool   `json:"isDefaultFunctionVersion"`
 		LogGroupName                   string `json:"logGroupName"`
 		LogStreamName                  string `json:"logStreamName"`
@@ -52,7 +52,7 @@ type (
 	Event struct {
 		Body            interface{}       `json:"body"`
 		Headers         map[string]string `json:"headers"`
-		HttpMethod      string            `json:"httpMethod"`
+		HTTPMethod      string            `json:"httpMethod"`
 		IsBase64Encoded bool              `json:"isBase64Encoded"`
 		Path            string            `json:"path"`
 		// Will be {"proxy": "path/parts"} if set.
@@ -71,11 +71,11 @@ type (
 	// RequestContext for the API Gateway request (different than the Lambda function context itself)
 	RequestContext struct {
 		AccountID  string   `json:"accountId"`
-		ApiID      string   `json:"apiId"`
-		HttpMethod string   `json:"httpMethod"`
+		APIID      string   `json:"apiId"`
+		HTTPMethod string   `json:"httpMethod"`
 		Identity   Identity `json:"identity"`
-		RequestId  string   `json:"requestId"`
-		ResourceId string   `json:"resourceId"`
+		RequestID  string   `json:"requestId"`
+		ResourceID string   `json:"resourceId"`
 		// Always `/` or `/{proxy+}` in this case
 		ResourcePath string `json:"resourcePath"`
 		Stage        string `json:"stage"`
@@ -84,14 +84,14 @@ type (
 	// Identity for the API Gateway request
 	Identity struct {
 		AccessKey                     string `json:"accessKey"`
-		AccountId                     string `json:"accountId"`
-		ApiKey                        string `json:"apiKey"`
+		AccountID                     string `json:"accountId"`
+		APIKey                        string `json:"apiKey"`
 		Caller                        string `json:"caller"`
 		CognitoAuthenticationProvider string `json:"cognitoAuthenticationProvider"`
 		CognitoAuthenticationType     string `json:"cognitoAuthenticationType"`
-		CognitoIdentityId             string `json:"cognitoIdentityId"`
-		CognitoIdentityPoolId         string `json:"cognitoIdentityPoolId"`
-		SourceIp                      string `json:"sourceIp"`
+		CognitoIdentityID             string `json:"cognitoIdentityId"`
+		CognitoIdentityPoolID         string `json:"cognitoIdentityPoolId"`
+		SourceIP                      string `json:"sourceIp"`
 		User                          string `json:"user"`
 		UserAgent                     string `json:"userAgent"`
 		UserArn                       string `json:"userArn"`
@@ -117,7 +117,7 @@ type (
 		StatusCode string            `json:"statusCode"`
 		Headers    map[string]string `json:"headers"`
 		Body       string            `json:"body"`
-		err        error             `json:"-"`
+		err        error
 	}
 )
 

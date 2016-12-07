@@ -23,7 +23,10 @@ import (
 	"os"
 )
 
+// SrcPath defines the path to the example Go source main.go to be copied from bindata to the current working directory upon init
 const SrcPath = "./main.go"
+
+// YmlPath defines the path to the example aegis config file to be copied from bindata to the current working directory upon init
 const YmlPath = "./aegis.yaml"
 
 // initCmd represents the init command

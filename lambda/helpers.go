@@ -184,7 +184,7 @@ func (res *ProxyResponse) SetStatus(status int) {
 
 // IP returns the visitor's IP address from the event struct.
 func (evt *Event) IP() string {
-	return evt.RequestContext.Identity.SourceIp
+	return evt.RequestContext.Identity.SourceIP
 }
 
 // UserAgent returns the visitor's browser agent.
