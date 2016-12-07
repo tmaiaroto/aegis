@@ -1,6 +1,8 @@
 Aegis
 ==========
 
+[![License Apache 2](https://img.shields.io/badge/license-Apache%202-blue.svg)](https://github.com/tmaiaroto/aegis/blob/master/LICENSE) [![godoc aegis](https://img.shields.io/badge/godoc-reference-blue.svg)](http://godoc.org/github.com/tmaiaroto/aegis) [![Go Report Card](https://goreportcard.com/badge/github.com/tmaiaroto/aegis)](https://goreportcard.com/report/github.com/tmaiaroto/aegis)
+
 A simple utility for deploying a Golang based Lambda with an API using 
 AWS API Gateway's `ANY` method with a `{proxy+}` path to handle any request.
 
