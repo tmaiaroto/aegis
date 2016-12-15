@@ -670,10 +670,14 @@ func stripLamdaVersionFromArn(lambdaArn string) string {
 
 // getExecPath returns the full path to a passed binary in $PATH.
 func getExecPath(name string) string {
+	if name == "" {
+		log.Println("invalid executable file name")
+		os.Exit(-1)
+	}
 	out, err := exec.Command("which", name).Output()
 	if err != nil {
-		log.Fatalf("executable file %s not found in $PATH", name)
-		return ""
+		log.Println("executable file %s not found in $PATH", name)
+		os.Exit(-1)
 	}
 	return string(bytes.TrimSpace(out))
 }

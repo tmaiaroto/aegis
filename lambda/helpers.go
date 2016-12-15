@@ -210,16 +210,16 @@ func (evt *Event) GetForm() (map[string]interface{}, error) {
 			body := strings.NewReader(evt.Body.(string))
 			mr := multipart.NewReader(body, params["boundary"])
 			for {
-				p, err := mr.NextPart()
-				if err == io.EOF {
+				p, readerErr := mr.NextPart()
+				if readerErr == io.EOF {
 					return formData, nil
 				}
-				if err != nil {
-					return formData, err
+				if readerErr != nil {
+					return formData, readerErr
 				}
-				b, err := ioutil.ReadAll(p)
-				if err != nil {
-					return formData, err
+				b, readPartsErr := ioutil.ReadAll(p)
+				if readPartsErr != nil {
+					return formData, readPartsErr
 				}
 				formData[p.FormName()] = string(b)
 			}

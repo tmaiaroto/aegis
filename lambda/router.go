@@ -16,7 +16,6 @@ const (
 	put     = "PUT"
 	patch   = "PATCH"
 	deleteh = "DELETE"
-	any     = "ANY"
 )
 
 // RouteHandler is similar to "net/http" Handlers, except there is no response writer.

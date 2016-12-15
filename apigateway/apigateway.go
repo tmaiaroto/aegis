@@ -172,7 +172,7 @@ func GetLambdaURI(lambdaArn string) string {
 	// ...but lambdaArn is in this string.
 
 	// arn:aws:lambda:us-east-1:12345:function:aegis_example:6
-	r, _ := regexp.Compile("arn:aws:lambda:(.+):([0-9]+):function:(.+)($|:)")
+	r := regexp.MustCompile("arn:aws:lambda:(.+):([0-9]+):function:(.+)($|:)")
 	matches := r.FindStringSubmatch(lambdaArn)
 	accountID := ""
 	region := ""
@@ -234,69 +234,3 @@ func randomCacheNamespace(n int) string {
 
 	return string(b)
 }
-
-// Example Swagger Export for reference.
-// {
-//   "swagger": "2.0",
-//   "info": {
-//     "version": "2016-10-30T21:15:01Z",
-//     "title": "Aegis"
-//   },
-//   "host": "xwvpe8m55b.execute-api.us-east-1.amazonaws.com",
-//   "basePath": "/prod",
-//   "schemes": [
-//     "https"
-//   ],
-//   "paths": {
-//     "/": {
-//       "x-amazon-apigateway-any-method": {
-//         "produces": [
-//           "application/json"
-//         ],
-//         "responses": {},
-//         "x-amazon-apigateway-integration": {
-//           "uri": "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:12345:function:aegis_example/invocations",
-//           "responses": {
-//             "default": {
-//               "statusCode": "200"
-//             }
-//           },
-//           "passthroughBehavior": "when_no_match",
-//           "httpMethod": "POST",
-//           "type": "aws_proxy"
-//         }
-//       }
-//     },
-//     "/{proxy+}": {
-//       "x-amazon-apigateway-any-method": {
-//         "produces": [
-//           "application/json"
-//         ],
-//         "parameters": [
-//           {
-//             "name": "proxy",
-//             "in": "path",
-//             "required": true,
-//             "type": "string"
-//           }
-//         ],
-//         "responses": {},
-//         "x-amazon-apigateway-integration": {
-//           "uri": "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:12345:function:aegistest/invocations",
-//           "responses": {
-//             "default": {
-//               "statusCode": "200"
-//             }
-//           },
-//           "passthroughBehavior": "when_no_match",
-//           "httpMethod": "POST",
-//           "cacheNamespace": "xxvfsk",
-//           "cacheKeyParameters": [
-//             "method.request.path.proxy"
-//           ],
-//           "type": "aws_proxy"
-//         }
-//       }
-//     }
-//   }
-// }
