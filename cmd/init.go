@@ -67,12 +67,11 @@ func init() {
 func copyConfig(filePath string) error {
 	if _, err := os.Stat(filePath); err == nil {
 		return errors.New("An aegis.yaml file already exists in this location. It has been left alone.")
-	} else {
-		ioErr := ioutil.WriteFile(filePath, function.MustAsset("example_aegis"), 0644)
-		if ioErr != nil {
-			//fmt.Printf("%v %v\n", color.RedString("Error:"), ioErr.Error())
-			return ioErr
-		}
+	}
+	ioErr := ioutil.WriteFile(filePath, function.MustAsset("example_aegis"), 0644)
+	if ioErr != nil {
+		//fmt.Printf("%v %v\n", color.RedString("Error:"), ioErr.Error())
+		return ioErr
 	}
 	return nil
 }
