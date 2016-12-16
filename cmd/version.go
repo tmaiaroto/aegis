@@ -25,7 +25,7 @@ var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Displays the version of aegis",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println(version.Semantic)
+		fmt.Println(version.Current())
 	},
 }
 
