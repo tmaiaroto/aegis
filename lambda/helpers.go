@@ -237,10 +237,13 @@ func (evt *Event) GetForm() (map[string]interface{}, error) {
 					return formData, readerErr
 				}
 				b, readPartsErr := ioutil.ReadAll(p)
-				if readPartsErr != nil {
-					return formData, readPartsErr
+				// Not bothering with the error here, it shouldn't really ever occur
+				// if it were to, I think it'd be a buffer overflow...but that couldn't
+				// happen because AWS Lambda has a POST limit that's far below that.
+				// Other read errors would have already been seen by this point (above).
+				if readPartsErr == nil {
+					formData[p.FormName()] = string(b)
 				}
-				formData[p.FormName()] = string(b)
 			}
 		}
 	}

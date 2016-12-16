@@ -15,6 +15,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
@@ -35,22 +36,14 @@ var initCmd = &cobra.Command{
 	Short: "Initialize app",
 	Long:  `Initializes your serverless application and creates a configuration file for you to alter as needed.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		if _, err := os.Stat(YmlPath); err == nil {
-			fmt.Printf("%v %v\n", color.YellowString("Warning:"), "An aegis.yaml file already exists in this location. It has been left alone.")
-		} else {
-			ymlErr := ioutil.WriteFile(YmlPath, function.MustAsset("example_aegis"), 0644)
-			if ymlErr != nil {
-				fmt.Printf("%v %v\n", color.RedString("Error:"), ymlErr.Error())
-			}
+		err := copyConfig(YmlPath)
+		if err != nil {
+			fmt.Printf("%v %v\n", color.YellowString("Warning:"), err.Error())
 		}
 
-		if _, err := os.Stat(SrcPath); err == nil {
-			fmt.Printf("%v %v\n", color.YellowString("Warning:"), "A main.go file already exists in this location. It has been left alone.")
-		} else {
-			mainErr := ioutil.WriteFile(SrcPath, function.MustAsset("example_main"), 0644)
-			if mainErr != nil {
-				fmt.Printf("%v %v\n", color.RedString("Error:"), mainErr.Error())
-			}
+		err = copySrc(SrcPath)
+		if err != nil {
+			fmt.Printf("%v %v\n", color.YellowString("Warning:"), err.Error())
 		}
 	},
 }
@@ -68,4 +61,32 @@ func init() {
 	// is called directly, e.g.:
 	// initCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 
+}
+
+// copyConfig will copy a boilerplate aegis.yaml config file to the given path (including file name)
+func copyConfig(filePath string) error {
+	if _, err := os.Stat(filePath); err == nil {
+		return errors.New("An aegis.yaml file already exists in this location. It has been left alone.")
+	} else {
+		ioErr := ioutil.WriteFile(filePath, function.MustAsset("example_aegis"), 0644)
+		if ioErr != nil {
+			//fmt.Printf("%v %v\n", color.RedString("Error:"), ioErr.Error())
+			return ioErr
+		}
+	}
+	return nil
+}
+
+// copySrc will copy a boilerplate main.go source file to the given path (including file name)
+func copySrc(filePath string) error {
+	if _, err := os.Stat(filePath); err == nil {
+		return errors.New("A main.go file already exists in this location. It has been left alone.")
+	} else {
+		ioErr := ioutil.WriteFile(filePath, function.MustAsset("example_main"), 0644)
+		if ioErr != nil {
+			// fmt.Printf("%v %v\n", color.RedString("Error:"), ioErr.Error())
+			return ioErr
+		}
+	}
+	return nil
 }

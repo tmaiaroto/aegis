@@ -70,7 +70,7 @@ var upCmd = &cobra.Command{
 			// 	fmt.Println(err.Error())
 			// }
 
-			cfg.Lambda.SourceZip = compress()
+			cfg.Lambda.SourceZip = compress(cfg.App.BuildFileName)
 			// If something went wrong, exit
 			if cfg.Lambda.SourceZip == "" {
 				fmt.Println("There was a problem building the Lambda function zip file.")
@@ -183,10 +183,10 @@ func build() (string, error) {
 	return builtApp, nil
 }
 
-// compress returns the zipped contents of the AWS Lambda function.
-func compress() string {
+// compress zips the AWS Lambda function files and returns the zip file path.
+func compress(fileName string) string {
 	zipper := new(archivex.ZipFile)
-	zipper.Create("aegis_function.zip")
+	zipper.Create(fileName)
 
 	// Create a header for aegis_app to retain permissions?
 	header := &zip.FileHeader{
@@ -209,7 +209,7 @@ func compress() string {
 	zipper.Close()
 
 	pwd, _ := os.Getwd()
-	builtZip := filepath.Join(pwd, "aegis_function.zip")
+	builtZip := filepath.Join(pwd, fileName)
 	// Set the config
 	cfg.Lambda.SourceZip = builtZip
 

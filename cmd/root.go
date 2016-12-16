@@ -44,6 +44,7 @@ type deploymentConfig struct {
 	App struct {
 		Name           string
 		KeepBuildFiles bool
+		BuildFileName  string
 	}
 	AWS struct {
 		Region string
@@ -165,6 +166,8 @@ func initConfig() {
 
 	// By default do not keep the build files (clean up)
 	viper.SetDefault("app.keepBuildFiles", false)
+	// Just in case the temporary zip file that gets built creates a conflict, it can be adjusted. However, this is the default.
+	viper.SetDefault("app.buildFileName", "aegis_function.zip")
 
 	// If a config file is found, read it in.
 	err = viper.ReadInConfig()
