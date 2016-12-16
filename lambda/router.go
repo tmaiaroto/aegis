@@ -16,6 +16,7 @@ const (
 	put     = "PUT"
 	patch   = "PATCH"
 	deleteh = "DELETE"
+	options = "OPTIONS"
 )
 
 // RouteHandler is similar to "net/http" Handlers, except there is no response writer.
@@ -64,7 +65,7 @@ func (r *Router) HEAD(path string, handler RouteHandler, middleware ...Middlewar
 
 // OPTIONS same as Handle only the method is already implied.
 func (r *Router) OPTIONS(path string, handler RouteHandler, middleware ...Middleware) {
-	r.Handle(head, path, handler, middleware...)
+	r.Handle(options, path, handler, middleware...)
 }
 
 // POST same as Handle only the method is already implied.
@@ -78,7 +79,7 @@ func (r *Router) PUT(path string, handler RouteHandler, middleware ...Middleware
 }
 
 // PATCH same as Handle only the method is already implied.
-func (r *Router) PATCH(path string, handler RouteHandler, middleware ...Middleware) { // might make this and put one.
+func (r *Router) PATCH(path string, handler RouteHandler, middleware ...Middleware) {
 	r.Handle(patch, path, handler, middleware...)
 }
 

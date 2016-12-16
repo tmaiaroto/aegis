@@ -80,12 +80,11 @@ func copyConfig(filePath string) error {
 func copySrc(filePath string) error {
 	if _, err := os.Stat(filePath); err == nil {
 		return errors.New("A main.go file already exists in this location. It has been left alone.")
-	} else {
-		ioErr := ioutil.WriteFile(filePath, function.MustAsset("example_main"), 0644)
-		if ioErr != nil {
-			// fmt.Printf("%v %v\n", color.RedString("Error:"), ioErr.Error())
-			return ioErr
-		}
+	}
+	ioErr := ioutil.WriteFile(filePath, function.MustAsset("example_main"), 0644)
+	if ioErr != nil {
+		// fmt.Printf("%v %v\n", color.RedString("Error:"), ioErr.Error())
+		return ioErr
 	}
 	return nil
 }
