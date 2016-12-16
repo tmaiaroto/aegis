@@ -111,12 +111,12 @@ func TestHelpers(t *testing.T) {
 		})
 
 		Convey("Should be able to return an HTTP redirect", func() {
-			redirectUrl := "http://google.com"
-			resp.Redirect(301, redirectUrl)
+			redirectURL := "http://google.com"
+			resp.Redirect(301, redirectURL)
 			So(resp.StatusCode, ShouldEqual, "301")
-			So(resp.Headers["Location"], ShouldEqual, redirectUrl)
+			So(resp.Headers["Location"], ShouldEqual, redirectURL)
 
-			resp.Redirect(200, redirectUrl)
+			resp.Redirect(200, redirectURL)
 			So(resp.err, ShouldNotBeNil)
 		})
 

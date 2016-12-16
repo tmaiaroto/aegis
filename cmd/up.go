@@ -685,7 +685,7 @@ func getExecPath(name string) string {
 	}
 	out, err := exec.Command("which", name).Output()
 	if err != nil {
-		log.Println("executable file %s not found in $PATH", name)
+		log.Printf("executable file %s not found in $PATH", name)
 		os.Exit(-1)
 	}
 	return string(bytes.TrimSpace(out))
