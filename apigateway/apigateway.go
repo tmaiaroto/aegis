@@ -17,9 +17,8 @@ package apigateway
 
 import (
 	"bytes"
-	"fmt"
+	"errors"
 	"math/rand"
-	"os"
 	"regexp"
 	"time"
 )
@@ -75,10 +74,9 @@ type SwaggerConfig struct {
 }
 
 // NewSwagger creates a new Swagger struct with some default values
-func NewSwagger(cfg *SwaggerConfig) Swagger {
+func NewSwagger(cfg *SwaggerConfig) (Swagger, error) {
 	if cfg.LambdaURI == "" {
-		fmt.Println("Invalid Lambda URI provided for Swagger definition.")
-		os.Exit(-1)
+		return Swagger{}, errors.New("Invalid Lambda URI provided for Swagger definition.")
 	}
 
 	// Some defaults
@@ -162,7 +160,7 @@ func NewSwagger(cfg *SwaggerConfig) Swagger {
 			},
 		},
 		XAmazonAPIGatewayBinaryMediaTypes: cfg.BinaryMediaTypes,
-	}
+	}, nil
 }
 
 // GetLambdaURI returns the Lambda URI

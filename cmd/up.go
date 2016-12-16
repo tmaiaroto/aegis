@@ -476,10 +476,14 @@ func importAPI(lambdaArn string) string {
 	}
 
 	// Build Swagger
-	swaggerDefinition := swagger.NewSwagger(&swagger.SwaggerConfig{
+	swaggerDefinition, swaggerErr := swagger.NewSwagger(&swagger.SwaggerConfig{
 		Title:     cfg.API.Name,
 		LambdaURI: swagger.GetLambdaURI(lambdaArn),
 	})
+	if swaggerErr != nil {
+		fmt.Println(swaggerErr.Error())
+		os.Exit(-1)
+	}
 
 	swaggerBytes, err := json.Marshal(swaggerDefinition)
 	if err != nil {
@@ -509,10 +513,15 @@ func updateAPI(apiID string, lambdaArn string) {
 	svc := apigateway.New(session.New(&awsCfg))
 
 	// Build Swagger
-	swaggerDefinition := swagger.NewSwagger(&swagger.SwaggerConfig{
+	swaggerDefinition, swaggerErr := swagger.NewSwagger(&swagger.SwaggerConfig{
 		Title:     cfg.API.Name,
 		LambdaURI: swagger.GetLambdaURI(lambdaArn),
 	})
+	if swaggerErr != nil {
+		fmt.Println("There was a problem creating the API.")
+		fmt.Println(swaggerErr.Error())
+		os.Exit(-1)
+	}
 
 	swaggerBytes, err := json.Marshal(swaggerDefinition)
 	if err != nil {

@@ -115,12 +115,31 @@ func (res *ProxyResponse) XML(status int, i interface{}) {
 	if err != nil {
 		res.err = err
 	} else {
-		var buffer bytes.Buffer
-		buffer.WriteString(xml.Header)
-		buffer.WriteString(string(b))
-		res.Body = buffer.String()
-		buffer.Reset()
+		res.Body = formatXML(b)
 	}
+}
+
+// XMLPretty sends an indented XML response with status code.
+func (res *ProxyResponse) XMLPretty(status int, i interface{}, indent string) {
+	res.SetStatus(status)
+	res.SetHeader(HeaderContentType, MIMEApplicationXMLCharsetUTF8)
+
+	b, err := xml.MarshalIndent(i, "", indent)
+	if err != nil {
+		res.err = err
+	} else {
+		res.Body = formatXML(b)
+	}
+}
+
+// formatXML joins together an XML header and marshalled XML bytes for a completely formatted response
+func formatXML(b []byte) string {
+	var buffer bytes.Buffer
+	buffer.WriteString(xml.Header)
+	buffer.WriteString(string(b))
+	xmlString := buffer.String()
+	buffer.Reset()
+	return xmlString
 }
 
 // HTML sets an HTML header and returns a response with status code.
@@ -163,6 +182,14 @@ func (res *ProxyResponse) SetHeader(key string, value string) {
 	res.Headers[key] = value
 }
 
+// SetStatus will set the status code for the response.
+func (res *ProxyResponse) SetStatus(status int) {
+	res.StatusCode = strconv.Itoa(status)
+}
+
+// TODO: add more response helpers like echo
+// File? Attachment?
+
 // GetHeader will return the value for a given header key. If there are no values associated with the key, GetHeader returns "".
 func (evt *Event) GetHeader(key string) string {
 	value := ""
@@ -173,14 +200,6 @@ func (evt *Event) GetHeader(key string) string {
 	}
 	return value
 }
-
-// SetStatus will set the status code for the response.
-func (res *ProxyResponse) SetStatus(status int) {
-	res.StatusCode = strconv.Itoa(status)
-}
-
-// TODO: add more response helpers like echo
-// File? Attachment?
 
 // IP returns the visitor's IP address from the event struct.
 func (evt *Event) IP() string {

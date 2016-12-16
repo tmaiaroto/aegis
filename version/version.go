@@ -2,4 +2,4 @@
 package version
 
 // Semantic defines a semver string for aegis
-const Semantic = "0.1.4"
+const Semantic = "0.2.0"
