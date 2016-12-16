@@ -8,7 +8,7 @@ import (
 
 func TestUpCmd(t *testing.T) {
 	Convey("compress", t, func() {
-		Convey("Should return the path to a Lambda function zip file", func() {
+		Convey("Should compress a Lambda function zip file and return the file path", func() {
 			testZipFileName := "./aegis_function.test.zip"
 			filePath := compress(testZipFileName)
 			// make the "aegis_app" file so it exists to zip
