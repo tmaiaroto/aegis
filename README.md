@@ -14,7 +14,8 @@ resulting in a single Lambda and a very minimal API Gateway.
 You'll need an AWS account of course. You'll also want to have your credentials
 in your user's local directory where AWS CLI likes to keep them. If you already
 use AWS CLI, then you won't have to do anything new. If not, getting your credentials
-setup is probably easies by following AWS CLI instructions.
+setup is probably easiest by following AWS CLI instructions. Note that you can 
+also pass keys via the CLI or by setting environment variables.
 
 Install Aegis, then create an `aegis.yaml` file and configure your Lambda. 
 Ensure your Go app uses the `HandleProxy` function from `"github.com/tmaiaroto/aegis/lambda"`.
