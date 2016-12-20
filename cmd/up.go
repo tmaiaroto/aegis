@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
+	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/apigateway"
 	"github.com/aws/aws-sdk-go/service/iam"
@@ -216,9 +217,60 @@ func compress(fileName string) string {
 	return builtZip
 }
 
+// setCredentials will try to set AWS credentials from a variety of methods
+func setCredentials() *credentials.Credentials {
+	// First, try the credentials file set by AWS CLI tool.
+	// Note the empty string instructs to look under default file path (different based on OS).
+	// This file can have multiple profiles and a default profile will be used unless otherwise configured.
+	// See: https://godoc.org/github.com/aws/aws-sdk-go/aws/credentials#SharedCredentialsProvider
+	creds := credentials.NewSharedCredentials("", cfg.AWS.Profile)
+
+	// Second, use environment variables if set. The following are checked:
+	// Access Key ID: AWS_ACCESS_KEY_ID or AWS_ACCESS_KEY
+	// Secret Access Key: AWS_SECRET_ACCESS_KEY or AWS_SECRET_KEY
+	envCreds := credentials.NewEnvCredentials()
+	setCreds, _ := envCreds.Get()
+	// error apparently does not return if environment variables weren't set
+	// so check what was set and look for empty strings, don't want to set empty creds
+	if setCreds.AccessKeyID != "" && setCreds.SecretAccessKey != "" {
+		creds = envCreds
+	}
+
+	// Last, if credentials were passed via CLI, always prefer those
+	if cfg.AWS.AccessKeyID != "" && cfg.AWS.SecretAccessKey != "" {
+		creds = credentials.NewStaticCredentials(cfg.AWS.AccessKeyID, cfg.AWS.SecretAccessKey, "")
+	}
+
+	return creds
+}
+
+// getAWSSession will return a session based on options passed to aegis
+func getAWSSession() *session.Session {
+	// get new credentials if not set
+	if awsCfg.Credentials == nil {
+		awsCfg.Credentials = setCredentials()
+	}
+
+	// session options
+	opts := session.Options{
+		Config:  awsCfg,
+		Profile: cfg.AWS.Profile,
+	}
+
+	// Note: New() has been deprecated from aws-sdk-go
+	sess, err := session.NewSessionWithOptions(opts)
+	if err != nil {
+		fmt.Println("There was a problem creating a session with AWS. Make sure you have credentials configured.")
+		fmt.Println(err.Error())
+		os.Exit(-1)
+	}
+
+	return sess
+}
+
 // createFunction will create a Lambda function in AWS
 func createFunction(zipBytes []byte) *string {
-	svc := lambda.New(session.New(&awsCfg))
+	svc := lambda.New(getAWSSession())
 
 	// TODO: Keep versions and allow rollback
 
@@ -280,7 +332,7 @@ func createFunction(zipBytes []byte) *string {
 
 // updateFunction will update a Lambda function and its configuration in AWS
 func updateFunction(zipBytes []byte) *string {
-	svc := lambda.New(session.New(&awsCfg))
+	svc := lambda.New(getAWSSession())
 
 	_, err := svc.UpdateFunctionConfiguration(&lambda.UpdateFunctionConfigurationInput{
 		Description:  aws.String(cfg.Lambda.Description),
@@ -329,7 +381,7 @@ func updateFunction(zipBytes []byte) *string {
 
 // createOrUpdateAlias will handle the Lambda function alias
 func createOrUpdateAlias(f *lambda.FunctionConfiguration) error {
-	svc := lambda.New(session.New(&awsCfg))
+	svc := lambda.New(getAWSSession())
 
 	_, err := svc.CreateAlias(&lambda.CreateAliasInput{
 		FunctionName:    aws.String(cfg.Lambda.FunctionName),
@@ -360,7 +412,7 @@ func createOrUpdateAlias(f *lambda.FunctionConfiguration) error {
 
 // deleteFunction will delete a Lambda function in AWS
 func deleteFunction(name, version string) {
-	svc := lambda.New(session.New(&awsCfg))
+	svc := lambda.New(getAWSSession())
 
 	input := &lambda.DeleteFunctionInput{
 		FunctionName: aws.String(name),
@@ -380,7 +432,7 @@ func createAegisRole() string {
 	aegisLambdaRoleName := aws.String("aegis_lambda_function")
 	aegisLambdaPolicyName := aws.String("aegis_lambda_logs")
 
-	svc := iam.New(session.New(&awsCfg))
+	svc := iam.New(getAWSSession())
 
 	// First see if the role exists
 	params := &iam.GetRoleInput{
@@ -451,7 +503,7 @@ func createAegisRole() string {
 
 // importAPI will import an API using Swagger
 func importAPI(lambdaArn string) string {
-	svc := apigateway.New(session.New(&awsCfg))
+	svc := apigateway.New(getAWSSession())
 
 	// First check to see if there's already an API by the same name
 	// (only pulls up to 100 APIs, so this isn't a great long term solution)
@@ -510,7 +562,7 @@ func importAPI(lambdaArn string) string {
 // There is no real need to update the resources or integrations of course, but things like
 // the description, name, binary content types, etc. will need to be updated if changed.
 func updateAPI(apiID string, lambdaArn string) {
-	svc := apigateway.New(session.New(&awsCfg))
+	svc := apigateway.New(getAWSSession())
 
 	// Build Swagger
 	swaggerDefinition, swaggerErr := swagger.NewSwagger(&swagger.SwaggerConfig{
@@ -546,7 +598,7 @@ func updateAPI(apiID string, lambdaArn string) {
 
 // deployAPI will create a stage and deploy the API
 func deployAPI(apiID string, stage deploymentStage) string {
-	svc := apigateway.New(session.New(&awsCfg))
+	svc := apigateway.New(getAWSSession())
 
 	// Must be one of: [58.2, 13.5, 28.4, 237, 0.5, 118, 6.1, 1.6]
 	// TODO: Validate user input. Maybe round to nearest value
@@ -606,7 +658,7 @@ func addAPIPermission(apiID string, lambdaArn string) {
 	sourceArn := buffer.String()
 	buffer.Reset()
 
-	svc := lambda.New(session.New(&awsCfg))
+	svc := lambda.New(getAWSSession())
 
 	// There's no list permissions? So remove first and add.
 	// _, err := svc.RemovePermission(&lambda.RemovePermissionInput{

@@ -47,7 +47,10 @@ type deploymentConfig struct {
 		BuildFileName  string
 	}
 	AWS struct {
-		Region string
+		Region          string
+		Profile         string
+		AccessKeyID     string
+		SecretAccessKey string
 	}
 	Lambda struct {
 		Wrapper              string
@@ -103,7 +106,13 @@ func Execute() {
 
 func init() {
 	cobra.OnInitialize(initConfig)
-	RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "aegis", "config file (default is aegis.yaml)")
+	RootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "aegis", "config file (default is aegis.yaml)")
+
+	// AWS options & credentials
+	RootCmd.PersistentFlags().StringVarP(&cfg.AWS.Region, "region", "r", "us-east-1", "AWS Region to use")
+	RootCmd.PersistentFlags().StringVarP(&cfg.AWS.AccessKeyID, "keyId", "k", "", "AWS Access Key ID")
+	RootCmd.PersistentFlags().StringVarP(&cfg.AWS.SecretAccessKey, "secretKey", "s", "", "AWS Secret Access Key")
+	RootCmd.PersistentFlags().StringVarP(&cfg.AWS.Profile, "profile", "p", "default", "AWS Credentials Profile to use")
 }
 
 // initConfig reads in config file and ENV variables if set.
@@ -115,6 +124,7 @@ func initConfig() {
 
 	// Default config values
 	viper.SetDefault("aws.region", "us-east-1")
+	// viper.SetDefault("aws.profile", "default") // set by defaults on flags
 	// Default Lambda config values
 	viper.SetDefault("lambda.functionName", "aegis_example")
 	// Valid runtimes:
