@@ -99,6 +99,22 @@ func root(ctx *lambda.Context, evt *lambda.Event, res *lambda.ProxyResponse, par
 Go's normal logging will work and end up in CloudWatch. Additionally, logrus is available under `lambda.Log`
 and a hook has been added for CloudWatch. Additional hooks can be added for other centralized logging solutions.
 
+#### Testing Locally
+
+Sometimes it's handy to test your Lambda function before deploying to AWS. Aegis allows you to do so if you
+are using its router. While a `router.Listen()` is used for Lambda (via stdio), a `router.Gateway()` is 
+used for starting a local web server (you can configure the port by setting `router.GatewayPort` it's
+`:9999` by default).
+
+When writing your app using the router and making this gateway, you can simply use `go run main.go` 
+for example and test your Lambda without even building your app let alone deploying to AWS.
+
+This makes it very convenient to test while you develop, but keep in mind that not all data
+normally found in a Lambda Event and Context are available to you.
+
+Also keep in mind that there is no Lambda for IAM roles to be assigned to. So your local AWS credentials 
+will need to be valid for any AWS services you want to use.
+
 #### Not Using Aegis Handler for your Lambda
 
 What if you want to use another Lambda function? You can! Just keep mind it's a Lambda Proxy. This means
