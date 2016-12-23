@@ -2,7 +2,7 @@
 language: go
 
 go:
-  - 1.6
+  - 1.7
 
 before_install:
 # bindata causes problems for golint
@@ -15,7 +15,9 @@ matrix:
 script: 
   - go vet -x ./...
 #  - $HOME/gopath/bin/golint ./...
-  - go test -v ./...
+#  - go test -v ./...
+#  exclude vendor
+  - go test -v $(go list ./... | grep -v /vendor/)
 # - go test -covermode=count -coverprofile=profile.cov .
 
 #after_script:
