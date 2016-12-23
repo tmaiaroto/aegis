@@ -31,7 +31,7 @@ import (
 )
 
 type (
-	// Handler returns int (HTTP status for statusCode), map[string]string (headers), string (body), error (error, which gets placed into the body)
+	// Handler for a Lambda event, it returns int (HTTP status for statusCode), map[string]string (headers), string (body), error (error, which gets placed into the body)
 	Handler func(*Context, *Event) *ProxyResponse
 
 	// Context for the AWS Lambda

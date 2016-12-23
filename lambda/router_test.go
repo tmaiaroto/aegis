@@ -2,6 +2,7 @@ package lambda
 
 import (
 	. "github.com/smartystreets/goconvey/convey"
+	"net/http/httptest"
 	"net/url"
 	"strings"
 	"testing"
@@ -69,6 +70,36 @@ func TestRouter(t *testing.T) {
 
 			noNext := runMiddleware(&ctx, &evt, &res, params, testMiddlewareStop, testMiddleware)
 			So(noNext, ShouldBeFalse)
+		})
+	})
+
+	Convey("requestToEvent", t, func() {
+		Convey("Should take an HTTP request and format a Lambda Event", func() {
+			gwHandler := gatewayHandler{}
+			r := httptest.NewRequest("GET", "/?foo=bar", strings.NewReader("some body to be read"))
+			r.Header.Set("User-Agent", "aegis-test")
+
+			ctx, evt := gwHandler.requestToEvent(r)
+
+			So(ctx.FunctionVersion, ShouldBeEmpty)
+			So(evt.Body.(string), ShouldEqual, "some body to be read")
+			So(evt.Headers, ShouldContainKey, "User-Agent")
+			So(evt.QueryStringParameters, ShouldContainKey, "foo")
+
+		})
+	})
+
+	Convey("proxyResponseToHTTPResponse", t, func() {
+		Convey("Should take a Lambda Proxy response and format an HTTP response", func() {
+			gwHandler := gatewayHandler{}
+			res := NewProxyResponse(200, map[string]string{"Content-Type": "application/json"}, "", nil)
+			rw := httptest.NewRecorder()
+			gwHandler.proxyResponseToHTTPResponse(res, rw)
+
+			result := rw.Result()
+			rw.Flush()
+			So(result.StatusCode, ShouldEqual, 200)
+			So(result.Header.Get("Content-Type"), ShouldEqual, "application/json")
 		})
 	})
 }
