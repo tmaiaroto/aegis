@@ -114,10 +114,11 @@ type (
 	//   "body": "{\"key1\":\"value1\",\"key2\":\"value2\",\"key3\":\"value3\"}"
 	// }
 	ProxyResponse struct {
-		StatusCode string            `json:"statusCode"`
-		Headers    map[string]string `json:"headers"`
-		Body       string            `json:"body"`
-		err        error
+		StatusCode      string            `json:"statusCode"`
+		Headers         map[string]string `json:"headers"`
+		Body            string            `json:"body"`
+		IsBase64Encoded bool              `json:"isBase64Encoded"`
+		err             error
 	}
 )
 

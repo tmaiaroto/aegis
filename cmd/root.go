@@ -76,7 +76,7 @@ type deploymentConfig struct {
 		Cache            bool
 		CacheSize        string
 		Stages           map[string]deploymentStage
-		BinaryMediaTypes []*string
+		BinaryMediaTypes []string
 	}
 }
 
@@ -161,6 +161,7 @@ func initConfig() {
 	viper.SetDefault("api.name", "Aegis API")
 	viper.SetDefault("api.description", "")
 	viper.SetDefault("api.cache", false)
+	viper.SetDefault("api.binaryMediaTypes", "*/*")
 	// For valid values, see: https://godoc.org/github.com/aws/aws-sdk-go/service/apigateway#pkg-constants
 	viper.SetDefault("api.cacheSize", apigateway.CacheClusterSize05)
 
@@ -190,11 +191,11 @@ func initConfig() {
 		// os.Exit(-1)
 	}
 
-	err = viper.Unmarshal(&cfg)
-	if err != nil {
-		fmt.Println("Could parse aegis config file.")
-		os.Exit(-1)
-	}
+	_ = viper.Unmarshal(&cfg)
+	// if err != nil {
+	// 	fmt.Println("Could parse aegis config file.")
+	// 	os.Exit(-1)
+	// }
 
 	// Initialize AWS config
 	awsCfg = aws.Config{

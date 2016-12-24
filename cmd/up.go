@@ -123,6 +123,10 @@ var upCmd = &cobra.Command{
 		// Ensure the API can access the Lambda
 		addAPIPermission(apiID, *lambdaArn)
 
+		// TODO
+		// Ensure the API has it's binary media types set (Swagger import apparently does not set them)
+		// addBinaryMediaTypes(apiID)
+
 		// Deploy for each stage (defaults to just one "prod" stage).
 		// However, this can be changed over time (cache settings, etc.) and is relatively harmless to re-deploy
 		// on each run anyway. Plus, new stages can be added at any time.
@@ -529,8 +533,9 @@ func importAPI(lambdaArn string) string {
 
 	// Build Swagger
 	swaggerDefinition, swaggerErr := swagger.NewSwagger(&swagger.SwaggerConfig{
-		Title:     cfg.API.Name,
-		LambdaURI: swagger.GetLambdaURI(lambdaArn),
+		Title:            cfg.API.Name,
+		LambdaURI:        swagger.GetLambdaURI(lambdaArn),
+		BinaryMediaTypes: cfg.API.BinaryMediaTypes,
 	})
 	if swaggerErr != nil {
 		fmt.Println(swaggerErr.Error())
@@ -685,6 +690,23 @@ func addAPIPermission(apiID string, lambdaArn string) {
 			fmt.Println(err.Error())
 		}
 	}
+}
+
+// addBinaryMediaTypes will update the API to specify valid binary media types
+func addBinaryMediaTypes(apiID string) {
+	svc := apigateway.New(getAWSSession())
+	svc.UpdateRestApi(&apigateway.UpdateRestApiInput{
+		RestApiId: aws.String(apiID), // Required
+		PatchOperations: []*apigateway.PatchOperation{
+			{ // Required
+				From:  aws.String("String"),
+				Op:    aws.String("Op"),
+				Path:  aws.String("String"),
+				Value: aws.String("String"),
+			},
+			// More values...
+		},
+	})
 }
 
 // getAccountInfoFromArn will extract the account ID and region from a given ARN
