@@ -123,9 +123,8 @@ var upCmd = &cobra.Command{
 		// Ensure the API can access the Lambda
 		addAPIPermission(apiID, *lambdaArn)
 
-		// TODO
 		// Ensure the API has it's binary media types set (Swagger import apparently does not set them)
-		// addBinaryMediaTypes(apiID)
+		addBinaryMediaTypes(apiID)
 
 		// Deploy for each stage (defaults to just one "prod" stage).
 		// However, this can be changed over time (cache settings, etc.) and is relatively harmless to re-deploy
@@ -533,9 +532,9 @@ func importAPI(lambdaArn string) string {
 
 	// Build Swagger
 	swaggerDefinition, swaggerErr := swagger.NewSwagger(&swagger.SwaggerConfig{
-		Title:            cfg.API.Name,
-		LambdaURI:        swagger.GetLambdaURI(lambdaArn),
-		BinaryMediaTypes: cfg.API.BinaryMediaTypes,
+		Title:     cfg.API.Name,
+		LambdaURI: swagger.GetLambdaURI(lambdaArn),
+		// BinaryMediaTypes: cfg.API.BinaryMediaTypes,
 	})
 	if swaggerErr != nil {
 		fmt.Println(swaggerErr.Error())
@@ -695,18 +694,22 @@ func addAPIPermission(apiID string, lambdaArn string) {
 // addBinaryMediaTypes will update the API to specify valid binary media types
 func addBinaryMediaTypes(apiID string) {
 	svc := apigateway.New(getAWSSession())
-	svc.UpdateRestApi(&apigateway.UpdateRestApiInput{
+	_, err := svc.UpdateRestApi(&apigateway.UpdateRestApiInput{
 		RestApiId: aws.String(apiID), // Required
 		PatchOperations: []*apigateway.PatchOperation{
-			{ // Required
-				From:  aws.String("String"),
-				Op:    aws.String("Op"),
-				Path:  aws.String("String"),
-				Value: aws.String("String"),
+			{
+				Op: aws.String("add"),
+				// TODO: Use configuration to set this...But that requires a function to escape and format this sring.
+				// *~1* is */* which handles everything...Which could be enough...But maybe someone will want to only
+				// accept specific media types? I don't know if there's any harm with this wildcard.
+				// More info here: http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-payload-encodings-configure-with-control-service-api.html#api-gateway-payload-encodings-setup-with-api-set-encodings-map
+				Path: aws.String("/binaryMediaTypes/*~1*"),
 			},
-			// More values...
 		},
 	})
+	if err != nil {
+		fmt.Println("There was a problem setting the binary media types for the API.")
+	}
 }
 
 // getAccountInfoFromArn will extract the account ID and region from a given ARN

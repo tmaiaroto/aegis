@@ -76,7 +76,7 @@ type deploymentConfig struct {
 		Cache            bool
 		CacheSize        string
 		Stages           map[string]deploymentStage
-		BinaryMediaTypes []string
+		BinaryMediaTypes []*string
 	}
 }
 

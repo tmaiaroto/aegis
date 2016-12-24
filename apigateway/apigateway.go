@@ -66,11 +66,11 @@ type APIIntegration struct {
 
 // SwaggerConfig holds configuration values for NewSwagger()
 type SwaggerConfig struct {
-	Title            string
-	LambdaURI        string
-	CacheNamespace   string
-	Version          string
-	BinaryMediaTypes []string
+	Title          string
+	LambdaURI      string
+	CacheNamespace string
+	Version        string
+	// BinaryMediaTypes []string
 }
 
 // NewSwagger creates a new Swagger struct with some default values
@@ -159,7 +159,8 @@ func NewSwagger(cfg *SwaggerConfig) (Swagger, error) {
 				XAmazonAPIGatwayAnyMethod: proxyAnyMethod,
 			},
 		},
-		XAmazonAPIGatewayBinaryMediaTypes: cfg.BinaryMediaTypes,
+		// This does not work.
+		// XAmazonAPIGatewayBinaryMediaTypes: cfg.BinaryMediaTypes,
 	}, nil
 }
 
