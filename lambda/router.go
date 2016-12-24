@@ -272,7 +272,7 @@ func (r *Router) Gateway() {
 	if r.GatewayPort == "" {
 		r.GatewayPort = ":9999"
 	}
-	fmt.Printf("Starting local gateway: http://localhost%v \n", r.GatewayPort)
+	log.Printf("Starting local gateway: http://localhost%v \n", r.GatewayPort)
 	err := http.ListenAndServe(r.GatewayPort, gatewayHandler(*r))
 	if err != nil {
 		log.Fatal(err)
