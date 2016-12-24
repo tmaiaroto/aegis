@@ -3,6 +3,7 @@
 package lambda
 
 import (
+	"encoding/base64"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -250,8 +251,20 @@ func (h gatewayHandler) proxyResponseToHTTPResponse(res *ProxyResponse, w http.R
 	code, _ := strconv.ParseInt(res.StatusCode, 10, 32)
 	w.WriteHeader(int(code))
 
-	// and of course the body
-	fmt.Fprintf(w, res.Body)
+	// If this is true, then API Gateway will decode the base64 string to bytes. Mimic that behavior here.
+	if res.IsBase64Encoded {
+		decodedBody, err := base64.StdEncoding.DecodeString(res.Body)
+		if err == nil {
+			w.Header().Set("Content-Length", strconv.Itoa(len(decodedBody)))
+			fmt.Fprintf(w, "%s", decodedBody)
+		} else {
+			res.Body = err.Error()
+			fmt.Fprintf(w, res.Body)
+		}
+	} else {
+		// if not base64, write res.Body
+		fmt.Fprintf(w, res.Body)
+	}
 }
 
 // Gateway will start a local web server to listen for events. Useful for testing locally.
