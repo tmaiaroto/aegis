@@ -705,11 +705,48 @@ func addBinaryMediaTypes(apiID string) {
 				// More info here: http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-payload-encodings-configure-with-control-service-api.html#api-gateway-payload-encodings-setup-with-api-set-encodings-map
 				Path: aws.String("/binaryMediaTypes/*~1*"),
 			},
+			{
+				Op:   aws.String("add"),
+				Path: aws.String("/binaryMediaTypes/application~1octet-stream"),
+			},
 		},
 	})
 	if err != nil {
 		fmt.Println("There was a problem setting the binary media types for the API.")
 	}
+
+	// Set the contentHandling for each resource ("/" and "/{proxy+}")
+	resp, err := svc.GetResources(
+		&apigateway.GetResourcesInput{
+			RestApiId: aws.String(apiID), // Required
+		})
+	log.Println(resp)
+	if err == nil {
+		for _, v := range resp.Items {
+			_, err = svc.UpdateIntegration(&apigateway.UpdateIntegrationInput{
+				RestApiId:  aws.String(apiID),
+				HttpMethod: aws.String("ANY"),
+				ResourceId: v.Id,
+				PatchOperations: []*apigateway.PatchOperation{
+					{
+						Op:    aws.String("replace"),
+						Path:  aws.String("/contentHandling"),
+						Value: aws.String("CONVERT_TO_TEXT"),
+					},
+					{
+						Op:    aws.String("add"),
+						Path:  aws.String("/requestTemplates/application~1octet-stream"),
+						Value: aws.String("{\"body\": \"$input.body\"}"),
+					},
+				},
+			})
+			if err != nil {
+				fmt.Println("There was a problem setting the binary content handling for the API.")
+				log.Println(err.Error())
+			}
+		}
+	}
+
 }
 
 // getAccountInfoFromArn will extract the account ID and region from a given ARN
