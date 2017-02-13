@@ -1,3 +1,5 @@
+# The Aegis Lambda Router
+
 When using API Gateway with an ANY route hooked to just one Lambda function, it became obvious that some sort of "router" was needed. Of course by the time the request payload hits the Lambda function we are beyond the normal HTTP request/response loop. The way in which Lambda is passing data to your Go application is via stdio so it's not exactly a router, but we can still think of it as one.
 
 From the JSON passed via stdio, Aegis will construct a request that feels like a normal HTTP request when using Aegis' router. This makes it very natural to write your API. Here's an example:
@@ -16,10 +18,10 @@ func fallThrough(ctx *lambda.Context, evt *lambda.Event, res *lambda.ProxyRespon
 func main() {
     // Aegis Lambda Router instance
     router := lambda.NewRouter(fallThrough)
-    
+
     // Routes
     router.Handle("GET", "/", hello)
-    
+
     // Listen (to stdio - hence no port)
     router.Listen()
 }
