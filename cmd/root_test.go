@@ -1,13 +1,14 @@
 package cmd
 
 import (
-	. "github.com/smartystreets/goconvey/convey"
 	"testing"
+
+	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestRootCmd(t *testing.T) {
 	Convey("Should initialize default config options", t, func() {
-		initConfig()
+		InitConfig()
 		So(cfg.AWS.Region, ShouldEqual, "us-east-1")
 	})
 }
