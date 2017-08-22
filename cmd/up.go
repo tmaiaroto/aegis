@@ -45,108 +45,7 @@ var upCmd = &cobra.Command{
 	Use:   "up",
 	Short: "Deploy app and API",
 	Long:  `Deploys or updates your serverless application and API`,
-	Run: func(cmd *cobra.Command, args []string) {
-		appPath := ""
-
-		// It is possible to pass a specific zip file from the config instead of building a new one (why would one? who knows, but I liked the pattern of using cfg)
-		if cfg.Lambda.SourceZip == "" {
-			// Build the Go app in the current directory (for AWS architecture).
-			appPath, err := build()
-			if err != nil {
-				fmt.Println("There was a problem building the Go app for the Lambda function.")
-				fmt.Println(err.Error())
-				os.Exit(-1)
-			}
-			// Ensure it's executable.
-			err = os.Chmod(appPath, os.FileMode(int(0777)))
-			if err != nil {
-				fmt.Println("Warning, executable permissions could not be set on Go binary. It may fail to run in AWS.")
-				fmt.Println(err.Error())
-			}
-
-			// Adjust timestamp?
-			// err = os.Chtimes(appPath, time.Now(), time.Now())
-			// if err != nil {
-			// 	fmt.Println("Warning, executable permissions could not be set on Go binary. It may fail to run in AWS.")
-			// 	fmt.Println(err.Error())
-			// }
-
-			cfg.Lambda.SourceZip = compress(cfg.App.BuildFileName)
-			// If something went wrong, exit
-			if cfg.Lambda.SourceZip == "" {
-				fmt.Println("There was a problem building the Lambda function zip file.")
-				os.Exit(-1)
-			}
-		}
-
-		// Get the Lambda function zip file's bytes
-		var zipBytes []byte
-		zipBytes, err := ioutil.ReadFile(cfg.Lambda.SourceZip)
-		if err != nil {
-			fmt.Println("Could not read from Lambda function zip file.")
-			fmt.Println(err)
-			os.Exit(-1)
-		}
-
-		// If no role, create a basic aegis role for executing Lambda functions (this will be very limited role)
-		if cfg.Lambda.Role == "" {
-			cfg.Lambda.Role = createAegisRole()
-			// fmt.Printf("Created a default aegis role for Lambda: %s\n", cfg.Lambda.Role)
-
-			// Have to delay a few seconds to give AWS some time to set up the role.
-			// Assigning it to the Lambda too soon could result in an error:
-			// InvalidParameterValueException: The role defined for the function cannot be assumed by Lambda.
-			// Apparently it needs a few seconds ¯\_(ツ)_/¯
-			time.Sleep(4 * time.Second)
-		}
-
-		// Create (or update) the function
-		lambdaArn := createFunction(zipBytes)
-
-		// Create the API Gateway API with proxy resource.
-		// This only needs to be done once as it shouldn't change and additional resources can't be configured.
-		// So it will check first for the same name before creating. If a match is found, that API ID will be returned.
-		//
-		// TODO: Maybe prompt the user to overwrite? Because if the name matches, it will go on to deploy stages on
-		// that API...Which may be bad. I wish API names had to be unique. That would be a lot better.
-		// Think on what to do here because it could create a bad experience...It's also nice to have one "up" command
-		// that also deploys stages and picks up new stages as the config changes. Could always break out deploy stage
-		// into a separate command...Again, all comes down to experience and expectations. Warnings might be enough...
-		// But a prompt on each "up" command after the first? Maybe too annoying. Could pass an "--ignore" flag or force
-		// to solve those annoyances though.
-		apiID := importAPI(*lambdaArn)
-		// TODO: Allow updates...this isn't quite working yet
-		// updateAPI(apiID, *lambdaArn)
-
-		// fmt.Printf("API ID: %s\n", apiID)
-
-		// Ensure the API can access the Lambda
-		addAPIPermission(apiID, *lambdaArn)
-
-		// Ensure the API has it's binary media types set (Swagger import apparently does not set them)
-		addBinaryMediaTypes(apiID)
-
-		// Deploy for each stage (defaults to just one "prod" stage).
-		// However, this can be changed over time (cache settings, etc.) and is relatively harmless to re-deploy
-		// on each run anyway. Plus, new stages can be added at any time.
-		for key := range cfg.API.Stages {
-			invokeURL := deployAPI(apiID, cfg.API.Stages[key])
-			// fmt.Printf("%s API Invoke URL: %s\n", key, invokeURL)
-			fmt.Printf("%v %v %v\n", color.GreenString(key), "API Invoke URL:", color.GreenString(invokeURL))
-		}
-
-		// Clean up
-		if !cfg.App.KeepBuildFiles {
-			os.Remove(cfg.Lambda.SourceZip)
-			// Remember the Go app may not be built if the source zip file was passed via configuration/CLI flag.
-			// However, if it is build then it's for AWS architecture and likely isn't needed by the user. Clean it up.
-			// Note: It should be called `aegis_app` to help avoid conflicts.
-			if _, err := os.Stat(appPath); err == nil {
-				os.Remove(appPath)
-			}
-		}
-
-	},
+	Run:   Deploy,
 }
 
 // init the `up` command
@@ -167,6 +66,110 @@ func init() {
 
 // aegisAppName is the Go binary built for AWS. The wrapper script refers to this file name. No need to change it.
 const aegisAppName = "aegis_app"
+
+// Deploy will build and deploy to AWS Lambda and API Gateway
+func Deploy(cmd *cobra.Command, args []string) {
+	appPath := ""
+
+	// It is possible to pass a specific zip file from the config instead of building a new one (why would one? who knows, but I liked the pattern of using cfg)
+	if cfg.Lambda.SourceZip == "" {
+		// Build the Go app in the current directory (for AWS architecture).
+		appPath, err := build()
+		if err != nil {
+			fmt.Println("There was a problem building the Go app for the Lambda function.")
+			fmt.Println(err.Error())
+			os.Exit(-1)
+		}
+		// Ensure it's executable.
+		err = os.Chmod(appPath, os.FileMode(int(0777)))
+		if err != nil {
+			fmt.Println("Warning, executable permissions could not be set on Go binary. It may fail to run in AWS.")
+			fmt.Println(err.Error())
+		}
+
+		// Adjust timestamp?
+		// err = os.Chtimes(appPath, time.Now(), time.Now())
+		// if err != nil {
+		// 	fmt.Println("Warning, executable permissions could not be set on Go binary. It may fail to run in AWS.")
+		// 	fmt.Println(err.Error())
+		// }
+
+		cfg.Lambda.SourceZip = compress(cfg.App.BuildFileName)
+		// If something went wrong, exit
+		if cfg.Lambda.SourceZip == "" {
+			fmt.Println("There was a problem building the Lambda function zip file.")
+			os.Exit(-1)
+		}
+	}
+
+	// Get the Lambda function zip file's bytes
+	var zipBytes []byte
+	zipBytes, err := ioutil.ReadFile(cfg.Lambda.SourceZip)
+	if err != nil {
+		fmt.Println("Could not read from Lambda function zip file.")
+		fmt.Println(err)
+		os.Exit(-1)
+	}
+
+	// If no role, create a basic aegis role for executing Lambda functions (this will be very limited role)
+	if cfg.Lambda.Role == "" {
+		cfg.Lambda.Role = createAegisRole()
+		// fmt.Printf("Created a default aegis role for Lambda: %s\n", cfg.Lambda.Role)
+
+		// Have to delay a few seconds to give AWS some time to set up the role.
+		// Assigning it to the Lambda too soon could result in an error:
+		// InvalidParameterValueException: The role defined for the function cannot be assumed by Lambda.
+		// Apparently it needs a few seconds ¯\_(ツ)_/¯
+		time.Sleep(4 * time.Second)
+	}
+
+	// Create (or update) the function
+	lambdaArn := createFunction(zipBytes)
+
+	// Create the API Gateway API with proxy resource.
+	// This only needs to be done once as it shouldn't change and additional resources can't be configured.
+	// So it will check first for the same name before creating. If a match is found, that API ID will be returned.
+	//
+	// TODO: Maybe prompt the user to overwrite? Because if the name matches, it will go on to deploy stages on
+	// that API...Which may be bad. I wish API names had to be unique. That would be a lot better.
+	// Think on what to do here because it could create a bad experience...It's also nice to have one "up" command
+	// that also deploys stages and picks up new stages as the config changes. Could always break out deploy stage
+	// into a separate command...Again, all comes down to experience and expectations. Warnings might be enough...
+	// But a prompt on each "up" command after the first? Maybe too annoying. Could pass an "--ignore" flag or force
+	// to solve those annoyances though.
+	apiID := importAPI(*lambdaArn)
+	// TODO: Allow updates...this isn't quite working yet
+	// updateAPI(apiID, *lambdaArn)
+
+	// fmt.Printf("API ID: %s\n", apiID)
+
+	// Ensure the API can access the Lambda
+	addAPIPermission(apiID, *lambdaArn)
+
+	// Ensure the API has it's binary media types set (Swagger import apparently does not set them)
+	addBinaryMediaTypes(apiID)
+
+	// Deploy for each stage (defaults to just one "prod" stage).
+	// However, this can be changed over time (cache settings, etc.) and is relatively harmless to re-deploy
+	// on each run anyway. Plus, new stages can be added at any time.
+	for key := range cfg.API.Stages {
+		invokeURL := deployAPI(apiID, cfg.API.Stages[key])
+		// fmt.Printf("%s API Invoke URL: %s\n", key, invokeURL)
+		fmt.Printf("%v %v %v\n", color.GreenString(key), "API Invoke URL:", color.GreenString(invokeURL))
+	}
+
+	// Clean up
+	if !cfg.App.KeepBuildFiles {
+		os.Remove(cfg.Lambda.SourceZip)
+		// Remember the Go app may not be built if the source zip file was passed via configuration/CLI flag.
+		// However, if it is build then it's for AWS architecture and likely isn't needed by the user. Clean it up.
+		// Note: It should be called `aegis_app` to help avoid conflicts.
+		if _, err := os.Stat(appPath); err == nil {
+			os.Remove(appPath)
+		}
+	}
+
+}
 
 // build runs `go build` in the current directory and returns the binary file path to include in the Lambda function zip file.
 func build() (string, error) {

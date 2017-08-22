@@ -105,7 +105,7 @@ func Execute() {
 }
 
 func init() {
-	cobra.OnInitialize(initConfig)
+	cobra.OnInitialize(InitConfig)
 	RootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "aegis", "config file (default is aegis.yaml)")
 
 	// AWS options & credentials
@@ -115,8 +115,8 @@ func init() {
 	RootCmd.PersistentFlags().StringVarP(&cfg.AWS.Profile, "profile", "p", "default", "AWS Credentials Profile to use")
 }
 
-// initConfig reads in config file and ENV variables if set.
-func initConfig() {
+// InitConfig reads in config file and ENV variables if set.
+func InitConfig() {
 	viper.SetConfigName("aegis") // name of config file (without extension)
 	viper.AddConfigPath(".")
 	// viper.AddConfigPath("$HOME")  // adding home directory as first search path
@@ -201,5 +201,9 @@ func initConfig() {
 	awsCfg = aws.Config{
 		Region: aws.String(cfg.AWS.Region),
 	}
+}
 
+// SetAwsCfg will set awsCfg values using an aws.Config struct
+func SetAwsCfg(config aws.Config) {
+	awsCfg = config
 }

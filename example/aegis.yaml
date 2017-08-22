@@ -14,6 +14,7 @@ lambda:
 api:
   name: Example Aegis API update
   description: An example API
+  # TODO: usagePlans:
   binaryMediaTypes:
     - image/png
   # stages:

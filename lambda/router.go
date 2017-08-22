@@ -247,6 +247,28 @@ func (h gatewayHandler) proxyResponseToHTTPResponse(res *ProxyResponse, w http.R
 		w.Header().Set(k, v)
 	}
 
+	// CORS. Allow everything since we are assumed to be running locally.
+	allowedHeaders := []string{
+		"Accept",
+		"Content-Type",
+		"Content-Length",
+		"Accept-Encoding",
+		"Authorization",
+		"X-CSRF-Token",
+		"X-Auth-Token",
+	}
+	allowedMethods := []string{
+		"POST",
+		"GET",
+		"OPTIONS",
+		"PUT",
+		"PATCH",
+		"DELETE",
+	}
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", strings.Join(allowedMethods, ", "))
+	w.Header().Set("Access-Control-Allow-Headers", strings.Join(allowedHeaders, ", "))
+
 	// The handler and middleware should have set everything on res
 	code, _ := strconv.ParseInt(res.StatusCode, 10, 32)
 	w.WriteHeader(int(code))
