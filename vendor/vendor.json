@@ -9,10 +9,10 @@
 			"revisionTime": "2016-11-30T20:35:45Z"
 		},
 		{
-			"checksumSHA1": "GMLIw5dc7mZ/3XExNZ/olF1G6J4=",
+			"checksumSHA1": "QHhgoheN5SJh1nslHBd7zJDqE7I=",
 			"path": "github.com/aws/aws-sdk-go",
-			"revision": "9a0c8a57d9bb717d481bc91f995df80d9bb9238c",
-			"revisionTime": "2016-12-22T21:31:12Z"
+			"revision": "5a2026bfb28e86839f9fcc46523850319399006c",
+			"revisionTime": "2017-09-29T22:28:32Z"
 		},
 		{
 			"path": "github.com/aws/aws-sdk-go/*",
@@ -175,34 +175,40 @@
 			"revisionTime": "2016-12-22T21:31:12Z"
 		},
 		{
-			"checksumSHA1": "3f8H9ugLjJCxkQ56bFrFce9nL9c=",
+			"checksumSHA1": "O2HA8qyuxiolOGr0a1o/mFKz/Xo=",
 			"path": "github.com/aws/aws-sdk-go/service/apigateway",
-			"revision": "9a0c8a57d9bb717d481bc91f995df80d9bb9238c",
-			"revisionTime": "2016-12-22T21:31:12Z"
+			"revision": "5a2026bfb28e86839f9fcc46523850319399006c",
+			"revisionTime": "2017-09-29T22:28:32Z"
 		},
 		{
-			"checksumSHA1": "N1nmWTML3GMzq5IIfb9BG0A1i+0=",
+			"checksumSHA1": "2y8MKiWNwIVw/au7LBxCGLZusUU=",
+			"path": "github.com/aws/aws-sdk-go/service/cloudwatchevents",
+			"revision": "5a2026bfb28e86839f9fcc46523850319399006c",
+			"revisionTime": "2017-09-29T22:28:32Z"
+		},
+		{
+			"checksumSHA1": "SGbv4ySdQtVIE7WJ+5HcNyWkbNY=",
 			"path": "github.com/aws/aws-sdk-go/service/cloudwatchlogs",
-			"revision": "9a0c8a57d9bb717d481bc91f995df80d9bb9238c",
-			"revisionTime": "2016-12-22T21:31:12Z"
+			"revision": "5a2026bfb28e86839f9fcc46523850319399006c",
+			"revisionTime": "2017-09-29T22:28:32Z"
 		},
 		{
-			"checksumSHA1": "EiSfyocmTWxtJNgmuGhW7QvfLe0=",
+			"checksumSHA1": "a+tKLYUEM3ZftY52P2ywtIxlCxE=",
 			"path": "github.com/aws/aws-sdk-go/service/iam",
-			"revision": "9a0c8a57d9bb717d481bc91f995df80d9bb9238c",
-			"revisionTime": "2016-12-22T21:31:12Z"
+			"revision": "5a2026bfb28e86839f9fcc46523850319399006c",
+			"revisionTime": "2017-09-29T22:28:32Z"
 		},
 		{
-			"checksumSHA1": "j0YmFnaZEvfUySiQR61Jc0o4bps=",
+			"checksumSHA1": "qu7WvUeSIFYQOqF9RXM/3w45kFg=",
 			"path": "github.com/aws/aws-sdk-go/service/lambda",
-			"revision": "9a0c8a57d9bb717d481bc91f995df80d9bb9238c",
-			"revisionTime": "2016-12-22T21:31:12Z"
+			"revision": "5a2026bfb28e86839f9fcc46523850319399006c",
+			"revisionTime": "2017-09-29T22:28:32Z"
 		},
 		{
-			"checksumSHA1": "kZvAnT2KFYZBxgUHXzV0kv3KccA=",
+			"checksumSHA1": "MerduaV3PxtZAWvOGpgoBIglo38=",
 			"path": "github.com/aws/aws-sdk-go/service/sts",
-			"revision": "9a0c8a57d9bb717d481bc91f995df80d9bb9238c",
-			"revisionTime": "2016-12-22T21:31:12Z"
+			"revision": "5a2026bfb28e86839f9fcc46523850319399006c",
+			"revisionTime": "2017-09-29T22:28:32Z"
 		},
 		{
 			"checksumSHA1": "x77xUarDfVxctJMAJPCQzlYk8JM=",

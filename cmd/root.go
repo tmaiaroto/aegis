@@ -16,15 +16,19 @@ package cmd
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
+	"strings"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/apigateway"
 	"github.com/aws/aws-sdk-go/service/lambda"
 	// "github.com/fatih/color"
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"os"
 	"path/filepath"
+
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 var cfgFile string
@@ -89,6 +93,15 @@ type deploymentStage struct {
 	CacheSize   string
 }
 
+// task defines options for a CloudWatch event rule (scheduled task)
+type task struct {
+	Schedule    string          `json:"schedule"`
+	Input       json.RawMessage `json:"input"`
+	Disabled    bool            `json:"disabled"`
+	Description string          `json:"description"`
+	Name        string          `json:"-"`
+}
+
 // cfg holds the Aegis configuration for the Lambda function, API Gateway settings, etc.
 var cfg deploymentConfig
 
@@ -149,6 +162,8 @@ func InitConfig() {
 	if err == nil {
 		// Prepend aegis_
 		if dir != "/" && dir != "" {
+			dirParts := strings.Split(dir, "/")
+			dir = dirParts[len(dirParts)-1]
 			var buffer bytes.Buffer
 			buffer.WriteString("aegis_")
 			buffer.WriteString(dir)

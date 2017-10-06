@@ -22,3 +22,73 @@ api:
   #     name: prod
   #     variables:
   #       foo: Bar
+cron:
+  interval: * * * */30
+  message: lambda-scheduled-event.json
+# ^ would, on `aegis up`, set a CloudWatch event on that schedule
+# to invoke the lambda function with the JSON message in the given file.
+# Aegis would read the JSON file and make appropriae AWS API calls.
+# so now rather than using router and router.Handle() in main.go,
+# there can be new handlers for the "tasks" ... maybe:
+task:
+  cron: * * * */30
+  message: somefile.json
+# instead... tasks? how do multiple work in yaml?
+# maybe it can not be configed here. maybe a special "tasks" folder
+# can exist with JSON files for definition. Then:
+tasks: other_tasks_folder
+# to override where aegis looks by default.
+# let aegis loop through all JSON files and set schedules.
+# the challenge becomes in removing scheduled evnts...
+# have to name those events and on each `up` call likely
+# remove all scheduled jobs and add any new/existing ones found.
+# meh, not hot but good user experience. unless the unlikely
+# scenario occurs where job is removed at the wrong time.
+# gotta really catch that at the precise time though.
+# REALLY like this approach. because definining stuff
+# in this YAML file is just extra configuration.
+# --we want convention over configuration--
+# let this config file override something, but don't
+# make it mandatory.
+#
+# Now in this conventional special "_tasks" or "tasks"
+# folder (which is completely not Go code at all),
+# we have everything we need. Cron schedule, message and all.
+#
+# The incoming message will NOT be handled by the Aegis Router.
+# Instead it will be handled by some othr handler for Tasks.
+# Aegis TaskHandler or something. Just Task?
+#
+# Local testing. The router running a local gateway is nice
+# for easy local testing before deploying.
+# Typing out a JSON message to pass for a Task sounds annoying
+# as shit. So instead we can simply have a new CLI command
+# that takes a path to a JSON file to run the Task.
+# OR ... have the local gateway also start up a cron of its own.
+# Let it run the jobs. Though that's not great for testing
+# of course because who is gonna wait for the job? Or alter
+# the JSON task file to make it trigger more frequently
+# then switch it back, etc. That's bad. So a CLI command
+# is really going to be needed.
+# Actually, strike that. A special `/_task/xxxx` route
+# can be handled by the local gateway. Again convention
+# (can be adjusted). Do not use Router with a URL like "_task"...
+# Because while it'd work via API GAteway, it would not work
+# locally because of this convention (unless configured otherwise). 
+# Now no new CLI neded. 
+# This is really good because you can do `aegis up` like normal
+# and now test BOTH the API locally and also the tasks simply
+# by making a GET request to trigger th Task.
+# 
+# Don't forget! You could run the local gateway on a Docker
+# image and not use Lambda or API Gateway at all (why? i don't know).
+# BUT that's ok still! Let's say I put the "local dev version" 
+# on say Hyper.sh in a Docker... Cool, you get the SAME API
+# as on Lambda+API Gateway, but no scheduled jobs...
+# EXCEPT you DO have a way to trigger those jobs manually...
+# OR I can also look back into setting that local cron up.
+# There's the cron package I've used before even.
+#
+# So many options here, it works VERY well.
+# AND it's conventional.
+# Super awesome "tasks" folder. Perfect.

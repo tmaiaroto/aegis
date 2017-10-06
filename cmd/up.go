@@ -19,11 +19,21 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"log"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"regexp"
+	"strings"
+	"time"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/apigateway"
+	"github.com/aws/aws-sdk-go/service/cloudwatchevents"
 	"github.com/aws/aws-sdk-go/service/iam"
 	"github.com/aws/aws-sdk-go/service/lambda"
 	"github.com/fatih/color"
@@ -31,13 +41,6 @@ import (
 	"github.com/spf13/cobra"
 	swagger "github.com/tmaiaroto/aegis/apigateway"
 	"github.com/tmaiaroto/aegis/lambda/shim"
-	"io/ioutil"
-	"log"
-	"os"
-	"os/exec"
-	"path/filepath"
-	"regexp"
-	"time"
 )
 
 // upCmd is a command that will deploy the app and configuration to AWS Lambda and API Gateway
@@ -158,6 +161,11 @@ func Deploy(cmd *cobra.Command, args []string) {
 		fmt.Printf("%v %v %v\n", color.GreenString(key), "API Invoke URL:", color.GreenString(invokeURL))
 	}
 
+	// Tasks - set CloudWatch scheduled events
+	for _, task := range getTasks() {
+		addCloudWatchEventRuleForLambda(task, lambdaArn)
+	}
+
 	// Clean up
 	if !cfg.App.KeepBuildFiles {
 		os.Remove(cfg.Lambda.SourceZip)
@@ -274,10 +282,9 @@ func getAWSSession() *session.Session {
 	return sess
 }
 
-// createFunction will create a Lambda function in AWS
+// createFunction will create a Lambda function in AWS and return its ARN
 func createFunction(zipBytes []byte) *string {
 	svc := lambda.New(getAWSSession())
-
 	// TODO: Keep versions and allow rollback
 
 	// First check if function already exists
@@ -336,7 +343,7 @@ func createFunction(zipBytes []byte) *string {
 	return updateFunction(zipBytes)
 }
 
-// updateFunction will update a Lambda function and its configuration in AWS
+// updateFunction will update a Lambda function and its configuration in AWS and return its ARN
 func updateFunction(zipBytes []byte) *string {
 	svc := lambda.New(getAWSSession())
 
@@ -432,11 +439,12 @@ func deleteFunction(name, version string) {
 }
 
 // createAegisRole will create a basic role to run Lambda functions if one has not been provided in config
+// NOTE: When providing an IAM to the config it must have the same policies, assigned by this function; Lambda, CloudWatch logs, and CloudWatch events.
 func createAegisRole() string {
-	// Default aegis IAM role name: aegis_lambda_function
-	// Default aegis IAM policy name: aegis_lambda_logs
-	aegisLambdaRoleName := aws.String("aegis_lambda_function")
-	aegisLambdaPolicyName := aws.String("aegis_lambda_logs")
+	// Default aegis IAM role name: aegis_lambda_role
+	// Default aegis IAM policy name: aegis_lambda_policy
+	aegisLambdaRoleName := aws.String("aegis_lambda_role")
+	aegisLambdaPolicyName := aws.String("aegis_lambda_policy")
 
 	svc := iam.New(getAWSSession())
 
@@ -463,7 +471,14 @@ func createAegisRole() string {
 	        "Service": "lambda.amazonaws.com"
 	      },
 	      "Action": "sts:AssumeRole"
-	    }
+		},
+		{
+		  "Effect": "Allow",
+		  "Principal": {
+		    "Service": "events.amazonaws.com"
+		  },
+		    "Action": "sts:AssumeRole"
+		 }
 	  ]
 	}`
 
@@ -477,7 +492,7 @@ func createAegisRole() string {
 		os.Exit(-1)
 	}
 
-	var iamLogsPolicy = `{
+	var iamPolicy = `{
 	  "Version": "2012-10-17",
 	  "Statement": [
 	    {
@@ -486,7 +501,19 @@ func createAegisRole() string {
 	      ],
 	      "Effect": "Allow",
 	      "Resource": "*"
-	    }
+		},
+		{
+		  "Sid": "CloudWatchEventsFullAccess",
+		  "Effect": "Allow",
+		  "Action": "events:*",
+		  "Resource": "*"
+		},
+		{
+		  "Sid": "IAMPassRoleForCloudWatchEvents",
+		  "Effect": "Allow",
+		  "Action": "iam:PassRole",
+		  "Resource": "arn:aws:iam::*:role/AWS_Events_Invoke_Targets"
+		}
 	  ]
 	}`
 
@@ -494,7 +521,7 @@ func createAegisRole() string {
 	_, err = svc.PutRolePolicy(&iam.PutRolePolicyInput{
 		PolicyName:     aegisLambdaPolicyName,
 		RoleName:       aegisLambdaRoleName,
-		PolicyDocument: aws.String(iamLogsPolicy),
+		PolicyDocument: aws.String(iamPolicy),
 	})
 	if err != nil {
 		fmt.Println("There was a problem creating a default inline IAM policy for Lambda. Check your configuration.")
@@ -715,6 +742,64 @@ func addBinaryMediaTypes(apiID string) {
 	}
 }
 
+// addCloudWatchEventRuleForLambda will add CloudWatch Event Rule for triggering the Lambda on a schedule with input
+func addCloudWatchEventRuleForLambda(t *task, lambdaArn *string) {
+	state := "ENABLED"
+	if t.Disabled {
+		state = "DISABLED"
+	}
+	// TODO: validation and log out errors/warnings?
+	if t.Schedule != "" {
+		svc := cloudwatchevents.New(getAWSSession())
+		_, err := svc.PutRule(&cloudwatchevents.PutRuleInput{
+			Description: aws.String(t.Description),
+			// Likely do not allow name override from the JSON. It helps keep rules predictable and easy to update/find in the future.
+			Name: aws.String(t.Name),
+			// IAM Role
+			RoleArn: aws.String(createAegisRole()),
+			// For example, "cron(0 20 * * ? *)" or "rate(5 minutes)"
+			ScheduleExpression: aws.String(t.Schedule),
+			// ENABLED or DISABLED
+			// In the Task JSON, the field is "disabled" so that when marshaling it defaults to false.
+			// This way it's optional in the JSON which makes it enabled by default.
+			State: aws.String(state),
+		})
+		if err != nil {
+			fmt.Println("There was a problem creating a CloudWatch Event Rule.")
+			fmt.Println(err)
+		}
+
+		// Enclose the input JSON in another object with key "task"
+		// This will allow the tasker to handle these specific types of messages.
+		jsonStr, _ := t.Input.MarshalJSON()
+		var buffer bytes.Buffer
+		buffer.WriteString("{task: ")
+		buffer.WriteString(string(jsonStr))
+		buffer.WriteString("}")
+		inputTask := buffer.String()
+		buffer.Reset()
+
+		// Add the Lambda ARN as the target
+		_, err = svc.PutTargets(&cloudwatchevents.PutTargetsInput{
+			Rule: aws.String(t.Name),
+			Targets: []*cloudwatchevents.Target{
+				&cloudwatchevents.Target{
+					Arn: lambdaArn,
+					Id:  aws.String(t.Name),
+					// The JSON event message input
+					// Input: aws.String(string(jsonStr)),
+					Input: aws.String(inputTask),
+				},
+			},
+		})
+
+		if err != nil {
+			fmt.Println("There was an error setting the CloudWatch Event Rule Target (Lambda function).")
+			fmt.Println(err)
+		}
+	}
+}
+
 // getAccountInfoFromArn will extract the account ID and region from a given ARN
 func getAccountInfoFromLambdaArn(lambdaArn string) (string, string) {
 	r, _ := regexp.Compile("arn:aws:lambda:(.+):([0-9]+):function")
@@ -769,4 +854,45 @@ func getExecPath(name string) string {
 		os.Exit(-1)
 	}
 	return string(bytes.TrimSpace(out))
+}
+
+// getTasks will scan a `tasks` directory looking for JSON files
+func getTasks() []*task {
+	var tasks []*task
+
+	// Don't proceed if the folder doesn't even exist.
+	_, err := os.Stat(TasksPath)
+	if os.IsNotExist(err) {
+		return tasks
+	}
+
+	// Load the task definition files.
+	d, err := os.Open(TasksPath)
+	if err != nil {
+		log.Printf("error opening tasks path: %s", err)
+	}
+	defer d.Close()
+
+	files, err := d.Readdir(-1)
+	for _, file := range files {
+		if file.Mode().IsRegular() {
+			if strings.ToLower(filepath.Ext(file.Name())) == ".json" {
+				fp, err := filepath.EvalSymlinks(TasksPath + "/" + file.Name())
+				if err == nil {
+					raw, err := ioutil.ReadFile(fp)
+					if err == nil {
+						var t task
+						json.Unmarshal(raw, &t)
+						// Set a name based on the function name and file path.
+						// This makes it easier to update for future deploys.
+						// TODO: Think about allowing user to override in JSON...
+						t.Name = strings.ToLower(cfg.Lambda.FunctionName + "." + file.Name())
+						tasks = append(tasks, &t)
+					}
+				}
+			}
+		}
+	}
+
+	return tasks
 }
