@@ -1,28 +1,22 @@
 package lambda
 
-import (
-	"io"
-	"net/url"
-	"testing"
+//. "github.com/smartystreets/goconvey/convey"
 
-	. "github.com/smartystreets/goconvey/convey"
-)
+// func TestTasker(t *testing.T) {
+// 	pr, pw := io.Pipe()
+// 	TaskerIn = pw
+// 	TaskerOut = pr
 
-func TestTasker(t *testing.T) {
-	pr, pw := io.Pipe()
-	TaskerIn = pw
-	TaskerOut = pr
+// 	testHandler := func(ctx *Context, evt *Event, params url.Values) {}
+// 	// testParams := url.Values{}
+// 	testTasker := NewTasker()
+// 	Convey("NewTasker", t, func() {
+// 		Convey("Should create a new Tasker", func() {
+// 			So(testTasker, ShouldNotBeNil)
+// 		})
+// 	})
 
-	testHandler := func(ctx *Context, evt *Event, params url.Values) {}
-	// testParams := url.Values{}
-	testTasker := NewTasker()
-	Convey("NewTasker", t, func() {
-		Convey("Should create a new Tasker", func() {
-			So(testTasker, ShouldNotBeNil)
-		})
-	})
+// 	testTasker.Handle("taskName", testHandler)
 
-	testTasker.Handle("taskName", testHandler)
-
-	testTasker.Listen()
-}
+// 	testTasker.Listen()
+// }
