@@ -2,6 +2,7 @@ package lambda
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"encoding/xml"
 	"errors"
@@ -249,4 +250,24 @@ func (evt *Event) GetForm() (map[string]interface{}, error) {
 	}
 
 	return formData, err
+}
+
+// GetStringBody will return the request body if passed in the event as a string. It's base64 encoded.
+func (evt *Event) GetStringBody() (string, error) {
+	s := ""
+	b, err := base64.StdEncoding.DecodeString(evt.Body.(string))
+	if err == nil {
+		s = string(b[:])
+	}
+	return s, err
+}
+
+// GetJSONBody will return the request body as map if passed in the event as a JSON string (which would be base64 encoded).
+func (evt *Event) GetJSONBody() (map[string]interface{}, error) {
+	var m map[string]interface{}
+	b, err := base64.StdEncoding.DecodeString(evt.Body.(string))
+	if err == nil {
+		err = json.Unmarshal([]byte(b), &m)
+	}
+	return m, err
 }

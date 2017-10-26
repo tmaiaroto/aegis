@@ -73,6 +73,7 @@ type deploymentConfig struct {
 			SecurityGroups []string
 			Subnets        []string
 		}
+		TraceMode string
 	}
 	API struct {
 		Name             string
@@ -172,6 +173,8 @@ func InitConfig() {
 		}
 	}
 	viper.SetDefault("lambda.functionName", fName)
+	// Enable XRay by default, see: https://docs.aws.amazon.com/sdk-for-go/api/service/lambda/#TracingConfig
+	viper.SetDefault("lambda.traceMode", "Active")
 	// Default API Gateway config values
 	viper.SetDefault("api.name", "Aegis API")
 	viper.SetDefault("api.description", "")

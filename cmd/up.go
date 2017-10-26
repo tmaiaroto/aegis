@@ -41,6 +41,8 @@ import (
 	"github.com/spf13/cobra"
 	swagger "github.com/tmaiaroto/aegis/apigateway"
 	"github.com/tmaiaroto/aegis/lambda/shim"
+	// TODO: Make it pretty :)
+	// https://github.com/gernest/wow?utm_source=golangweekly&utm_medium=email
 )
 
 // upCmd is a command that will deploy the app and configuration to AWS Lambda and API Gateway
@@ -316,6 +318,9 @@ func createFunction(zipBytes []byte) *string {
 				SecurityGroupIds: aws.StringSlice(cfg.Lambda.VPC.SecurityGroups),
 				SubnetIds:        aws.StringSlice(cfg.Lambda.VPC.Subnets),
 			},
+			TracingConfig: &lambda.TracingConfig{
+				Mode: aws.String(cfg.Lambda.TraceMode),
+			},
 		}
 		f, err := svc.CreateFunction(input)
 		if err != nil {
@@ -362,6 +367,9 @@ func updateFunction(zipBytes []byte) *string {
 		VpcConfig: &lambda.VpcConfig{
 			SecurityGroupIds: aws.StringSlice(cfg.Lambda.VPC.SecurityGroups),
 			SubnetIds:        aws.StringSlice(cfg.Lambda.VPC.Subnets),
+		},
+		TracingConfig: &lambda.TracingConfig{
+			Mode: aws.String(cfg.Lambda.TraceMode),
 		},
 	})
 	if err != nil {
@@ -478,7 +486,14 @@ func createAegisRole() string {
 		    "Service": "events.amazonaws.com"
 		  },
 		    "Action": "sts:AssumeRole"
-		 }
+		},
+		{
+		  "Effect": "Allow",
+		  "Principal": {
+		    "Service": "xray.amazonaws.com"
+		  },
+		  "Action": "sts:AssumeRole"
+		}
 	  ]
 	}`
 
@@ -497,7 +512,8 @@ func createAegisRole() string {
 	  "Statement": [
 	    {
 	      "Action": [
-	        "logs:*"
+			"logs:*",
+			"xray:*"
 	      ],
 	      "Effect": "Allow",
 	      "Resource": "*"
