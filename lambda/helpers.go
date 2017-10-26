@@ -252,8 +252,8 @@ func (evt *Event) GetForm() (map[string]interface{}, error) {
 	return formData, err
 }
 
-// GetStringBody will return the request body if passed in the event as a string. It's base64 encoded.
-func (evt *Event) GetStringBody() (string, error) {
+// GetBody will return the request body if passed in the event. It's base64 encoded.
+func (evt *Event) GetBody() (string, error) {
 	s := ""
 	b, err := base64.StdEncoding.DecodeString(evt.Body.(string))
 	if err == nil {
