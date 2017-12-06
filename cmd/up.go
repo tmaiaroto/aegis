@@ -86,7 +86,8 @@ func Deploy(cmd *cobra.Command, args []string) {
 			os.Exit(-1)
 		}
 		// Ensure it's executable.
-		err = os.Chmod(appPath, os.FileMode(int(0777)))
+		// err = os.Chmod(appPath, os.FileMode(int(0777)))
+		err = os.Chmod(appPath, os.ModePerm)
 		if err != nil {
 			fmt.Println("Warning, executable permissions could not be set on Go binary. It may fail to run in AWS.")
 			fmt.Println(err.Error())
@@ -205,6 +206,10 @@ func compress(fileName string) string {
 	zipper := new(archivex.ZipFile)
 	zipper.Create(fileName)
 
+	// Setting permissions on file to os.ModePerm or 0777 doesn't seem to keep the proper permissions.
+	// So use the file's own?
+	// aegisAppFileInfo, _ := os.Stat(aegisAppName)
+
 	// Create a header for aegis_app to retain permissions?
 	header := &zip.FileHeader{
 		Name:         "aegis_app",
@@ -212,8 +217,17 @@ func compress(fileName string) string {
 		ModifiedTime: uint16(time.Now().UnixNano()),
 		ModifiedDate: uint16(time.Now().UnixNano()),
 	}
-	header.SetMode(os.FileMode(int(0777)))
-	_, _ = zipper.Writer.CreateHeader(header)
+	// os.ModePerm = -rwxrwxrwx
+	header.SetMode(os.ModePerm)
+	// log.Println("aegis_app file mode:", aegisAppFileInfo.Mode())
+	// header.SetMode(aegisAppFileInfo.Mode())
+	zipWriter, _ := zipper.Writer.CreateHeader(header)
+	log.Println("zip header", header)
+
+	content, err := ioutil.ReadFile(aegisAppName)
+	if err == nil {
+		zipWriter.Write(content)
+	}
 
 	// Add the AWS Lambda shim for Go
 	// TODO: Allow multiple wrappers
@@ -222,7 +236,7 @@ func compress(fileName string) string {
 	}
 
 	// Add the compiled Go app
-	zipper.AddFile(aegisAppName)
+	// zipper.AddFile(aegisAppName) <-- maybe this is writing w/o the header... have to use the writer returned by CreateHeader()??
 	zipper.Close()
 
 	pwd, _ := os.Getwd()

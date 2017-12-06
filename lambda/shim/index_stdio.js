@@ -51,33 +51,33 @@ var child_process = require('child_process'),
 // TODO: Try to avoid this? I can't imagine copying, not moving, this app over each time is great for performance.
 // To avoid permission issues...
 // Really hate to copy this file each time (and mv didn't work).
-var fs = require('fs');
-if (!fs.existsSync('/tmp/aegis_app')) {
-  child_process.execSync('cp aegis_app /tmp/aegis_app && chmod +x /tmp/aegis_app');
-}
+// var fs = require('fs');
+// if (!fs.existsSync('/tmp/aegis_app')) {
+//   child_process.execSync('cp aegis_app /tmp/aegis_app && chmod +x /tmp/aegis_app');
+// }
 
 // Debug
-// var fs = require('fs');
-// items = fs.readdirSync('./');
-// for (var i=0; i<items.length; i++) {
-//     console.log("");
-//     console.log("");
-//     console.log("FILE: " + items[i]);
-//     var stats = fs.statSync(items[i]);
-//     console.log("------------------------");
-//     console.log(stats);
-//     console.log();
+var fs = require('fs');
+items = fs.readdirSync('./');
+for (var i=0; i<items.length; i++) {
+    console.log("");
+    console.log("");
+    console.log("FILE: " + items[i]);
+    var stats = fs.statSync(items[i]);
+    console.log("------------------------");
+    console.log(stats);
+    console.log();
  
-//     if (stats.isFile()) {
-//         console.log('    file');
-//     }
-//     if (stats.isDirectory()) {
-//         console.log('    directory');
-//     }
+    if (stats.isFile()) {
+        console.log('    file');
+    }
+    if (stats.isDirectory()) {
+        console.log('    directory');
+    }
  
-//     console.log('    size: ' + stats["size"]);
-//     console.log('    mode: ' + stats["mode"]);
-// }
+    console.log('    size: ' + stats["size"]);
+    console.log('    mode: ' + stats["mode"]);
+}
 
 // This creates problems.
 // The problem is that when the Lambda is invoked quick enough, the pipe could be closed already but a new 
@@ -160,7 +160,7 @@ exports.handler = function(event, context) {
   //
   // TODO: Look into the Lambda container re-use and re-using child processes...It "should" work...But in reality there
   // are a lot of situations where things get closed and then are trying to be written to again which results in annoying errors.
-  var go_proc = child_process.spawn('/tmp/aegis_app', { stdio: ['pipe', 'pipe', process.stderr] });
+  var go_proc = child_process.spawn('./aegis_app', { stdio: ['pipe', 'pipe', process.stderr] });
 
   // add to event the invoke time (oddly not present in context or event)
   // I wish it was from when API Gateway received the request...not sure if there's a way to pass that info.
