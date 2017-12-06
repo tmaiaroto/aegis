@@ -57,27 +57,27 @@ var child_process = require('child_process'),
 // }
 
 // Debug
-var fs = require('fs');
-items = fs.readdirSync('./');
-for (var i=0; i<items.length; i++) {
-    console.log("");
-    console.log("");
-    console.log("FILE: " + items[i]);
-    var stats = fs.statSync(items[i]);
-    console.log("------------------------");
-    console.log(stats);
-    console.log();
+// var fs = require('fs');
+// items = fs.readdirSync('./');
+// for (var i=0; i<items.length; i++) {
+//     console.log("");
+//     console.log("");
+//     console.log("FILE: " + items[i]);
+//     var stats = fs.statSync(items[i]);
+//     console.log("------------------------");
+//     console.log(stats);
+//     console.log();
  
-    if (stats.isFile()) {
-        console.log('    file');
-    }
-    if (stats.isDirectory()) {
-        console.log('    directory');
-    }
+//     if (stats.isFile()) {
+//         console.log('    file');
+//     }
+//     if (stats.isDirectory()) {
+//         console.log('    directory');
+//     }
  
-    console.log('    size: ' + stats["size"]);
-    console.log('    mode: ' + stats["mode"]);
-}
+//     console.log('    size: ' + stats["size"]);
+//     console.log('    mode: ' + stats["mode"]);
+// }
 
 // This creates problems.
 // The problem is that when the Lambda is invoked quick enough, the pipe could be closed already but a new 
