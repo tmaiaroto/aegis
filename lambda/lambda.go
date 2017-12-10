@@ -19,15 +19,16 @@ package lambda
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/Sirupsen/logrus"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/tmaiaroto/logrus-cloudwatchlogs"
 	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"strconv"
+
+	"github.com/Sirupsen/logrus"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/tmaiaroto/logrus-cloudwatchlogs"
 )
 
 type (
@@ -113,6 +114,7 @@ type (
 	//   },
 	//   "body": "{\"key1\":\"value1\",\"key2\":\"value2\",\"key3\":\"value3\"}"
 	// }
+	// Will adding ID break it?
 	ProxyResponse struct {
 		StatusCode      string            `json:"statusCode"`
 		Headers         map[string]string `json:"headers"`
@@ -165,7 +167,7 @@ func RunStream(handler Handler, Stdin io.Reader, Stdout io.Writer) {
 		cfg := aws.NewConfig()
 		hook, err := logrus_cloudwatchlogs.NewHook(payload.Context.LogGroupName, payload.Context.LogStreamName, cfg)
 		if err != nil {
-			log.Println("Error setting up logrus hook for CloudWatch")
+			log.Println("[aegis] Error setting up logrus hook for CloudWatch")
 			log.Fatal(err)
 		}
 		Log.Hooks.Add(hook)
@@ -175,6 +177,15 @@ func RunStream(handler Handler, Stdin io.Reader, Stdout io.Writer) {
 		// nanosecond format the millisconds for now
 		payload.Event.HandlerStartTime = payload.Event.HandlerStartTimeMs * 1000000
 		resp := handler(payload.Context, payload.Event)
+
+		// Set the request id in the response... Does this break things? Lambda Proxy requires a specific format with statusCode, body, etc.
+		// Can we add more? We need this to keep track of concurrent callbacks in the Node.js wrapper (until go support is available early 2018).
+		// resp.ID = payload.Event.RequestContext.RequestID
+		// maybe doesn't work...
+		// If this doesn't work, then we can stick it in the header. Which isn't a bad place to stick it anyway.
+		// In fact, we want to ensure X-Ray has whatever it needs there too.
+		// The trick is just ensuring that we are appending to and not replacing whatever the user application sets for headers.
+		resp.Headers["request-id"] = payload.Event.RequestContext.RequestID
 
 		if err != nil {
 			// If thre's an error, the statusCode has to be in the 500's.
@@ -191,10 +202,9 @@ func RunStream(handler Handler, Stdin io.Reader, Stdout io.Writer) {
 	}(); err != nil {
 		if encErr := stdout.Encode(NewProxyResponse(http.StatusInternalServerError, map[string]string{}, "", err)); encErr != nil {
 			// bad times
-			log.Println("Failed to encode err response!", encErr.Error())
+			log.Println("[aegis] Failed to encode err response!", encErr.Error())
 		}
 	}
-
 }
 
 // HandleProxy handles an AWS Lambda function as proxy via API Gateway directly

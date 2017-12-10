@@ -108,35 +108,37 @@ func runMiddleware(ctx *Context, evt *Event, res *ProxyResponse, params url.Valu
 
 // Listen will start the internal router and listen for Lambda events to forward to registered routes.
 func (r *Router) Listen() {
-	RunStream(func(ctx *Context, evt *Event) *ProxyResponse {
-		// url.Values are typically used for qureystring parameters.
-		// However, this router uses them for path params.
-		// Querystring parameters can be picked up from the *Event though.
-		params := url.Values{}
-		// New empty response with a 200 status code since nothing has gone wrong yet, it's just empty.
-		res := NewProxyResponse(200, map[string]string{}, "", nil)
+	for {
+		RunStream(func(ctx *Context, evt *Event) *ProxyResponse {
+			// url.Values are typically used for qureystring parameters.
+			// However, this router uses them for path params.
+			// Querystring parameters can be picked up from the *Event though.
+			params := url.Values{}
+			// New empty response with a 200 status code since nothing has gone wrong yet, it's just empty.
+			res := NewProxyResponse(200, map[string]string{}, "", nil)
 
-		// use the Path and HTTPMethod from the event to figure out the route
-		node, _ := r.tree.traverse(strings.Split(evt.Path, "/")[1:], params)
-		if handler := node.methods[evt.HTTPMethod]; handler != nil {
-			// Middleware must return true in order to continue.
-			// If it returns false, it will catch and halt everything.
-			if !runMiddleware(ctx, evt, res, params, handler.middleware...) {
-				// TODO: Figure out what to do here. I'm not sure what makes sense.
-				// Should it return the response in its current state?
-				return res
-				// Or should it return an error?
-				// Typically it leaves the request hanging if it returns false.
-				// The middleware would need to write something back to the client.
-				// return NewProxyResponse(500, map[string]string{}, "", nil)
+			// use the Path and HTTPMethod from the event to figure out the route
+			node, _ := r.tree.traverse(strings.Split(evt.Path, "/")[1:], params)
+			if handler := node.methods[evt.HTTPMethod]; handler != nil {
+				// Middleware must return true in order to continue.
+				// If it returns false, it will catch and halt everything.
+				if !runMiddleware(ctx, evt, res, params, handler.middleware...) {
+					// TODO: Figure out what to do here. I'm not sure what makes sense.
+					// Should it return the response in its current state?
+					return res
+					// Or should it return an error?
+					// Typically it leaves the request hanging if it returns false.
+					// The middleware would need to write something back to the client.
+					// return NewProxyResponse(500, map[string]string{}, "", nil)
+				}
+				handler.handler(ctx, evt, res, params)
+			} else {
+				r.rootHandler(ctx, evt, res, params)
 			}
-			handler.handler(ctx, evt, res, params)
-		} else {
-			r.rootHandler(ctx, evt, res, params)
-		}
 
-		return res
-	}, os.Stdin, os.Stdout)
+			return res
+		}, os.Stdin, os.Stdout)
+	}
 }
 
 // gatewayHandler is a Router that implements an http.Handler interface

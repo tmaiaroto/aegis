@@ -46,6 +46,6 @@ func (t *Tasker) Handle(name string, handler TaskHandler) {
 	if name == "" {
 
 	}
-	log.Println("Handling ", name)
+	log.Println("[aegis] Handling ", name)
 	// r.tree.addNode(method, r.URIVersion+path, handler, middleware...)
 }

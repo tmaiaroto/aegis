@@ -222,7 +222,7 @@ func compress(fileName string) string {
 	// log.Println("aegis_app file mode:", aegisAppFileInfo.Mode())
 	// header.SetMode(aegisAppFileInfo.Mode())
 	zipWriter, _ := zipper.Writer.CreateHeader(header)
-	log.Println("zip header", header)
+	// log.Println("zip header", header)
 
 	content, err := ioutil.ReadFile(aegisAppName)
 	if err == nil {
