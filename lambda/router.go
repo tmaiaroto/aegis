@@ -4,6 +4,7 @@ package lambda
 
 import (
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -14,6 +15,9 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/aws/aws-lambda-go/events"
+	"github.com/aws/aws-lambda-go/lambda"
 )
 
 const (
@@ -44,6 +48,11 @@ type Router struct {
 	URIVersion     string
 	GatewayPort    string
 }
+
+var (
+	// ErrNameNotProvided is thrown when a name is not provided
+	ErrNameNotProvided = errors.New("no name was provided in the HTTP body")
+)
 
 // NewRouter creates a new router. Take the root/fall through route
 // like how the default mux works. Only difference is in this case,
@@ -97,7 +106,7 @@ func (r *Router) DELETE(path string, handler RouteHandler, middleware ...Middlew
 }
 
 // runMiddleware loops over the slice of middleware and call to each of the middleware handlers.
-func runMiddleware(ctx *Context, evt *Event, res *ProxyResponse, params url.Values, middleware ...Middleware) bool {
+func runMiddleware(ctx *events.APIGatewayProxyRequestContext, evt *Event, res *ProxyResponse, params url.Values, middleware ...Middleware) bool {
 	for _, m := range middleware {
 		if !m(ctx, evt, res, params) {
 			return false // the middleware returned false, so end processing the chain.
@@ -106,7 +115,85 @@ func runMiddleware(ctx *Context, evt *Event, res *ProxyResponse, params url.Valu
 	return true
 }
 
+// LambdaHandler is a native AWS Lambda Go handler function (no more shim)
+// It will do the job of the JavaScript shim, by taking the request and passing it to our own router handler.
+func (r *Router) LambdaHandler(ctx *events.APIGatewayProxyRequestContext, req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+	// url.Values are typically used for qureystring parameters.
+	// However, this router uses them for path params.
+	// Querystring parameters can be picked up from the *Event though.
+	params := url.Values{}
+	// New empty response with a 200 status code since nothing has gone wrong yet, it's just empty.
+	res := NewProxyResponse(200, map[string]string{}, "", nil)
+
+	// Turn events.APIGatewayProxyRequest into Event
+	// Or replace many of the structs in aegis with official AWS Lambda ones...
+	// Backward compatibility?
+	//
+	// Event struct {
+	// 	Body            interface{}       `json:"body"`
+	// 	Headers         map[string]string `json:"headers"`
+	// 	HTTPMethod      string            `json:"httpMethod"`
+	// 	IsBase64Encoded bool              `json:"isBase64Encoded"`
+	// 	Path            string            `json:"path"`
+	// 	// Will be {"proxy": "path/parts"} if set.
+	// 	// Almost redundant in this case with Path because the API Gateway has this catch all proxy path.
+	// 	PathParameters        map[string]string `json:"pathParameters"`
+	// 	QueryStringParameters map[string]string `json:"queryStringParameters"`
+	// 	RequestContext        RequestContext    `json:"requestContext"`
+	// 	// Always `/` or `/{proxy+}` in this case
+	// 	Resource           string            `json:"resource"`
+	// 	StageVariables     map[string]string `json:"stageVariables"`
+	// 	HandlerStartHrTime []int64           `json:"handlerStartHrTime"`
+	// 	HandlerStartTimeMs int64             `json:"handlerStartTimeMs"`
+	// 	HandlerStartTime   int64             `json:"handlerStartTime"`
+	// }
+
+	// use the Path and HTTPMethod from the event to figure out the route
+	node, _ := r.tree.traverse(strings.Split(req.Path, "/")[1:], params)
+	if handler := node.methods[req.HTTPMethod]; handler != nil {
+		// Middleware must return true in order to continue.
+		// If it returns false, it will catch and halt everything.
+		if !runMiddleware(ctx, req, res, params, handler.middleware...) {
+			// TODO: Figure out what to do here. I'm not sure what makes sense.
+			// Should it return the response in its current state?
+			statusCode, _ := strconv.Atoi(res.StatusCode)
+			return events.APIGatewayProxyResponse{
+				Body:            res.Body,
+				StatusCode:      statusCode,
+				IsBase64Encoded: res.IsBase64Encoded,
+				Headers:         res.Headers,
+			}, nil
+			// Or should it return an error?
+			// Typically it leaves the request hanging if it returns false.
+			// The middleware would need to write something back to the client.
+			// return NewProxyResponse(500, map[string]string{}, "", nil)
+		}
+		handler.handler(ctx, evt, res, params)
+	} else {
+		r.rootHandler(ctx, evt, res, params)
+	}
+
+	// Aegis' ProxyResponse is almost identical to Amazon's APIGatewayProxyResponse
+	// TODO: Think about removing ProxyResponse and just using Amazon's.
+	statusCode, _ := strconv.Atoi(res.StatusCode)
+	return events.APIGatewayProxyResponse{
+		Body:            res.Body,
+		StatusCode:      statusCode,
+		IsBase64Encoded: res.IsBase64Encoded,
+		Headers:         res.Headers,
+	}, nil
+
+}
+
+// Start will call allow the Router to call lambda.Start using LambdaHandler
+func (r *Router) Start() {
+	lambda.Start(r.LambdaHandler)
+}
+
 // Listen will start the internal router and listen for Lambda events to forward to registered routes.
+// Deprecated: This will still work and use the Node.js shim, but it comes at a performance cost.
+// Anything using this method, should upgrade to Start(). Also note that the context, request and response
+// structs will all change when using the new Start() function. So this is a breaking change.
 func (r *Router) Listen() {
 	for {
 		RunStream(func(ctx *Context, evt *Event) *ProxyResponse {
