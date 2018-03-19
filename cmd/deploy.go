@@ -40,14 +40,13 @@ import (
 	"github.com/jhoonb/archivex"
 	"github.com/spf13/cobra"
 	swagger "github.com/tmaiaroto/aegis/apigateway"
-	"github.com/tmaiaroto/aegis/lambda/shim"
 	// TODO: Make it pretty :)
 	// https://github.com/gernest/wow?utm_source=golangweekly&utm_medium=email
 )
 
-// upCmd is a command that will deploy the app and configuration to AWS Lambda and API Gateway
-var upCmd = &cobra.Command{
-	Use:   "up",
+// deployCmd is a command that will deploy the app and configuration to AWS Lambda and API Gateway
+var deployCmd = &cobra.Command{
+	Use:   "deploy",
 	Short: "Deploy app and API",
 	Long:  `Deploys or updates your serverless application and API`,
 	Run:   Deploy,
@@ -55,17 +54,17 @@ var upCmd = &cobra.Command{
 
 // init the `up` command
 func init() {
-	RootCmd.AddCommand(upCmd)
+	RootCmd.AddCommand(deployCmd)
 
 	// Here you will define your flags and configuration settings.
 
 	// Cobra supports Persistent Flags which will work for this command
 	// and all subcommands, e.g.:
-	// upCmd.PersistentFlags().String("foo", "", "A help for foo")
+	// deployCmd.PersistentFlags().String("foo", "", "A help for foo")
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
-	// upCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	// deployCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 
 }
 
@@ -138,10 +137,10 @@ func Deploy(cmd *cobra.Command, args []string) {
 	//
 	// TODO: Maybe prompt the user to overwrite? Because if the name matches, it will go on to deploy stages on
 	// that API...Which may be bad. I wish API names had to be unique. That would be a lot better.
-	// Think on what to do here because it could create a bad experience...It's also nice to have one "up" command
+	// Think on what to do here because it could create a bad experience...It's also nice to have one "deploy" command
 	// that also deploys stages and picks up new stages as the config changes. Could always break out deploy stage
 	// into a separate command...Again, all comes down to experience and expectations. Warnings might be enough...
-	// But a prompt on each "up" command after the first? Maybe too annoying. Could pass an "--ignore" flag or force
+	// But a prompt on each "deploy" command after the first? Maybe too annoying. Could pass an "--ignore" flag or force
 	// to solve those annoyances though.
 	apiID := importAPI(*lambdaArn)
 	// TODO: Allow updates...this isn't quite working yet
@@ -188,13 +187,22 @@ func build() (string, error) {
 	_ = os.Setenv("GOARCH", "amd64")
 	path := getExecPath("go")
 	pwd, _ := os.Getwd()
-	args := []string{path, "build", "-o", aegisAppName}
-	cmd := exec.Cmd{
-		Path: path,
-		Args: args,
-	}
+
+	// Try to build a smaller binary.
+	// This won't work on Windows. Though Windows remains untested in general, let's try this and fall back.
+	cmd := exec.Command("sh", "-c", path+` build -ldflags="-w -s" -o `+aegisAppName)
 	if err := cmd.Run(); err != nil {
-		return "", err
+		// If it failed, just build without all the fancy flags. The binary size will be a little larger though.
+		// This should work on Windows. Right? TODO: Test. Better yet, figure out how to build Cmd with flags.
+		// Spent over an hour trying every method of escaping known to man. Why???
+		args := []string{path, "build", "-o", aegisAppName}
+		cmd := exec.Cmd{
+			Path: path,
+			Args: args,
+		}
+		if err := cmd.Run(); err != nil {
+			return "", err
+		}
 	}
 	builtApp := filepath.Join(pwd, aegisAppName)
 
@@ -227,12 +235,6 @@ func compress(fileName string) string {
 	content, err := ioutil.ReadFile(aegisAppName)
 	if err == nil {
 		zipWriter.Write(content)
-	}
-
-	// Add the AWS Lambda shim for Go
-	// TODO: Allow multiple wrappers
-	if err := zipper.Add("index.js", shim.MustAsset(cfg.Lambda.Wrapper)); err != nil {
-		return ""
 	}
 
 	// Add the compiled Go app
@@ -783,7 +785,8 @@ func addCloudWatchEventRuleForLambda(t *task, lambdaArn *string) {
 		svc := cloudwatchevents.New(getAWSSession())
 		_, err := svc.PutRule(&cloudwatchevents.PutRuleInput{
 			Description: aws.String(t.Description),
-			// Likely do not allow name override from the JSON. It helps keep rules predictable and easy to update/find in the future.
+			// Again, name is all lowercase: <function name>.<file name>
+			// Creating an event ARN/ID like: arn:aws:events:us-east-1:1234567890:rule/aegis_aegis.example.json
 			Name: aws.String(t.Name),
 			// IAM Role
 			RoleArn: aws.String(createAegisRole()),
@@ -799,13 +802,9 @@ func addCloudWatchEventRuleForLambda(t *task, lambdaArn *string) {
 			fmt.Println(err)
 		}
 
-		// Enclose the input JSON in another object with key "task"
-		// This will allow the tasker to handle these specific types of messages.
 		jsonStr, _ := t.Input.MarshalJSON()
 		var buffer bytes.Buffer
-		buffer.WriteString("{task: ")
 		buffer.WriteString(string(jsonStr))
-		buffer.WriteString("}")
 		inputTask := buffer.String()
 		buffer.Reset()
 
@@ -826,6 +825,8 @@ func addCloudWatchEventRuleForLambda(t *task, lambdaArn *string) {
 		if err != nil {
 			fmt.Println("There was an error setting the CloudWatch Event Rule Target (Lambda function).")
 			fmt.Println(err)
+		} else {
+			fmt.Println("Added task (CloudWatch scheduled event):", t.Name)
 		}
 	}
 }
@@ -886,11 +887,12 @@ func getExecPath(name string) string {
 	return string(bytes.TrimSpace(out))
 }
 
-// getTasks will scan a `tasks` directory looking for JSON files
+// getTasks will scan a `tasks` directory looking for JSON files (this is where all tasks should be kept)
 func getTasks() []*task {
 	var tasks []*task
 
 	// Don't proceed if the folder doesn't even exist.
+	log.Println("Looking for tasks in:", TasksPath)
 	_, err := os.Stat(TasksPath)
 	if os.IsNotExist(err) {
 		return tasks
@@ -912,10 +914,12 @@ func getTasks() []*task {
 					raw, err := ioutil.ReadFile(fp)
 					if err == nil {
 						var t task
+						// The scheduled task file (a JSON file) should define most everything needed.
+						// The input, schedule, etc.
 						json.Unmarshal(raw, &t)
 						// Set a name based on the function name and file path.
 						// This makes it easier to update for future deploys.
-						// TODO: Think about allowing user to override in JSON...
+						// Do not allow a name override (for now - makes Tasker name matching easier, more conventional)
 						t.Name = strings.ToLower(cfg.Lambda.FunctionName + "." + file.Name())
 						tasks = append(tasks, &t)
 					}

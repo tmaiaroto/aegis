@@ -17,53 +17,65 @@ package main
 import (
 	//"encoding/json"
 	"bytes"
-	"github.com/tmaiaroto/aegis/lambda"
+	"context"
 	"log"
 	"net/url"
-	"time"
+
+	aegis "github.com/tmaiaroto/aegis/framework"
 )
 
 func main() {
+	// Enable line numbers in logging
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
 	// Handle the Lambda Proxy directly
-	// lambda.HandleProxy(func(ctx *lambda.Context, evt *lambda.Event) *lambda.ProxyResponse {
+	// aegis.HandleProxy(func(ctx *aegis.Context, evt *events.APIGatewayProxyRequest) *events.APIGatewayProxyResponse {
 
 	// 	event, err := json.Marshal(evt)
 	// 	if err != nil {
-	// 		return lambda.NewProxyResponse(500, map[string]string{}, "", err)
+	// 		return aegis.NewProxyResponse(500, map[string]string{}, "", err)
 	// 	}
 
-	// 	return lambda.NewProxyResponse(200, map[string]string{}, string(event), nil)
+	// 	return aegis.NewProxyResponse(200, map[string]string{}, string(event), nil)
 	// })
 
+	// Handle tasks
+	tasker := aegis.NewTasker()
+	tasker.Handle("somefile.json", handleTask)
+
 	// Handle with a URL reqeust path Router
-	router := lambda.NewRouter(fallThrough)
+	router := aegis.NewRouter(fallThrough)
 
 	router.Handle("GET", "/", root)
 	router.Handle("GET", "/blah/:thing", somepath, fooMiddleware, barMiddleware)
 
 	router.Handle("POST", "/", postExample)
 
-	router.Listen()
+	// Blocks. So this function would only be good for handling APIGatewayProxyRequest events
+	// router.Listen()
+	// Also blocks, but uses reflection to get the event type and then calls the appropriate handler
+	// This way, the same Go application can be used to handle multiple events.
+	// This is a microservice design consideration. To each their own.
+	handlers := aegis.Handlers{
+		Router: router,
+		// Tasker...
+	}
+	handlers.Listen()
 }
 
-func fallThrough(ctx *lambda.Context, evt *lambda.Event, res *lambda.ProxyResponse, params url.Values) {
-	res.SetStatus(404)
+func fallThrough(ctx context.Context, req *aegis.APIGatewayProxyRequest, res *aegis.APIGatewayProxyResponse, params url.Values) {
+	res.StatusCode = 404
 }
 
-func root(ctx *lambda.Context, evt *lambda.Event, res *lambda.ProxyResponse, params url.Values) {
-	lambda.Log.Info("logging to CloudWatch")
+func root(ctx context.Context, req *aegis.APIGatewayProxyRequest, res *aegis.APIGatewayProxyResponse, params url.Values) {
+	aegis.Log.Info("logging to CloudWatch")
 	log.Println("normal go logging (also goes to cloudwatch)")
 
-	// nowMs := time.Now().UnixNano() / int64(time.Millisecond)
-	now := time.Now().UnixNano()
-	handleTime := (now - evt.HandlerStartTime)
-
-	res.JSON(200, map[string]interface{}{"handleTime": handleTime, "event": evt})
+	res.JSON(200, map[string]interface{}{"event": req})
 }
 
-func postExample(ctx *lambda.Context, evt *lambda.Event, res *lambda.ProxyResponse, params url.Values) {
-	form, err := evt.GetForm()
+func postExample(ctx context.Context, req *aegis.APIGatewayProxyRequest, res *aegis.APIGatewayProxyResponse, params url.Values) {
+	form, err := req.GetForm()
 	if err != nil {
 		res.JSON(500, err.Error())
 	} else {
@@ -71,7 +83,7 @@ func postExample(ctx *lambda.Context, evt *lambda.Event, res *lambda.ProxyRespon
 	}
 }
 
-func somepath(ctx *lambda.Context, evt *lambda.Event, res *lambda.ProxyResponse, params url.Values) {
+func somepath(ctx context.Context, req *aegis.APIGatewayProxyRequest, res *aegis.APIGatewayProxyResponse, params url.Values) {
 	// log.Println(params) <-- these will be path params...
 	// so in this roue definition it means `thing` will be a key.
 	// get with: params.Get("thing")
@@ -102,13 +114,18 @@ func somepath(ctx *lambda.Context, evt *lambda.Event, res *lambda.ProxyResponse,
 // Notice the Middleware has a return type. True means go to the next middleware. False
 // means to stop right here. If you return false to end the request-response cycle you MUST
 // write something back to the client, otherwise it will be left hanging.
-func fooMiddleware(ctx *lambda.Context, evt *lambda.Event, res *lambda.ProxyResponse, params url.Values) bool {
+func fooMiddleware(ctx context.Context, req *aegis.APIGatewayProxyRequest, res *aegis.APIGatewayProxyResponse, params url.Values) bool {
 	log.Println("Foo!")
 	return true
 }
 
-func barMiddleware(ctx *lambda.Context, evt *lambda.Event, res *lambda.ProxyResponse, params url.Values) bool {
+func barMiddleware(ctx context.Context, req *aegis.APIGatewayProxyRequest, res *aegis.APIGatewayProxyResponse, params url.Values) bool {
 	log.Println("Bar!")
 	res.Body = "bar!"
 	return true
+}
+
+// Example task handler
+func handleTask(ctx context.Context, evt *aegis.CloudWatchEvent) {
+	log.Println("Handling task!", evt)
 }

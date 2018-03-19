@@ -25,7 +25,7 @@ api:
 cron:
   interval: * * * */30
   message: lambda-scheduled-event.json
-# ^ would, on `aegis up`, set a CloudWatch event on that schedule
+# ^ would, on `aegis deploy`, set a CloudWatch event on that schedule
 # to invoke the lambda function with the JSON message in the given file.
 # Aegis would read the JSON file and make appropriae AWS API calls.
 # so now rather than using router and router.Handle() in main.go,

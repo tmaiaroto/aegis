@@ -12,29 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package framework
 
-import (
-	"github.com/tmaiaroto/aegis/lambda"
-	"net/url"
-)
-
-func main() {
-	// Handle with a URL reqeust path Router
-	router := lambda.NewRouter(fallThrough)
-
-	router.Handle("GET", "/", root)
-
-	router.Listen()
-}
-
-func fallThrough(ctx *lambda.Context, evt *lambda.Event, res *lambda.ProxyResponse, params url.Values) {
-	res.SetStatus(404)
-}
-
-func root(ctx *lambda.Context, evt *lambda.Event, res *lambda.ProxyResponse, params url.Values) {
-	lambda.Log.Info("logging to CloudWatch via logrus")
-	// log.Println("normal Go logging (also goes to CloudWatch)")
-
-	res.JSON(200, evt)
-}
+// TODO: Add tests.

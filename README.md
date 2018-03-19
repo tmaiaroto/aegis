@@ -16,11 +16,16 @@ use AWS CLI, then you won't have to do anything new. If not, getting your creden
 setup is probably easiest by following AWS CLI instructions. Note that you can   
 also pass keys via the CLI or by setting environment variables.
 
-Install Aegis, then create an `aegis.yaml` file and configure your Lambda.   
-Ensure your Go app uses the `HandleProxy` function from `"github.com/tmaiaroto/aegis/lambda"`.
+Install Aegis, then create an `aegis.yaml` file and configure your Lambda.
 
-You can reference the `example` directory from this repo to help you out. Or you can  
-copy some example files to get you started with:
+AWS Lambda for Go works a little differently than when working with Node.js functions.
+Each handler function will be passed a given event type instead of a JavaScript object.
+This means, you must write handlers that use certain structs.
+See: https://github.com/aws/aws-lambda-go/tree/master/events
+
+The most common handler is likely to handle requests from AWS API Gateway.
+So you can reference the `example` directory from this repo to help you out there. Or you can  
+copy some example files to get you started with using API Gateway and Lambda with Go:
 
 ```
 aegis init
@@ -29,52 +34,15 @@ aegis init
 Then in your Go project directory run:
 
 ```
-aegis up
+aegis deploy
 ```
 
 If everything is configured properly, this should upload your Lambda and setup an API for you.  
 The CLI output will return the URL to you, but you can of course also see this in your AWS console.
 
-### Your Go Function
-
-AWS API Gateway when used with Lambda Proxy requires a specific response format. It's not quite   
-like your typical Lambda response. It's basically a JSON response with `statusCode`, `headers`,  
-and `body` keys.
-
-So when building your Go Lambda, use the `HandleProxy` function from this package and return an   
-`*lambda.ProxyResponse` struct which includes a statusCode `int`, headers `map`, body `string`   
-and optional `error`. The error will prompt a 500 response and will automatically fill in the body   
-with the error message if no body is provided, though no error key is returend in the actual API  
-HTTP response.
-
-```go
-lambda.HandleProxy(func(ctx *lambda.Context, evt *lambda.Event) *lambda.ProxyResponse {
-
-    event, err := json.Marshal(evt)
-    if err != nil {
-        // If this body string is empty, the error message will be used.
-        return lambda.NewProxyResponse(500, map[string]string{}, "", err)
-    }
-
-    // This will simply return the event JSON that was passed in.
-    // Note: It will contain more than just what was passed in the HTTP request.
-    // API Gateway is configured to pass everything for your use. HTTP request type, request body,
-    // path, querystring parameters, as well as API Gateway stage variables and other configuration info.
-    return lambda.NewProxyResponse(200, map[string]string{}, string(event), nil)
-
-})
-```
-
-#### Getting More Fancy
-
-Having one handler isn't really that fancy. Not only can the URL path be literally anything, but it also  
-supports `ANY` HTTP method. So you end up having to write a switch or bunch of if/elses or something   
-less than pretty.
-
-So to make this even nicer, Aegis has a handler that will act as a router of the sorts. It will let you   
-register a function to handle incoming requests for any path and HTTP method. It isn't an HTTP router  
-per se, as it doesn't work with HTTP requests/responses, but it reads very much the same way.  
-Again, all information your functions will need will be in the Lambda Event struct.
+Aegis has a handler that will act as a router of the sorts. It will let you register a function to 
+handle incoming requests for any path and HTTP method. It isn't an HTTP router per se, as it doesn't 
+work with HTTP requests/responses, but it reads very much the same way.
 
 The router also supports middleware.
 
@@ -83,15 +51,19 @@ router := lambda.NewRouter(fallThrough)
 
 router.Handle("GET", "/", root)
 
-func fallThrough(ctx *lambda.Context, evt *lambda.Event, res *lambda.ProxyResponse, params url.Values) {
+func fallThrough(ctx *context.Context, evt *lambda.APIGatewayProxyRequest, res *lambda.APIGatewayProxyResponse, params url.Values) {
     res.StatusCode = 404
 }
 
-func root(ctx *lambda.Context, evt *lambda.Event, res *lambda.ProxyResponse, params url.Values) {
+func root(ctx *context.Context, evt *lambda.APIGatewayProxyRequest, res *lambda.APIGatewayProxyResponse, params url.Values) {
     res.Body = "body for root path"
     res.Headers = map[string]string{"Content-Type": "text/plain"}
 }
 ```
+
+Note that structs in Aegis' lambda package (APIGatewayProxyRequest, APIGatewayProxyResponse, etc.) are
+simply references to the underlying AWS Go Lambda package's structs. However, there is some additional
+functionality composed on to them with the router.
 
 #### Logging
 
@@ -113,40 +85,6 @@ normally found in a Lambda Event and Context are available to you.
 
 Also keep in mind that there is no Lambda for IAM roles to be assigned to. So your local AWS credentials   
 will need to be valid for any AWS services you want to use.
-
-#### Not Using Aegis Handler for your Lambda
-
-What if you want to use another Lambda function? You can! Just keep mind it's a Lambda Proxy. This means  
-a specific JSON response is required in order for it to work with API Gateway. The response format is  
-as follows:
-
-```js
-{
-  "statusCode": "200",
-  "headers": {
-    "Content-Type": "application/json"
-  },
-  "body": "{\"key1\":\"value1\",\"key2\":\"value2\",\"key3\":\"value3\"}"
-}
-```
-
-NOTE: The `body` must be a string. API Gateway will return this as JSON if the `Content-Type` header   
-is set appropriately.
-
-If you want to use another Lambda function, you'll need to configure `aegis.yaml` appropriately.  
-It's under `lambda.sourceZip` config key, for example:
-
-```YAML
-app:
-  name: Example Using Another Lambda
-  keepBuildFiles: true
-lambda:
-  sourceZip: YourFunction.zip
-  functionName: your_function
-api:
-  name: Example Aegis API
-  description: This API uses a Lambda function not built by Aegis
-```
 
 ### About the Project
 

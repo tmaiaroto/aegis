@@ -22,7 +22,7 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
-	"github.com/tmaiaroto/aegis/lambda/function"
+	"github.com/tmaiaroto/aegis/framework/function"
 )
 
 // SrcPath defines the path to the example Go source main.go to be copied from bindata to the current working directory upon init

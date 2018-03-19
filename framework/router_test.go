@@ -1,18 +1,26 @@
-package lambda
+package framework
 
 import (
-	. "github.com/smartystreets/goconvey/convey"
+	"context"
 	"net/http/httptest"
 	"net/url"
 	"strings"
 	"testing"
+
+	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestRouter(t *testing.T) {
-	testFallThroughHandler := func(ctx *Context, evt *Event, res *ProxyResponse, params url.Values) {}
-	testHandler := func(ctx *Context, evt *Event, res *ProxyResponse, params url.Values) {}
-	testMiddleware := func(ctx *Context, evt *Event, res *ProxyResponse, params url.Values) bool { return true }
-	testMiddlewareStop := func(ctx *Context, evt *Event, res *ProxyResponse, params url.Values) bool { return false }
+	testFallThroughHandler := func(ctx context.Context, req *APIGatewayProxyRequest, res *APIGatewayProxyResponse, params url.Values) {
+	}
+	testHandler := func(ctx context.Context, req *APIGatewayProxyRequest, res *APIGatewayProxyResponse, params url.Values) {
+	}
+	testMiddleware := func(ctx context.Context, req *APIGatewayProxyRequest, res *APIGatewayProxyResponse, params url.Values) bool {
+		return true
+	}
+	testMiddlewareStop := func(ctx context.Context, req *APIGatewayProxyRequest, res *APIGatewayProxyResponse, params url.Values) bool {
+		return false
+	}
 	testParams := url.Values{}
 	testRouter := NewRouter(testFallThroughHandler)
 	Convey("NewRouter", t, func() {
@@ -61,30 +69,29 @@ func TestRouter(t *testing.T) {
 
 	Convey("runMiddleware", t, func() {
 		Convey("Should handle middleware", func() {
-			ctx := Context{}
-			evt := Event{}
-			res := ProxyResponse{}
+			ctx := context.Background()
+			req := APIGatewayProxyRequest{}
+			res := APIGatewayProxyResponse{}
 			params := url.Values{}
-			next := runMiddleware(&ctx, &evt, &res, params, testMiddleware)
+			next := runMiddleware(ctx, &req, &res, params, testMiddleware)
 			So(next, ShouldBeTrue)
 
-			noNext := runMiddleware(&ctx, &evt, &res, params, testMiddlewareStop, testMiddleware)
+			noNext := runMiddleware(ctx, &req, &res, params, testMiddlewareStop, testMiddleware)
 			So(noNext, ShouldBeFalse)
 		})
 	})
 
-	Convey("requestToEvent", t, func() {
+	Convey("requestToProxyRequest", t, func() {
 		Convey("Should take an HTTP request and format a Lambda Event", func() {
 			gwHandler := gatewayHandler{}
 			r := httptest.NewRequest("GET", "/?foo=bar", strings.NewReader("some body to be read"))
 			r.Header.Set("User-Agent", "aegis-test")
 
-			ctx, evt := gwHandler.requestToEvent(r)
+			_, req := gwHandler.requestToProxyRequest(r)
 
-			So(ctx.FunctionVersion, ShouldBeEmpty)
-			So(evt.Body.(string), ShouldEqual, "some body to be read")
-			So(evt.Headers, ShouldContainKey, "User-Agent")
-			So(evt.QueryStringParameters, ShouldContainKey, "foo")
+			So(req.Body, ShouldEqual, "some body to be read")
+			So(req.Headers, ShouldContainKey, "User-Agent")
+			So(req.QueryStringParameters, ShouldContainKey, "foo")
 
 		})
 	})
@@ -92,9 +99,12 @@ func TestRouter(t *testing.T) {
 	Convey("proxyResponseToHTTPResponse", t, func() {
 		Convey("Should take a Lambda Proxy response and format an HTTP response", func() {
 			gwHandler := gatewayHandler{}
-			res := NewProxyResponse(200, map[string]string{"Content-Type": "application/json"}, "", nil)
+			res := APIGatewayProxyResponse{
+				StatusCode: 200,
+				Headers:    map[string]string{"Content-Type": "application/json"},
+			}
 			rw := httptest.NewRecorder()
-			gwHandler.proxyResponseToHTTPResponse(res, rw)
+			gwHandler.proxyResponseToHTTPResponse(&res, rw)
 
 			result := rw.Result()
 			rw.Flush()

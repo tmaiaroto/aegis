@@ -100,7 +100,7 @@ type task struct {
 	Input       json.RawMessage `json:"input"`
 	Disabled    bool            `json:"disabled"`
 	Description string          `json:"description"`
-	Name        string          `json:"-"`
+	Name        string          `json:"-"` // Do not allow names to be set by JSON files (for now)
 }
 
 // cfg holds the Aegis configuration for the Lambda function, API Gateway settings, etc.
@@ -141,14 +141,9 @@ func InitConfig() {
 	// viper.SetDefault("aws.profile", "default") // set by defaults on flags
 	// Default Lambda config values
 	viper.SetDefault("lambda.functionName", "aegis_example")
-	// Valid runtimes:
-	// nodejs
-	// nodejs4.3
-	// java8
-	// python2.7
-	viper.SetDefault("lambda.runtime", lambda.RuntimeNodejs43)
-	viper.SetDefault("lambda.wrapper", "index_stdio.js") // TODO: allow multiple wrappers
-	viper.SetDefault("lambda.handler", "index.handler")
+	viper.SetDefault("lambda.runtime", lambda.RuntimeGo1X)
+	// Aegis will build a Go binary named aegis_app ... This shouldn't need to change.
+	viper.SetDefault("lambda.handler", "aegis_app")
 	viper.SetDefault("lambda.alias", "current")
 	// In megabytes
 	viper.SetDefault("lambda.memorySize", int64(128))

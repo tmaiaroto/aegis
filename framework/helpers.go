@@ -1,17 +1,15 @@
-package lambda
+package framework
 
 import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"encoding/xml"
-	"errors"
 	"io"
 	"io/ioutil"
 	"mime"
 	"mime/multipart"
 	"net/http"
-	"strconv"
 	"strings"
 )
 
@@ -80,7 +78,7 @@ const (
 )
 
 // JSON sends a JSON response with status code.
-func (res *ProxyResponse) JSON(status int, body interface{}) {
+func (res *APIGatewayProxyResponse) JSON(status int, body interface{}) {
 	res.SetStatus(status)
 	res.SetHeader(HeaderContentType, MIMEApplicationJSONCharsetUTF8)
 
@@ -91,7 +89,7 @@ func (res *ProxyResponse) JSON(status int, body interface{}) {
 }
 
 // JSONP sends a JSONP response with status code.
-func (res *ProxyResponse) JSONP(status int, callback string, body interface{}) {
+func (res *APIGatewayProxyResponse) JSONP(status int, callback string, body interface{}) {
 	res.SetStatus(status)
 	res.SetHeader(HeaderContentType, MIMEApplicationJSONCharsetUTF8)
 
@@ -108,26 +106,28 @@ func (res *ProxyResponse) JSONP(status int, callback string, body interface{}) {
 }
 
 // XML sends an XML response with status code.
-func (res *ProxyResponse) XML(status int, i interface{}) {
+func (res *APIGatewayProxyResponse) XML(status int, i interface{}) {
 	res.SetStatus(status)
 	res.SetHeader(HeaderContentType, MIMEApplicationXMLCharsetUTF8)
 
 	b, err := xml.Marshal(i)
 	if err != nil {
-		res.err = err
+		// TODO: Figure out what to do with error now that it's not on struct
+		// res.err = err
 	} else {
 		res.Body = formatXML(b)
 	}
 }
 
 // XMLPretty sends an indented XML response with status code.
-func (res *ProxyResponse) XMLPretty(status int, i interface{}, indent string) {
+func (res *APIGatewayProxyResponse) XMLPretty(status int, i interface{}, indent string) {
 	res.SetStatus(status)
 	res.SetHeader(HeaderContentType, MIMEApplicationXMLCharsetUTF8)
 
 	b, err := xml.MarshalIndent(i, "", indent)
 	if err != nil {
-		res.err = err
+		// TODO: Figure out what to do with error now that it's not on struct
+		// res.err = err
 	} else {
 		res.Body = formatXML(b)
 	}
@@ -144,21 +144,21 @@ func formatXML(b []byte) string {
 }
 
 // HTML sets an HTML header and returns a response with status code.
-func (res *ProxyResponse) HTML(status int, html string) {
+func (res *APIGatewayProxyResponse) HTML(status int, html string) {
 	res.SetStatus(status)
 	res.SetHeader(HeaderContentType, MIMETextHTMLCharsetUTF8)
 	res.Body = html
 }
 
 // String returns a plain text response with status code.
-func (res *ProxyResponse) String(status int, s string) {
+func (res *APIGatewayProxyResponse) String(status int, s string) {
 	res.SetStatus(status)
 	res.SetHeader(HeaderContentType, MIMETextPlainCharsetUTF8)
 	res.Body = s
 }
 
 // Error returns a JSON message with an error and status code.
-func (res *ProxyResponse) Error(status int, e error) {
+func (res *APIGatewayProxyResponse) Error(status int, e error) {
 	res.SetStatus(status)
 	res.SetHeader(HeaderContentType, MIMEApplicationJSONCharsetUTF8)
 
@@ -169,32 +169,36 @@ func (res *ProxyResponse) Error(status int, e error) {
 }
 
 // Redirect redirects the request with status code.
-func (res *ProxyResponse) Redirect(status int, url string) {
+func (res *APIGatewayProxyResponse) Redirect(status int, url string) {
 	if status < http.StatusMultipleChoices || status > http.StatusTemporaryRedirect {
-		res.err = errors.New("Invalid redirect status code")
+		// TODO: Figure out how to handle error now that it's not on the struct
+		//res.err = errors.New("Invalid redirect status code")
 	} else {
 		res.SetHeader(HeaderLocation, url)
 		res.SetStatus(status)
 	}
 }
 
-// SetHeader will set a ProxyResponse header replacing any existing value.
-func (res *ProxyResponse) SetHeader(key string, value string) {
+// SetHeader will set a APIGatewayProxyResponse header replacing any existing value.
+func (res *APIGatewayProxyResponse) SetHeader(key string, value string) {
+	if res.Headers == nil {
+		res.Headers = make(map[string]string)
+	}
 	res.Headers[key] = value
 }
 
 // SetStatus will set the status code for the response.
-func (res *ProxyResponse) SetStatus(status int) {
-	res.StatusCode = strconv.Itoa(status)
+func (res *APIGatewayProxyResponse) SetStatus(status int) {
+	res.StatusCode = status
 }
 
 // TODO: add more response helpers like echo
 // File? Attachment?
 
 // GetHeader will return the value for a given header key. If there are no values associated with the key, GetHeader returns "".
-func (evt *Event) GetHeader(key string) string {
+func (req *APIGatewayProxyRequest) GetHeader(key string) string {
 	value := ""
-	for k, v := range evt.Headers {
+	for k, v := range req.Headers {
 		if key == k {
 			value = v
 		}
@@ -202,32 +206,32 @@ func (evt *Event) GetHeader(key string) string {
 	return value
 }
 
-// IP returns the visitor's IP address from the event struct.
-func (evt *Event) IP() string {
-	return evt.RequestContext.Identity.SourceIP
+// IP returns the visitor's IP address from the request event struct.
+func (req *APIGatewayProxyRequest) IP() string {
+	return req.RequestContext.Identity.SourceIP
 }
 
 // UserAgent returns the visitor's browser agent.
-func (evt *Event) UserAgent() string {
-	return evt.RequestContext.Identity.UserAgent
+func (req *APIGatewayProxyRequest) UserAgent() string {
+	return req.RequestContext.Identity.UserAgent
 }
 
 // GetParam returns a querystring parameter given its key name or empty string if not set.
-func (evt *Event) GetParam(key string) string {
+func (req *APIGatewayProxyRequest) GetParam(key string) string {
 	param := ""
-	if val, ok := evt.QueryStringParameters[key]; ok {
+	if val, ok := req.QueryStringParameters[key]; ok {
 		param = val
 	}
 	return param
 }
 
-// GetForm will return a Form struct from a form-data body if passed in the event.
-func (evt *Event) GetForm() (map[string]interface{}, error) {
+// GetForm will return a Form struct from a form-data body if passed in the request event.
+func (req *APIGatewayProxyRequest) GetForm() (map[string]interface{}, error) {
 	formData := map[string]interface{}{}
-	mediaType, params, err := mime.ParseMediaType(evt.GetHeader(HeaderContentType))
+	mediaType, params, err := mime.ParseMediaType(req.GetHeader(HeaderContentType))
 	if err == nil {
 		if strings.HasPrefix(mediaType, "multipart/") {
-			body := strings.NewReader(evt.Body.(string))
+			body := strings.NewReader(req.Body)
 			mr := multipart.NewReader(body, params["boundary"])
 			for {
 				p, readerErr := mr.NextPart()
@@ -253,9 +257,9 @@ func (evt *Event) GetForm() (map[string]interface{}, error) {
 }
 
 // GetBody will return the request body if passed in the event. It's base64 encoded.
-func (evt *Event) GetBody() (string, error) {
+func (req *APIGatewayProxyRequest) GetBody() (string, error) {
 	s := ""
-	b, err := base64.StdEncoding.DecodeString(evt.Body.(string))
+	b, err := base64.StdEncoding.DecodeString(req.Body)
 	if err == nil {
 		s = string(b[:])
 	}
@@ -263,9 +267,9 @@ func (evt *Event) GetBody() (string, error) {
 }
 
 // GetJSONBody will return the request body as map if passed in the event as a JSON string (which would be base64 encoded).
-func (evt *Event) GetJSONBody() (map[string]interface{}, error) {
+func (req *APIGatewayProxyRequest) GetJSONBody() (map[string]interface{}, error) {
 	var m map[string]interface{}
-	b, err := base64.StdEncoding.DecodeString(evt.Body.(string))
+	b, err := base64.StdEncoding.DecodeString(req.Body)
 	if err == nil {
 		err = json.Unmarshal([]byte(b), &m)
 	}

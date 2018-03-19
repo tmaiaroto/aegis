@@ -1,6 +1,6 @@
 // Borrowed from https://github.com/acmacalister/helm
 
-package lambda
+package framework
 
 import (
 	"net/url"

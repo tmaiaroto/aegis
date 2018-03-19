@@ -1,12 +1,13 @@
 package cmd
 
 import (
-	. "github.com/smartystreets/goconvey/convey"
 	"os"
 	"testing"
+
+	. "github.com/smartystreets/goconvey/convey"
 )
 
-func TestUpCmd(t *testing.T) {
+func TestDeployCmd(t *testing.T) {
 	Convey("compress", t, func() {
 		Convey("Should compress a Lambda function zip file and return the file path", func() {
 			testZipFileName := "./aegis_function.test.zip"

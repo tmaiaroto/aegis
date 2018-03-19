@@ -1,16 +1,21 @@
-package lambda
+package framework
 
 import (
-	. "github.com/smartystreets/goconvey/convey"
+	"context"
 	"net/url"
 	"strings"
 	"testing"
+
+	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestTrie(t *testing.T) {
-	testFallThroughHandler := func(ctx *Context, evt *Event, res *ProxyResponse, params url.Values) {}
-	testHandler := func(ctx *Context, evt *Event, res *ProxyResponse, params url.Values) {}
-	testNamedHandler := func(ctx *Context, evt *Event, res *ProxyResponse, params url.Values) {}
+	testFallThroughHandler := func(ctx context.Context, req *APIGatewayProxyRequest, res *APIGatewayProxyResponse, params url.Values) {
+	}
+	testHandler := func(ctx context.Context, req *APIGatewayProxyRequest, res *APIGatewayProxyResponse, params url.Values) {
+	}
+	testNamedHandler := func(ctx context.Context, req *APIGatewayProxyRequest, res *APIGatewayProxyResponse, params url.Values) {
+	}
 	testRouter := NewRouter(testFallThroughHandler)
 	testParams := url.Values{}
 
