@@ -1,0 +1,7 @@
+{
+    "schedule": "rate(1 hour)",
+    "input": {
+        "_taskName": "test",
+        "foo": "bar"
+    }
+}
