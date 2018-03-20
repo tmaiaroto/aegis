@@ -51,13 +51,15 @@ router := lambda.NewRouter(fallThrough)
 
 router.Handle("GET", "/", root)
 
-func fallThrough(ctx *context.Context, evt *lambda.APIGatewayProxyRequest, res *lambda.APIGatewayProxyResponse, params url.Values) {
+func fallThrough(ctx *context.Context, evt *lambda.APIGatewayProxyRequest, res *lambda.APIGatewayProxyResponse, params url.Values) error {
     res.StatusCode = 404
+    return nil
 }
 
-func root(ctx *context.Context, evt *lambda.APIGatewayProxyRequest, res *lambda.APIGatewayProxyResponse, params url.Values) {
+func root(ctx *context.Context, evt *lambda.APIGatewayProxyRequest, res *lambda.APIGatewayProxyResponse, params url.Values) error {
     res.Body = "body for root path"
     res.Headers = map[string]string{"Content-Type": "text/plain"}
+    return nil
 }
 ```
 
