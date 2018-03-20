@@ -97,8 +97,12 @@ will need to be valid for any AWS services you want to use.
 
 There's a growing list of serverless frameworks and utilities out there. Some are maturing quite  
 nicely given the technology is still changing. This project was built for a very specific purpose.  
-It focuses solely on running Go in a single AWS Lambda with API Gateway. If you need more than that,   
-here's a list of serverless resources specifically for Go: [https://github.com/SerifAndSemaphore/go-serverless-list](https://github.com/SerifAndSemaphore/go-serverless-list)
+It focuses solely on running Go in a single AWS Lambda with API Gateway. There are a few helpers and
+special event handlers to help you out as well. Though in terms of a "framework," it's lightweight and
+completely optional. You could simply use Aegis to build, zip, and deploy your functions along with setting
+up an API Gateway and some CloudWatch events. You don't need to opt into it's "framework" package.
+
+If you need more than that, here's a list of serverless resources specifically for Go: [https://github.com/SerifAndSemaphore/go-serverless-list](https://github.com/SerifAndSemaphore/go-serverless-list)
 
 I suspect some of the existing serverless frameworks will support API Gateway with Lambda Proxy   
 in the future. Again, this is a very new space and everyone's research is kinda in different directions,  
