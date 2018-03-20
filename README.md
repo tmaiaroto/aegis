@@ -47,23 +47,28 @@ work with HTTP requests/responses, but it reads very much the same way.
 The router also supports middleware.
 
 ```go
-router := lambda.NewRouter(fallThrough)
 
-router.Handle("GET", "/", root)
+aegis "github.com/tmaiaroto/aegis/framework"
 
-func fallThrough(ctx *context.Context, evt *lambda.APIGatewayProxyRequest, res *lambda.APIGatewayProxyResponse, params url.Values) error {
+func main() {
+    router := aegis.NewRouter(fallThrough)
+    router.Handle("GET", "/", root)
+    router.Listen()
+}
+
+func fallThrough(ctx context.Context, evt *aegis.APIGatewayProxyRequest, res *aegis.APIGatewayProxyResponse, params url.Values) error {
     res.StatusCode = 404
     return nil
 }
 
-func root(ctx *context.Context, evt *lambda.APIGatewayProxyRequest, res *lambda.APIGatewayProxyResponse, params url.Values) error {
+func root(ctx context.Context, evt *aegis.APIGatewayProxyRequest, res *aegis.APIGatewayProxyResponse, params url.Values) error {
     res.Body = "body for root path"
     res.Headers = map[string]string{"Content-Type": "text/plain"}
     return nil
 }
 ```
 
-Note that structs in Aegis' lambda package (APIGatewayProxyRequest, APIGatewayProxyResponse, etc.) are
+Note that structs in Aegis' framework package (APIGatewayProxyRequest, APIGatewayProxyResponse, etc.) are
 simply references to the underlying AWS Go Lambda package's structs. However, there is some additional
 functionality composed on to them with the router.
 
