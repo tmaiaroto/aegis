@@ -10,6 +10,7 @@ import (
 	"mime"
 	"mime/multipart"
 	"net/http"
+	"strconv"
 	"strings"
 )
 
@@ -133,7 +134,7 @@ func (res *APIGatewayProxyResponse) XMLPretty(status int, i interface{}, indent 
 	}
 }
 
-// formatXML joins together an XML header and marshalled XML bytes for a completely formatted response
+// formatXML joins together an XML header and marshalled XML bytes for a completely formatted response.
 func formatXML(b []byte) string {
 	var buffer bytes.Buffer
 	buffer.WriteString(xml.Header)
@@ -157,15 +158,16 @@ func (res *APIGatewayProxyResponse) String(status int, s string) {
 	res.Body = s
 }
 
-// Error returns a JSON message with an error and status code.
+// Error returns an error message with a status code, format based on content type header.
 func (res *APIGatewayProxyResponse) Error(status int, e error) {
 	res.SetStatus(status)
-	res.SetHeader(HeaderContentType, MIMEApplicationJSONCharsetUTF8)
+	res.SetBodyError(e)
+}
 
-	data, err := json.Marshal(map[string]string{"error": e.Error()})
-	if err == nil {
-		res.Body = string(data)
-	}
+// JSONError will return an error message in a simple JSON object with a status code.
+func (res *APIGatewayProxyResponse) JSONError(status int, e error) {
+	res.SetHeader(HeaderContentType, MIMEApplicationJSONCharsetUTF8)
+	res.Error(status, e)
 }
 
 // Redirect redirects the request with status code.
@@ -192,14 +194,60 @@ func (res *APIGatewayProxyResponse) SetStatus(status int) {
 	res.StatusCode = status
 }
 
+// SetBodyError will set an error response body based on header content type (plain text if no content type set)
+// This function defines what the body format will be. One can choose to not use this helper function to return custom errors.
+func (res *APIGatewayProxyResponse) SetBodyError(e error) {
+	switch res.GetHeader(HeaderContentType) {
+	case MIMEApplicationJSON, MIMEApplicationJSONCharsetUTF8:
+		data, err := json.Marshal(map[string]string{"error": e.Error()})
+		if err == nil {
+			res.Body = string(data)
+		}
+	case MIMEApplicationXML, MIMEApplicationXMLCharsetUTF8:
+		data, err := xml.MarshalIndent(struct {
+			ErrStr string `xml:"error"`
+		}{
+			ErrStr: e.Error(),
+		}, "  ", "    ")
+		if err == nil {
+			res.Body = string(data)
+		}
+	case MIMETextHTML, MIMETextHTMLCharsetUTF8:
+		var buffer bytes.Buffer
+		buffer.WriteString("<html><body><h1>Error</h1>")
+		buffer.WriteString("<p><strong>Status Code:</strong> ")
+		buffer.WriteString(strconv.Itoa(res.StatusCode))
+		buffer.WriteString("<br /><strong>Error:</strong> ")
+		buffer.WriteString(e.Error())
+		buffer.WriteString("</p></body></html>")
+		res.Body = buffer.String()
+		buffer.Reset()
+	default:
+		res.Body = e.Error()
+	}
+}
+
 // TODO: add more response helpers like echo
 // File? Attachment?
 
-// GetHeader will return the value for a given header key. If there are no values associated with the key, GetHeader returns "".
+// GetHeader will return the value for a given header key (case insensitive).
+// If there are no values associated with the key, GetHeader returns "".
 func (req *APIGatewayProxyRequest) GetHeader(key string) string {
 	value := ""
 	for k, v := range req.Headers {
-		if key == k {
+		if strings.ToLower(key) == strings.ToLower(k) {
+			value = v
+		}
+	}
+	return value
+}
+
+// GetHeader will return the value for a given response header key (case insensitive).
+// Works the same as GetHeader() for request.
+func (res *APIGatewayProxyResponse) GetHeader(key string) string {
+	value := ""
+	for k, v := range res.Headers {
+		if strings.ToLower(key) == strings.ToLower(k) {
 			value = v
 		}
 	}

@@ -39,6 +39,8 @@ import (
 	"github.com/fatih/color"
 	"github.com/jhoonb/archivex"
 	"github.com/spf13/cobra"
+	"github.com/tdewolff/minify"
+	mJson "github.com/tdewolff/minify/json"
 	swagger "github.com/tmaiaroto/aegis/apigateway"
 	// TODO: Make it pretty :)
 	// https://github.com/gernest/wow?utm_source=golangweekly&utm_medium=email
@@ -785,8 +787,8 @@ func addCloudWatchEventRuleForLambda(t *task, lambdaArn *string) {
 		svc := cloudwatchevents.New(getAWSSession())
 		_, err := svc.PutRule(&cloudwatchevents.PutRuleInput{
 			Description: aws.String(t.Description),
-			// Again, name is all lowercase: <function name>.<file name>
-			// Creating an event ARN/ID like: arn:aws:events:us-east-1:1234567890:rule/aegis_aegis.example.json
+			// Again, name is all lowercase, filename without extension: <function name>_<file name>
+			// ie. for an example.json file, an event ARN/ID like: arn:aws:events:us-east-1:1234567890:rule/aegis_aegis_example
 			Name: aws.String(t.Name),
 			// IAM Role
 			RoleArn: aws.String(createAegisRole()),
@@ -802,9 +804,14 @@ func addCloudWatchEventRuleForLambda(t *task, lambdaArn *string) {
 			fmt.Println(err)
 		}
 
-		jsonStr, _ := t.Input.MarshalJSON()
+		jsonInput, _ := t.Input.MarshalJSON()
+		// Minify the JSON, trim whitespace, etc.
+		m := minify.New()
+		m.AddFuncRegexp(regexp.MustCompile("json$"), mJson.Minify)
+		jsonBytes, _ := m.Bytes("json", jsonInput)
+
 		var buffer bytes.Buffer
-		buffer.WriteString(string(jsonStr))
+		buffer.WriteString(string(jsonBytes))
 		inputTask := buffer.String()
 		buffer.Reset()
 
@@ -813,10 +820,8 @@ func addCloudWatchEventRuleForLambda(t *task, lambdaArn *string) {
 			Rule: aws.String(t.Name),
 			Targets: []*cloudwatchevents.Target{
 				&cloudwatchevents.Target{
-					Arn: lambdaArn,
-					Id:  aws.String(t.Name),
-					// The JSON event message input
-					// Input: aws.String(string(jsonStr)),
+					Arn:   lambdaArn,
+					Id:    aws.String(t.Name),
 					Input: aws.String(inputTask),
 				},
 			},
@@ -826,7 +831,7 @@ func addCloudWatchEventRuleForLambda(t *task, lambdaArn *string) {
 			fmt.Println("There was an error setting the CloudWatch Event Rule Target (Lambda function).")
 			fmt.Println(err)
 		} else {
-			fmt.Println("Added task (CloudWatch scheduled event):", t.Name)
+			fmt.Printf("%v %v\n", "Added/updated Task (CloudWatch scheduled event):", color.GreenString(t.Name))
 		}
 	}
 }
@@ -892,7 +897,7 @@ func getTasks() []*task {
 	var tasks []*task
 
 	// Don't proceed if the folder doesn't even exist.
-	log.Println("Looking for tasks in:", TasksPath)
+	// log.Println("Looking for tasks in:", TasksPath)
 	_, err := os.Stat(TasksPath)
 	if os.IsNotExist(err) {
 		return tasks
@@ -920,7 +925,10 @@ func getTasks() []*task {
 						// Set a name based on the function name and file path.
 						// This makes it easier to update for future deploys.
 						// Do not allow a name override (for now - makes Tasker name matching easier, more conventional)
-						t.Name = strings.ToLower(cfg.Lambda.FunctionName + "." + file.Name())
+						filename := file.Name()
+						extension := filepath.Ext(filename)
+						name := filename[0 : len(filename)-len(extension)]
+						t.Name = strings.ToLower(cfg.Lambda.FunctionName + "_" + name)
 						tasks = append(tasks, &t)
 					}
 				}

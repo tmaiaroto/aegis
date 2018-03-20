@@ -18,6 +18,7 @@ import (
 	//"encoding/json"
 	"bytes"
 	"context"
+	"errors"
 	"log"
 	"net/url"
 
@@ -40,8 +41,8 @@ func main() {
 	// })
 
 	// Handle tasks
-	tasker := aegis.NewTasker()
-	tasker.Handle("somefile.json", handleTask)
+	tasker := aegis.NewTasker(taskerFallThrough)
+	tasker.Handle("test", handleTask)
 
 	// Handle with a URL reqeust path Router
 	router := aegis.NewRouter(fallThrough)
@@ -58,32 +59,35 @@ func main() {
 	// This is a microservice design consideration. To each their own.
 	handlers := aegis.Handlers{
 		Router: router,
-		// Tasker...
+		Tasker: tasker,
 	}
 	handlers.Listen()
 }
 
-func fallThrough(ctx context.Context, req *aegis.APIGatewayProxyRequest, res *aegis.APIGatewayProxyResponse, params url.Values) {
+func fallThrough(ctx context.Context, req *aegis.APIGatewayProxyRequest, res *aegis.APIGatewayProxyResponse, params url.Values) error {
 	res.StatusCode = 404
+	return nil
 }
 
-func root(ctx context.Context, req *aegis.APIGatewayProxyRequest, res *aegis.APIGatewayProxyResponse, params url.Values) {
+func root(ctx context.Context, req *aegis.APIGatewayProxyRequest, res *aegis.APIGatewayProxyResponse, params url.Values) error {
 	aegis.Log.Info("logging to CloudWatch")
 	log.Println("normal go logging (also goes to cloudwatch)")
 
 	res.JSON(200, map[string]interface{}{"event": req})
+	return nil
 }
 
-func postExample(ctx context.Context, req *aegis.APIGatewayProxyRequest, res *aegis.APIGatewayProxyResponse, params url.Values) {
+func postExample(ctx context.Context, req *aegis.APIGatewayProxyRequest, res *aegis.APIGatewayProxyResponse, params url.Values) error {
 	form, err := req.GetForm()
 	if err != nil {
 		res.JSON(500, err.Error())
 	} else {
 		res.JSON(200, form)
 	}
+	return nil
 }
 
-func somepath(ctx context.Context, req *aegis.APIGatewayProxyRequest, res *aegis.APIGatewayProxyResponse, params url.Values) {
+func somepath(ctx context.Context, req *aegis.APIGatewayProxyRequest, res *aegis.APIGatewayProxyResponse, params url.Values) error {
 	// log.Println(params) <-- these will be path params...
 	// so in this roue definition it means `thing` will be a key.
 	// get with: params.Get("thing")
@@ -109,6 +113,8 @@ func somepath(ctx context.Context, req *aegis.APIGatewayProxyRequest, res *aegis
 	// another might be: res.Success(body)
 	// and res.Fail(body) ... setting status code 500, etc.
 	// (especially because we think of status code as integer, but Lambda Proxy wants a string - helpers are nice)
+
+	return errors.New("test error")
 }
 
 // Notice the Middleware has a return type. True means go to the next middleware. False
@@ -126,6 +132,13 @@ func barMiddleware(ctx context.Context, req *aegis.APIGatewayProxyRequest, res *
 }
 
 // Example task handler
-func handleTask(ctx context.Context, evt *aegis.CloudWatchEvent) {
+func handleTask(ctx context.Context, evt *map[string]interface{}) error {
 	log.Println("Handling task!", evt)
+	return nil
+}
+
+// Example task handler catch all
+func taskerFallThrough(ctx context.Context, evt *map[string]interface{}) error {
+	log.Println("Handling task!", evt)
+	return nil
 }

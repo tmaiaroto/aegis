@@ -2,7 +2,6 @@ package framework
 
 import (
 	"context"
-	"encoding/json"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -19,17 +18,16 @@ func TestTasker(t *testing.T) {
 
 	testTaskerVal := 0
 	testCtx := context.Background()
-	testHandler := func(testCtx context.Context, evt *CloudWatchEvent) {
+	testHandler := func(testCtx context.Context, evt *map[string]interface{}) error {
 		testTaskerVal = 1
+		return nil
 	}
-	testEvt := CloudWatchEvent{
-		DetailType: "Scheduled Event",
-		Source:     "aws.events",
-		Detail:     json.RawMessage("{}"),
-		Resources:  []string{"arn:aws:events:us-east-1:123456789012:rule/MyScheduledRule"},
+	testEvt := map[string]interface{}{
+		"_taskName": "test task",
+		"foo":       "bar",
 	}
 
-	testTasker.Handle("MyScheduledRule", testHandler)
+	testTasker.Handle("test task", testHandler)
 	testTasker.LambdaHandler(testCtx, testEvt)
 
 	Convey("LambdaHandler", t, func() {

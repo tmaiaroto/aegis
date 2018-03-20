@@ -11,9 +11,11 @@ import (
 )
 
 func TestRouter(t *testing.T) {
-	testFallThroughHandler := func(ctx context.Context, req *APIGatewayProxyRequest, res *APIGatewayProxyResponse, params url.Values) {
+	testFallThroughHandler := func(ctx context.Context, req *APIGatewayProxyRequest, res *APIGatewayProxyResponse, params url.Values) error {
+		return nil
 	}
-	testHandler := func(ctx context.Context, req *APIGatewayProxyRequest, res *APIGatewayProxyResponse, params url.Values) {
+	testHandler := func(ctx context.Context, req *APIGatewayProxyRequest, res *APIGatewayProxyResponse, params url.Values) error {
+		return nil
 	}
 	testMiddleware := func(ctx context.Context, req *APIGatewayProxyRequest, res *APIGatewayProxyResponse, params url.Values) bool {
 		return true

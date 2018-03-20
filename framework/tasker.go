@@ -1,12 +1,10 @@
 package framework
 
 import (
-	"bytes"
 	"context"
-	"strings"
 
 	"github.com/aws/aws-lambda-go/lambda"
-	"github.com/aws/aws-lambda-go/lambdacontext"
+	"github.com/aws/aws-xray-sdk-go/xray"
 )
 
 // Tasker struct provides an interface to handle scheduled tasks
@@ -16,46 +14,47 @@ type Tasker struct {
 }
 
 // TaskHandler is similar to RouteHandler except there is no response or middleware
-type TaskHandler func(context.Context, *CloudWatchEvent)
+type TaskHandler func(context.Context, *map[string]interface{}) error
 
 // LambdaHandler is a native AWS Lambda Go handler function. Handles a CloudWatch event.
-func (t *Tasker) LambdaHandler(ctx context.Context, evt CloudWatchEvent) {
-	// Only handle scheduled events
-	if evt.Source == "aws.events" && evt.DetailType == "Scheduled Event" {
-		// Figure out which handler to use.
-		if len(evt.Resources) > 0 {
-			// Would there ever be more than one??
-			// "resources": [ "arn:aws:events:us-east-1:123456789012:rule/MyScheduledRule" ],
-			// Aegis events are always JSON and are defined in JSON files along with configuration.
-			// Their ARN/IDs ultimately become something like:
-			// arn:aws:events:us-east-1:1234567890:rule/aegis_aegis.example.json
-			name := ""
-			parts := strings.Split(evt.Resources[0], "/")
-			if len(parts) > 1 {
-				// Glue together <function name>.<event file name>
-				// So not only does the handler handle by file name, but also function name.
-				// This means "event.json" from one Aegis created Lambda won't conflict with
-				// another "event.json" created by another Aegis Lambda.
-				// UNLESS... IgnoreFunctionScope was set to true.
-				// Then any simple name match will work. Good for local testing. Good for other cases.
-				// But tasker.Handle(name, ...) need not define the function name. It can just use the json file name.
-				var buffer bytes.Buffer
-				if !t.IgnoreFunctionScope {
-					// Protect in case the tasker.Handle(name, ...) did include the function name.
-					if !strings.Contains(parts[1], lambdacontext.FunctionName) {
-						buffer.WriteString(lambdacontext.FunctionName)
-						buffer.WriteString(".")
-					}
-				}
-				buffer.WriteString(parts[1])
-				name = buffer.String()
-				buffer.Reset()
-			}
-			if handler, ok := t.handlers[name]; ok {
-				handler(ctx, &evt)
-			}
+func (t *Tasker) LambdaHandler(ctx context.Context, evt map[string]interface{}) error {
+	var err error
+
+	handled := false
+	taskName := ""
+	if name, ok := evt["_taskName"]; ok {
+		taskName = name.(string)
+	}
+
+	// If there's a _taskName, use the registered handler if it exists.
+	if handler, ok := t.handlers[taskName]; ok {
+		handled = true
+		// Capture the handler in XRay automatically
+		err = xray.Capture(ctx, "TaskHandler", func(ctx1 context.Context) error {
+			// Annotations can be searched in XRay.
+			// For example: annotation.TaskName = "mytask"
+			xray.AddAnnotation(ctx1, "TaskName", taskName)
+			xray.AddMetadata(ctx1, "TaskEvent", evt)
+			return handler(ctx, &evt)
+		})
+	}
+	// Otherwise, use the catch all (router "fallthrough" equivalent) handler.
+	// The application can inspect the map and make a decision on what to do, if anything.
+	// This is optional.
+	if !handled {
+		// It's possible that the Tasker wasn't created with NewTasker, so check for this still.
+		if handler, ok := t.handlers["*"]; ok {
+			// Capture the handler in XRay automatically
+			err = xray.Capture(ctx, "TaskHandler", func(ctx1 context.Context) error {
+				xray.AddAnnotation(ctx1, "TaskName", taskName)
+				xray.AddAnnotation(ctx1, "FallthroughHandler", true)
+				xray.AddMetadata(ctx1, "TaskEvent", evt)
+				return handler(ctx, &evt)
+			})
 		}
 	}
+
+	return err
 }
 
 // Listen will start a task listener which acts much like a router except that it handles scheduled task events instead
@@ -63,9 +62,18 @@ func (t *Tasker) Listen() {
 	lambda.Start(t.LambdaHandler)
 }
 
-// NewTasker simply returns a new Tasker struct and behaves a bit like Router
-func NewTasker() *Tasker {
-	return &Tasker{}
+// NewTasker simply returns a new Tasker struct and behaves a bit like Router, it even takes an optional rootHandler or "fall through" catch all
+func NewTasker(rootHandler ...TaskHandler) *Tasker {
+	// The catch all is optional, if not provided, an empty handler is still called, but nothing happens.
+	handler := func(context.Context, *map[string]interface{}) error { return nil }
+	if len(rootHandler) > 0 {
+		handler = rootHandler[0]
+	}
+	return &Tasker{
+		handlers: map[string]TaskHandler{
+			"*": handler,
+		},
+	}
 }
 
 // Handle will register a handler for a given task name

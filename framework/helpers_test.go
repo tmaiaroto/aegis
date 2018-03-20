@@ -116,9 +116,16 @@ func TestHelpers(t *testing.T) {
 			So(resp.Headers["Location"], ShouldEqual, redirectURL)
 		})
 
-		Convey("Should be able to return a Go error string in a JSON response", func() {
+		Convey("Should be able to return a Go error string", func() {
 			e := errors.New("hey, something went wrong")
 			resp.Error(500, e)
+			So(resp.StatusCode, ShouldEqual, 500)
+			So(resp.Body, ShouldEqual, "hey, something went wrong")
+		})
+
+		Convey("Should be able to return a Go error string in a JSON response", func() {
+			e := errors.New("hey, something went wrong")
+			resp.JSONError(500, e)
 			So(resp.StatusCode, ShouldEqual, 500)
 			So(resp.Body, ShouldEqual, "{\"error\":\"hey, something went wrong\"}")
 		})

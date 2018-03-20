@@ -18,6 +18,7 @@ import (
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/aws/aws-xray-sdk-go/xray"
 )
 
 const (
@@ -32,7 +33,7 @@ const (
 
 // RouteHandler is similar to "net/http" Handler, except there is no response writer.
 // Instead the *APIGatewayProxyResponse is manipulated and returned directly.
-type RouteHandler func(context.Context, *APIGatewayProxyRequest, *APIGatewayProxyResponse, url.Values)
+type RouteHandler func(context.Context, *APIGatewayProxyRequest, *APIGatewayProxyResponse, url.Values) error
 
 // Middleware is just like the RouteHandler type, but has a boolean return. True
 // means to keep processing the rest of the middleware chain, false means end.
@@ -123,6 +124,7 @@ func (r *Router) LambdaHandler(ctx context.Context, req APIGatewayProxyRequest) 
 	params := url.Values{}
 
 	var res APIGatewayProxyResponse
+	var err error
 
 	// use the Path and HTTPMethod from the event to figure out the route
 	node, _ := r.tree.traverse(strings.Split(req.Path, "/")[1:], params)
@@ -138,11 +140,31 @@ func (r *Router) LambdaHandler(ctx context.Context, req APIGatewayProxyRequest) 
 			// The middleware would need to write something back to the client.
 			// return NewProxyResponse(500, map[string]string{}, "", nil)
 		}
-		handler.handler(ctx, &req, &res, params)
+		// Capture the handler in XRay automatically
+		err = xray.Capture(ctx, "RouteHandler", func(ctx1 context.Context) error {
+			// Annotations can be searched in XRay.
+			// For example: annotation.RequestPath CONTAINS "some/path/part"
+			xray.AddAnnotation(ctx1, "RequestPath", req.Path)
+			return handler.handler(ctx, &req, &res, params)
+		})
+		// TODO: look at environment variable to see if XRay was disabled (env var on lambda or when running local server)
+		// Then just call handler and not the xray part above.
+		// handler.handler(ctx, &req, &res, params)
 	} else {
 		r.rootHandler(ctx, &req, &res, params)
 	}
 
+	// Returning an error from this handler is how AWS Lambda works, but when dealing with API Gateway, it doesn't make for
+	// a great response. A 502 Bad Gateway is returned and a JSON message that isn't helpful or adjustable. So we can simply
+	// handle all errors this way and never return an error from the Lambda handler itself when using the Router.
+	if err != nil {
+		// At this point, the handler may have set a content type header.
+		// This function will look at that when determining how to display the error in the response body.
+		// TODO: Allow the error responses to use a template defined via configuration.
+		// This would allow an application to change the body response format to suit its needs and still use the errors for XRay.
+		// At least for now, the response will be of the intended type and should contain something somewhat useful.
+		res.Error(500, err)
+	}
 	return res, nil
 }
 
