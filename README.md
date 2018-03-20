@@ -48,7 +48,7 @@ The router also supports middleware.
 
 ```go
 
-aegis "github.com/tmaiaroto/aegis/framework"
+import aegis "github.com/tmaiaroto/aegis/framework"
 
 func main() {
     router := aegis.NewRouter(fallThrough)
