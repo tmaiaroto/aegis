@@ -140,7 +140,6 @@ func InitConfig() {
 	viper.SetDefault("aws.region", "us-east-1")
 	// viper.SetDefault("aws.profile", "default") // set by defaults on flags
 	// Default Lambda config values
-	viper.SetDefault("lambda.functionName", "aegis_example")
 	viper.SetDefault("lambda.runtime", lambda.RuntimeGo1X)
 	// Aegis will build a Go binary named aegis_app ... This shouldn't need to change.
 	viper.SetDefault("lambda.handler", "aegis_app")
