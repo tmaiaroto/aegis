@@ -1,5 +1,5 @@
 {
-    "schedule": "rate(1 hour)",
+    "schedule": "rate(1 minute)",
     "input": {
         "_taskName": "test",
         "foo": "bar"

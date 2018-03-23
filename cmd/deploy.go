@@ -162,12 +162,17 @@ func Deploy(cmd *cobra.Command, args []string) {
 	for key := range cfg.API.Stages {
 		invokeURL := deployAPI(apiID, cfg.API.Stages[key])
 		// fmt.Printf("%s API Invoke URL: %s\n", key, invokeURL)
-		fmt.Printf("%v %v %v\n", color.GreenString(key), "API Invoke URL:", color.GreenString(invokeURL))
+		fmt.Printf("%v %v %v\n", color.GreenString(key), "API URL:", color.GreenString(invokeURL))
 	}
 
 	// Tasks - set CloudWatch scheduled events
+	lambdaArnStr := *lambdaArn
+	fmt.Printf("\n\nCloudWatch Event Rules (Tasks) for:\n%v\n\n", lambdaArnStr)
+
 	for _, task := range getTasks() {
-		addCloudWatchEventRuleForLambda(task, lambdaArn)
+		ruleArn := addCloudWatchEventRuleForLambda(task, lambdaArn)
+		// After the rule is added, we have to give it permissions to invoke the Lambda (even though we gave it a target)
+		addCloudWatchRulePermission(ruleArn)
 	}
 
 	// Clean up
@@ -346,7 +351,7 @@ func createFunction(zipBytes []byte) *string {
 			fmt.Println(err.Error())
 			os.Exit(-1)
 		}
-		fmt.Printf("%v %v\n", "Created Lambda function:", color.GreenString(*f.FunctionArn))
+		fmt.Printf("%v %v\n\n", "Created Lambda function:", color.GreenString(*f.FunctionArn))
 
 		// Create or update alias
 		// TODO: This works, but doesn't really help much without roll back support, etc.
@@ -358,12 +363,29 @@ func createFunction(zipBytes []byte) *string {
 		// Ensure the version number is stripped from the end
 		arn := stripLamdaVersionFromArn(*f.FunctionArn)
 
-		fmt.Printf("%v %v %v %v%v\n", "Updated Lambda function:", color.GreenString(arn), "(version ", *f.Version, ")")
+		// Set concurrency limit, if configured
+		updateFunctionMaxConcurrency(svc)
+
+		// Believe this is in error. Or rather I think it was related to creating/updating an alias.
+		// fmt.Printf("%v %v %v %v%v\n\n", "Updated Lambda function:", color.GreenString(arn), "(version ", *f.Version, ")")
+
 		return &arn
 	}
 
 	// Otherwise, update the Lambda function
 	return updateFunction(zipBytes)
+}
+
+// updateFunctionMaxConcurrency will adjust the concurrency, if configured
+func updateFunctionMaxConcurrency(svc *lambda.Lambda) {
+	// is function name the arn??? Or is it aws.String(cfg.Lambda.FunctionName)?
+	if cfg.Lambda.MaxConcurrentExecutions > 0 {
+		svc.PutFunctionConcurrency(&lambda.PutFunctionConcurrencyInput{
+			// FunctionName: awsString(arn),
+			FunctionName:                 aws.String(cfg.Lambda.FunctionName),
+			ReservedConcurrentExecutions: aws.Int64(cfg.Lambda.MaxConcurrentExecutions),
+		})
+	}
 }
 
 // updateFunction will update a Lambda function and its configuration in AWS and return its ARN
@@ -414,7 +436,10 @@ func updateFunction(zipBytes []byte) *string {
 	// Remove the version number at the end.
 	arn := stripLamdaVersionFromArn(*f.FunctionArn)
 
-	fmt.Printf("%v %v %v %v%v\n", "Updated Lambda function:", color.GreenString(arn), "(version ", *f.Version, ")")
+	// Set concurrency limit, if configured
+	updateFunctionMaxConcurrency(svc)
+
+	fmt.Printf("%v %v %v %v%v\n\n", "Updated Lambda function:", color.GreenString(arn), "(version ", *f.Version, ")")
 	return &arn
 }
 
@@ -596,8 +621,9 @@ func importAPI(lambdaArn string) string {
 
 	// Build Swagger
 	swaggerDefinition, swaggerErr := swagger.NewSwagger(&swagger.SwaggerConfig{
-		Title:     cfg.API.Name,
-		LambdaURI: swagger.GetLambdaURI(lambdaArn),
+		Title:             cfg.API.Name,
+		LambdaURI:         swagger.GetLambdaURI(lambdaArn),
+		ResourceTimeoutMs: cfg.API.ResourceTimeoutMs,
 		// BinaryMediaTypes: cfg.API.BinaryMediaTypes,
 	})
 	if swaggerErr != nil {
@@ -634,8 +660,9 @@ func updateAPI(apiID string, lambdaArn string) {
 
 	// Build Swagger
 	swaggerDefinition, swaggerErr := swagger.NewSwagger(&swagger.SwaggerConfig{
-		Title:     cfg.API.Name,
-		LambdaURI: swagger.GetLambdaURI(lambdaArn),
+		Title:             cfg.API.Name,
+		LambdaURI:         swagger.GetLambdaURI(lambdaArn),
+		ResourceTimeoutMs: cfg.API.ResourceTimeoutMs,
 	})
 	if swaggerErr != nil {
 		fmt.Println("There was a problem creating the API.")
@@ -755,6 +782,34 @@ func addAPIPermission(apiID string, lambdaArn string) {
 	}
 }
 
+// addCloudWatchRulePermission will add CloudWatch event rule permission to trigger Lambda
+func addCloudWatchRulePermission(eventArn string) {
+	// Both resources are created and the rule even looks like it should invoke the Lambda.
+	// But it won't without this permission.
+	// https://stackoverflow.com/questions/37571581/aws-cloudwatch-event-puttargets-not-adding-lambda-event-sources
+
+	svc := lambda.New(getAWSSession())
+
+	_, err := svc.AddPermission(&lambda.AddPermissionInput{
+		Action:       aws.String("lambda:InvokeFunction"),
+		FunctionName: aws.String(cfg.Lambda.FunctionName),
+		Principal:    aws.String("events.amazonaws.com"),
+		StatementId:  aws.String("aegis-cloudwatch-rule-invoke-lambda"), // (any string should do)
+		// EventSourceToken: aws.String("EventSourceToken"),
+		// Qualifier:        aws.String("Qualifier"),
+		// SourceAccount:    aws.String("SourceOwner"),
+		SourceArn: aws.String(eventArn),
+	})
+	if err != nil {
+		// Ignore "already exists" errors, that's fine. No apparent way to look up permissions before making the add call?
+		match, _ := regexp.MatchString("already exists", err.Error())
+		if !match {
+			fmt.Println("There was a problem setting permissions for the CloudWatch Rule to invoke the Lambda. Try again or go into AWS console and manually add the CloudWatch event rule trigger.")
+			fmt.Println(err.Error())
+		}
+	}
+}
+
 // addBinaryMediaTypes will update the API to specify valid binary media types
 func addBinaryMediaTypes(apiID string) {
 	svc := apigateway.New(getAWSSession())
@@ -777,15 +832,16 @@ func addBinaryMediaTypes(apiID string) {
 }
 
 // addCloudWatchEventRuleForLambda will add CloudWatch Event Rule for triggering the Lambda on a schedule with input
-func addCloudWatchEventRuleForLambda(t *task, lambdaArn *string) {
+func addCloudWatchEventRuleForLambda(t *task, lambdaArn *string) string {
 	state := "ENABLED"
 	if t.Disabled {
 		state = "DISABLED"
 	}
+	ruleArn := ""
 	// TODO: validation and log out errors/warnings?
 	if t.Schedule != "" {
 		svc := cloudwatchevents.New(getAWSSession())
-		_, err := svc.PutRule(&cloudwatchevents.PutRuleInput{
+		ruleOutput, err := svc.PutRule(&cloudwatchevents.PutRuleInput{
 			Description: aws.String(t.Description),
 			// Again, name is all lowercase, filename without extension: <function name>_<file name>
 			// ie. for an example.json file, an event ARN/ID like: arn:aws:events:us-east-1:1234567890:rule/aegis_aegis_example
@@ -802,6 +858,8 @@ func addCloudWatchEventRuleForLambda(t *task, lambdaArn *string) {
 		if err != nil {
 			fmt.Println("There was a problem creating a CloudWatch Event Rule.")
 			fmt.Println(err)
+		} else {
+			ruleArn = *ruleOutput.RuleArn
 		}
 
 		jsonInput, _ := t.Input.MarshalJSON()
@@ -831,9 +889,11 @@ func addCloudWatchEventRuleForLambda(t *task, lambdaArn *string) {
 			fmt.Println("There was an error setting the CloudWatch Event Rule Target (Lambda function).")
 			fmt.Println(err)
 		} else {
-			fmt.Printf("%v %v\n", "Added/updated Task (CloudWatch scheduled event):", color.GreenString(t.Name))
+			fmt.Printf("%v %v\n", "Added/updated Task:", color.GreenString(t.Name))
 		}
 	}
+
+	return ruleArn
 }
 
 // getAccountInfoFromArn will extract the account ID and region from a given ARN

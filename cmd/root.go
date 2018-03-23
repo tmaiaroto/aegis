@@ -73,15 +73,17 @@ type deploymentConfig struct {
 			SecurityGroups []string
 			Subnets        []string
 		}
-		TraceMode string
+		TraceMode               string
+		MaxConcurrentExecutions int64
 	}
 	API struct {
-		Name             string
-		Description      string
-		Cache            bool
-		CacheSize        string
-		Stages           map[string]deploymentStage
-		BinaryMediaTypes []*string
+		Name              string
+		Description       string
+		Cache             bool
+		CacheSize         string
+		Stages            map[string]deploymentStage
+		ResourceTimeoutMs int
+		BinaryMediaTypes  []*string
 	}
 }
 
@@ -148,6 +150,8 @@ func InitConfig() {
 	viper.SetDefault("lambda.memorySize", int64(128))
 	// In seconds
 	viper.SetDefault("lambda.timeout", int64(3))
+	// Don't even default it. Let it be, it'll use the current account max.
+	// viper.SetDefault("lambda.maxConcurrentExecutions", int64());
 	// No suitable default for this
 	// viper.SetDefault("lambda.role", "arn:aws:iam::account-id:role/lambda_basic_execution")
 	// Set a default function name
@@ -176,6 +180,8 @@ func InitConfig() {
 	viper.SetDefault("api.binaryMediaTypes", "*/*")
 	// For valid values, see: https://godoc.org/github.com/aws/aws-sdk-go/service/apigateway#pkg-constants
 	viper.SetDefault("api.cacheSize", apigateway.CacheClusterSize05)
+	// All resources ({proxy+} and /) get this timeout in ms (AWS default is 29000 too)
+	viper.SetDefault("api.resourceTimeoutMs", 29000)
 
 	// Default API stage (does not use caching, that comes with an additional cost)
 	viper.SetDefault("api.stages", map[string]deploymentStage{

@@ -7,16 +7,19 @@ lambda:
   description: An example Aegis app
   functionName: aegis_example
   memorySize: 1024
+  maxConcurrentExecutions: 50
   # environmentVariables:
   #   foo: bar
   # sourceZip: Archive.zip
   # role: arn:aws:iam::12345:role/aegis_lambda_function
 api:
-  name: Example Aegis API update
+  name: Example Aegis API
   description: An example API
   # TODO: usagePlans:
   binaryMediaTypes:
     - image/png
+  # The default is 29 seconds already
+  # resourceTimeoutMs: 29000
   # stages:
   #   prod:
   #     name: prod

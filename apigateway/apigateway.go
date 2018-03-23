@@ -24,6 +24,7 @@ import (
 )
 
 // Swagger defines an AWS API Gateway Lambda Proxy swagger definition
+// More info here: https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-swagger-extensions.html
 type Swagger struct {
 	Swagger                           string             `json:"swagger"`
 	Info                              APIInfo            `json:"info"`
@@ -62,21 +63,25 @@ type APIIntegration struct {
 	CacheNamespace      string                       `json:"cacheNamespace"`
 	CacheKeyParameters  []string                     `json:"cacheKeyParameters"`
 	Type                string                       `json:"type"`
+	TimeoutMs           int                          `json:"timeoutInMillis"`
 }
 
 // SwaggerConfig holds configuration values for NewSwagger()
+// TODO: Probably want to a more comprehensive field for mapping XAmazonAPIGatewayIntegration values with defaults, etc.
+// For now, "ResourceTimeoutMs" is really XAmazonAPIGatewayIntegration.TimeoutMs which is "timeoutInMillis" in Swagger JSON to AWS.
 type SwaggerConfig struct {
-	Title          string
-	LambdaURI      string
-	CacheNamespace string
-	Version        string
+	Title             string
+	LambdaURI         string
+	CacheNamespace    string
+	Version           string
+	ResourceTimeoutMs int
 	// BinaryMediaTypes []string
 }
 
 // NewSwagger creates a new Swagger struct with some default values
 func NewSwagger(cfg *SwaggerConfig) (Swagger, error) {
 	if cfg.LambdaURI == "" {
-		return Swagger{}, errors.New("Invalid Lambda URI provided for Swagger definition.")
+		return Swagger{}, errors.New("invalid Lambda URI provided for Swagger definition")
 	}
 
 	// Some defaults
@@ -92,6 +97,15 @@ func NewSwagger(cfg *SwaggerConfig) (Swagger, error) {
 	if cfg.Version == "" {
 		t := time.Now()
 		cfg.Version = t.UTC().Format(time.RFC3339)
+	}
+
+	// 29000 is the default timeout (29 seconds), let's keep that (instead of struct default to empty 0).
+	if cfg.ResourceTimeoutMs == 0 {
+		cfg.ResourceTimeoutMs = 29000
+	}
+	// 50 (50ms) is the lowest value possible.
+	if cfg.ResourceTimeoutMs < 50 {
+		cfg.ResourceTimeoutMs = 50
 	}
 
 	// Set the API Info
@@ -125,6 +139,7 @@ func NewSwagger(cfg *SwaggerConfig) (Swagger, error) {
 			CacheNamespace:      cfg.CacheNamespace,
 			CacheKeyParameters:  []string{"method.request.path.proxy"},
 			Type:                "aws_proxy",
+			TimeoutMs:           cfg.ResourceTimeoutMs,
 		},
 	}
 
@@ -142,6 +157,7 @@ func NewSwagger(cfg *SwaggerConfig) (Swagger, error) {
 			PassthroughBehavior: "when_no_match",
 			HTTPMethod:          "POST",
 			Type:                "aws_proxy",
+			TimeoutMs:           cfg.ResourceTimeoutMs,
 		},
 	}
 
