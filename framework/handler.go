@@ -10,8 +10,9 @@ import (
 
 // Handlers defines a set of Aegis framework Lambda handlers
 type Handlers struct {
-	Router *Router
-	Tasker *Tasker
+	Router    *Router
+	Tasker    *Tasker
+	RPCRouter *RPCRouter
 }
 
 // getType will determine which type of event is being sent
@@ -48,6 +49,10 @@ func getType(evt map[string]interface{}) string {
 		return "AegisTask"
 	}
 
+	if keyInMap("_rpcName", evt) {
+		return "AegisRPC"
+	}
+
 	return ""
 }
 
@@ -82,6 +87,8 @@ func (h *Handlers) eventHandler(ctx context.Context, evt map[string]interface{})
 		// Tasker takes a simple map[string]interface{} - not a struct (like some other events).
 		h.Tasker.LambdaHandler(ctx, evt)
 		return nil, nil
+	case "AegisRPC":
+		return h.RPCRouter.LambdaHandler(ctx, evt)
 	default:
 		log.Println("Could not determine Lambda event type.")
 	}

@@ -26,31 +26,33 @@ func (t *Tasker) LambdaHandler(ctx context.Context, evt map[string]interface{}) 
 		taskName = name.(string)
 	}
 
-	// If there's a _taskName, use the registered handler if it exists.
-	if handler, ok := t.handlers[taskName]; ok {
-		handled = true
-		// Capture the handler in XRay automatically
-		err = xray.Capture(ctx, "TaskHandler", func(ctx1 context.Context) error {
-			// Annotations can be searched in XRay.
-			// For example: annotation.TaskName = "mytask"
-			xray.AddAnnotation(ctx1, "TaskName", taskName)
-			xray.AddMetadata(ctx1, "TaskEvent", evt)
-			return handler(ctx, &evt)
-		})
-	}
-	// Otherwise, use the catch all (router "fallthrough" equivalent) handler.
-	// The application can inspect the map and make a decision on what to do, if anything.
-	// This is optional.
-	if !handled {
-		// It's possible that the Tasker wasn't created with NewTasker, so check for this still.
-		if handler, ok := t.handlers["*"]; ok {
+	if t.handlers != nil {
+		// If there's a _taskName, use the registered handler if it exists.
+		if handler, ok := t.handlers[taskName]; ok {
+			handled = true
 			// Capture the handler in XRay automatically
 			err = xray.Capture(ctx, "TaskHandler", func(ctx1 context.Context) error {
+				// Annotations can be searched in XRay.
+				// For example: annotation.TaskName = "mytask"
 				xray.AddAnnotation(ctx1, "TaskName", taskName)
-				xray.AddAnnotation(ctx1, "FallthroughHandler", true)
 				xray.AddMetadata(ctx1, "TaskEvent", evt)
 				return handler(ctx, &evt)
 			})
+		}
+		// Otherwise, use the catch all (router "fallthrough" equivalent) handler.
+		// The application can inspect the map and make a decision on what to do, if anything.
+		// This is optional.
+		if !handled {
+			// It's possible that the Tasker wasn't created with NewTasker, so check for this still.
+			if handler, ok := t.handlers["*"]; ok {
+				// Capture the handler in XRay automatically
+				err = xray.Capture(ctx, "TaskHandler", func(ctx1 context.Context) error {
+					xray.AddAnnotation(ctx1, "TaskName", taskName)
+					xray.AddAnnotation(ctx1, "FallthroughHandler", true)
+					xray.AddMetadata(ctx1, "TaskEvent", evt)
+					return handler(ctx, &evt)
+				})
+			}
 		}
 	}
 

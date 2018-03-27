@@ -118,9 +118,13 @@ func Deploy(cmd *cobra.Command, args []string) {
 		os.Exit(-1)
 	}
 
-	// If no role, create a basic aegis role for executing Lambda functions (this will be very limited role)
+	// If no role, create an aegis role for executing Lambda functions.
+	// This will actually be rather permissive. Use a custom role to be more restrictive.
+	// The aegis framework needs the ability to invoke other Lambdas, work with XRay, S3, and more.
+	// So it's going to be a few managed policies that make sense. Use a custom role if needed.
+	// When roles are passed to use, they are not modified.
 	if cfg.Lambda.Role == "" {
-		cfg.Lambda.Role = createAegisRole()
+		cfg.Lambda.Role = createOrUpdateAegisRole()
 		// fmt.Printf("Created a default aegis role for Lambda: %s\n", cfg.Lambda.Role)
 
 		// Have to delay a few seconds to give AWS some time to set up the role.
@@ -489,13 +493,11 @@ func deleteFunction(name, version string) {
 	}
 }
 
-// createAegisRole will create a basic role to run Lambda functions if one has not been provided in config
-// NOTE: When providing an IAM to the config it must have the same policies, assigned by this function; Lambda, CloudWatch logs, and CloudWatch events.
-func createAegisRole() string {
+// createOrUpdateAegisRole will manage a basic role to run Lambda functions if one has not been provided in config
+func createOrUpdateAegisRole() string {
 	// Default aegis IAM role name: aegis_lambda_role
-	// Default aegis IAM policy name: aegis_lambda_policy
 	aegisLambdaRoleName := aws.String("aegis_lambda_role")
-	aegisLambdaPolicyName := aws.String("aegis_lambda_policy")
+	roleArn := ""
 
 	svc := iam.New(getAWSSession())
 
@@ -507,89 +509,73 @@ func createAegisRole() string {
 	resp, err := svc.GetRole(params)
 	if err == nil {
 		if resp.Role.Arn != nil {
-			existingRole := *resp.Role.Arn
-			fmt.Printf("%v %v\n", "Using existing execution role for Lambda:", color.GreenString(existingRole))
-			return existingRole
+			roleArn = *resp.Role.Arn
+			fmt.Printf("%v %v\n", "Using existing execution role for Lambda:", color.GreenString(roleArn))
 		}
 	}
 
-	var iamAssumeRolePolicy = `{
-	  "Version": "2012-10-17",
-	  "Statement": [
-	    {
-	      "Effect": "Allow",
-	      "Principal": {
-	        "Service": "lambda.amazonaws.com"
-	      },
-	      "Action": "sts:AssumeRole"
-		},
-		{
-		  "Effect": "Allow",
-		  "Principal": {
-		    "Service": "events.amazonaws.com"
-		  },
-		    "Action": "sts:AssumeRole"
-		},
-		{
-		  "Effect": "Allow",
-		  "Principal": {
-		    "Service": "xray.amazonaws.com"
-		  },
-		  "Action": "sts:AssumeRole"
-		}
-	  ]
-	}`
+	// Create the Lambda execution role, if necessary
+	if roleArn == "" {
+		var iamAssumeRolePolicy = `{
+			"Version": "2012-10-17",
+			"Statement": [
+			  {
+				"Effect": "Allow",
+				"Principal": {
+				  "Service": "lambda.amazonaws.com"
+				},
+				"Action": "sts:AssumeRole"
+			  },
+			  {
+				"Effect": "Allow",
+				"Principal": {
+				  "Service": "events.amazonaws.com"
+				},
+				  "Action": "sts:AssumeRole"
+			  },
+			  {
+				"Effect": "Allow",
+				"Principal": {
+				  "Service": "xray.amazonaws.com"
+				},
+				"Action": "sts:AssumeRole"
+			  }
+			]
+		  }`
 
-	// Create the Lambda execution role
-	role, err := svc.CreateRole(&iam.CreateRoleInput{
-		RoleName:                 aegisLambdaRoleName,
-		AssumeRolePolicyDocument: aws.String(iamAssumeRolePolicy),
-	})
-	if err != nil {
-		fmt.Println("There was a problem creating a default IAM role for Lambda. Check your configuration.")
-		os.Exit(-1)
+		role, err := svc.CreateRole(&iam.CreateRoleInput{
+			RoleName:                 aegisLambdaRoleName,
+			AssumeRolePolicyDocument: aws.String(iamAssumeRolePolicy),
+		})
+		if err != nil {
+			fmt.Println("There was a problem creating a default IAM role for Lambda. Check your configuration.")
+			os.Exit(-1)
+		}
+		roleArn := *role.Role.Arn
+		fmt.Printf("%v %v\n", "Created a new execution role for Lambda:", color.GreenString(roleArn))
 	}
 
-	var iamPolicy = `{
-	  "Version": "2012-10-17",
-	  "Statement": [
-	    {
-	      "Action": [
-			"logs:*",
-			"xray:*"
-	      ],
-	      "Effect": "Allow",
-	      "Resource": "*"
-		},
-		{
-		  "Sid": "CloudWatchEventsFullAccess",
-		  "Effect": "Allow",
-		  "Action": "events:*",
-		  "Resource": "*"
-		},
-		{
-		  "Sid": "IAMPassRoleForCloudWatchEvents",
-		  "Effect": "Allow",
-		  "Action": "iam:PassRole",
-		  "Resource": "arn:aws:iam::*:role/AWS_Events_Invoke_Targets"
-		}
-	  ]
-	}`
-
-	// Create the Lambda policy inline
-	_, err = svc.PutRolePolicy(&iam.PutRolePolicyInput{
-		PolicyName:     aegisLambdaPolicyName,
-		RoleName:       aegisLambdaRoleName,
-		PolicyDocument: aws.String(iamPolicy),
+	// Attach managed policies.
+	// First, AWSLambdaFullAccess
+	_, err = svc.AttachRolePolicy(&iam.AttachRolePolicyInput{
+		PolicyArn: aws.String("arn:aws:iam::aws:policy/AWSLambdaFullAccess"),
+		RoleName:  aegisLambdaRoleName,
 	})
 	if err != nil {
-		fmt.Println("There was a problem creating a default inline IAM policy for Lambda. Check your configuration.")
+		fmt.Println("There was a problem attaching AWSLambdaFullAccess managed policy to the IAM role for Lambda.")
 		fmt.Println(err)
-		os.Exit(-1)
 	}
 
-	roleArn := *role.Role.Arn
-	fmt.Printf("%v %v\n", "Created an execution role for Lambda:", color.GreenString(roleArn))
+	// Then AWSXrayFullAccess
+	_, err = svc.AttachRolePolicy(&iam.AttachRolePolicyInput{
+		PolicyArn: aws.String("arn:aws:iam::aws:policy/AWSXrayFullAccess"),
+		RoleName:  aegisLambdaRoleName,
+	})
+	if err != nil {
+		fmt.Println("There was a problem attaching AWSXrayFullAccess managed policy to the IAM role for Lambda.")
+		fmt.Println(err)
+	}
+
 	return roleArn
 }
 
@@ -846,8 +832,8 @@ func addCloudWatchEventRuleForLambda(t *task, lambdaArn *string) string {
 			// Again, name is all lowercase, filename without extension: <function name>_<file name>
 			// ie. for an example.json file, an event ARN/ID like: arn:aws:events:us-east-1:1234567890:rule/aegis_aegis_example
 			Name: aws.String(t.Name),
-			// IAM Role
-			RoleArn: aws.String(createAegisRole()),
+			// IAM Role (either defined in aegix.yml or was set after creating role - either way, it should be on cfg by now)
+			RoleArn: aws.String(cfg.Lambda.Role),
 			// For example, "cron(0 20 * * ? *)" or "rate(5 minutes)"
 			ScheduleExpression: aws.String(t.Schedule),
 			// ENABLED or DISABLED

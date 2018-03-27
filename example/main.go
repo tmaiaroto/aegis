@@ -52,14 +52,19 @@ func main() {
 
 	router.Handle("POST", "/", postExample)
 
+	// Handle RPCs
+	rpcRouter := aegis.NewRPCRouter()
+	rpcRouter.Handle("procedure", handleProcedure)
+
 	// Blocks. So this function would only be good for handling APIGatewayProxyRequest events
 	// router.Listen()
 	// Also blocks, but uses reflection to get the event type and then calls the appropriate handler
 	// This way, the same Go application can be used to handle multiple events.
 	// This is a microservice design consideration. To each their own.
 	handlers := aegis.Handlers{
-		Router: router,
-		Tasker: tasker,
+		Router:    router,
+		Tasker:    tasker,
+		RPCRouter: rpcRouter,
 	}
 	handlers.Listen()
 }
@@ -141,4 +146,11 @@ func handleTask(ctx context.Context, evt *map[string]interface{}) error {
 func taskerFallThrough(ctx context.Context, evt *map[string]interface{}) error {
 	log.Println("Handling task!", evt)
 	return nil
+}
+
+// Example RPC handler
+func handleProcedure(ctx context.Context, evt *map[string]interface{}) (map[string]interface{}, error) {
+	log.Println("Handling remote procedure!")
+	dereferenceEvt := *evt
+	return dereferenceEvt, nil
 }
