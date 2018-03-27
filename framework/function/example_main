@@ -16,14 +16,16 @@ func main() {
 }
 
 // fallThrough handles any path that couldn't be matched to another handler
-func fallThrough(ctx context.Context, req *aegis.APIGatewayProxyRequest, res *aegis.APIGatewayProxyResponse, params url.Values) {
+func fallThrough(ctx context.Context, req *aegis.APIGatewayProxyRequest, res *aegis.APIGatewayProxyResponse, params url.Values) error {
 	res.StatusCode = 404
+	return nil
 }
 
 // root is handling GET "/" in this case
-func root(ctx context.Context, req *aegis.APIGatewayProxyRequest, res *aegis.APIGatewayProxyResponse, params url.Values) {
+func root(ctx context.Context, req *aegis.APIGatewayProxyRequest, res *aegis.APIGatewayProxyResponse, params url.Values) error {
 	lc, _ := lambdacontext.FromContext(ctx)
 	res.JSON(200, map[string]interface{}{"event": req, "context": lc})
+	return nil
 }
 
 // helloMiddleware is a simple example of middleware
