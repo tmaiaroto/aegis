@@ -2,6 +2,7 @@ package framework
 
 import (
 	"context"
+	"errors"
 	"log"
 
 	"github.com/aws/aws-lambda-go/lambda"
@@ -10,10 +11,14 @@ import (
 
 // Handlers defines a set of Aegis framework Lambda handlers
 type Handlers struct {
-	Router    *Router
-	Tasker    *Tasker
-	RPCRouter *RPCRouter
+	Router         *Router
+	Tasker         *Tasker
+	RPCRouter      *RPCRouter
+	DefaultHandler DefaultHandler
 }
+
+// DefaultHandler is used when the message type can't be identified as anything else, completely optional to use
+type DefaultHandler func(context.Context, *map[string]interface{}) (interface{}, error)
 
 // getType will determine which type of event is being sent
 func getType(evt map[string]interface{}) string {
@@ -90,7 +95,15 @@ func (h *Handlers) eventHandler(ctx context.Context, evt map[string]interface{})
 	case "AegisRPC":
 		return h.RPCRouter.LambdaHandler(ctx, evt)
 	default:
-		log.Println("Could not determine Lambda event type.")
+		log.Println("Could not determine Lambda event type, using DefaultHandler.")
+		// If a default handler is not set, return an error about it.
+		// It's essentially an unhandled Lambda invocation at this point.
+		if h.DefaultHandler == nil {
+			h.DefaultHandler = func(context.Context, *map[string]interface{}) (interface{}, error) {
+				return nil, errors.New("unhandled event")
+			}
+		}
+		return h.DefaultHandler(ctx, &evt)
 	}
 
 	if err != nil {

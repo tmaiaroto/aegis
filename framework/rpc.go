@@ -101,11 +101,17 @@ func (r *RPCRouter) Handle(name string, handler RPCHandler) {
 }
 
 // RPC will make the remote procedure call (invoke another lambda)
-func RPC(ctx context.Context, functionName string, jsonBytes []byte) (map[string]interface{}, error) {
-	log.Println("RPC CALL")
+func RPC(ctx context.Context, functionName string, message map[string]interface{}) (map[string]interface{}, error) {
 	sess, err := session.NewSession()
 	if err != nil {
 		log.Println("could not make remote procedure call, session could not be created")
+		return nil, err
+	}
+
+	// Payload will need JSON bytes
+	jsonBytes, err := json.Marshal(message)
+	if err != nil {
+		log.Println("could not marshal remote procedure call message")
 		return nil, err
 	}
 
@@ -113,10 +119,8 @@ func RPC(ctx context.Context, functionName string, jsonBytes []byte) (map[string
 	svc := lambdaSDK.New(sess)
 	// Wrap in XRay so it gets logged and appears in service map
 	xray.AWS(svc.Client)
-	log.Println("Got new lambda session:", svc)
 
 	// TODO: Look into this more. So many interesting options here. InvocationType and LogType could be interesting outside of defaults
-	// output, err := svc.Invoke(&lambdaSDK.InvokeInput{
 	output, err := svc.InvokeWithContext(ctx, &lambdaSDK.InvokeInput{
 		// ClientContext // TODO: think about this...
 		FunctionName: aws.String(functionName),
@@ -126,21 +130,12 @@ func RPC(ctx context.Context, functionName string, jsonBytes []byte) (map[string
 		// Qualifier ... this is an interesting one. We use latest by default...But we also want to work in a circuit breaker
 		// here, so we'll need to set the qualifier at some point.
 	})
-	log.Println("Invoke err:", err)
-	log.Println(output)
 
+	//
 	var resp map[string]interface{}
 	if err == nil {
 		err = json.Unmarshal(output.Payload, &resp)
 	}
 
-	// It might be fair to convert the Payload byte array to map[string]interface{} since its a JSON representation
-	// Which means all handlers can deal with map[string]interface{} instead of interface{}
-	// That's a little nicer...Because we know it's JSON.
-	// It would be cool to have it be anything, though some knowledge is required.
-	// Knowledge of what is being returned so that proper type assertions can be made...
-	// But I think that would've been ok. You call an RPC with some sort of documentation or understanding of what it returns.
-	// output.Payload  <--- TODO: convert that to map[string]inteface{}
 	return resp, err
-
 }
