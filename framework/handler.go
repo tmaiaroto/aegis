@@ -72,7 +72,7 @@ func keyInMap(k string, m map[string]interface{}) bool {
 // eventHandler is a general handler that accepts an interface and determines which hanlder to use based on the event.
 // See: https://godoc.org/github.com/aws/aws-lambda-go/lambda#Start
 func (h *Handlers) eventHandler(ctx context.Context, evt map[string]interface{}) (interface{}, error) {
-	log.Println("Determining type of event for:", evt)
+	// log.Println("Determining type of event for:", evt)
 
 	var err error
 	// TODO: This isn't exactly reflection, it's a map.
