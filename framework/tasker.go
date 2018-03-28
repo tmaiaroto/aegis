@@ -4,13 +4,13 @@ import (
 	"context"
 
 	"github.com/aws/aws-lambda-go/lambda"
-	"github.com/aws/aws-xray-sdk-go/xray"
 )
 
 // Tasker struct provides an interface to handle scheduled tasks
 type Tasker struct {
 	handlers            map[string]TaskHandler
 	IgnoreFunctionScope bool
+	Tracer              TraceStrategy
 }
 
 // TaskHandler is similar to RouteHandler except there is no response or middleware
@@ -30,12 +30,16 @@ func (t *Tasker) LambdaHandler(ctx context.Context, evt map[string]interface{}) 
 		// If there's a _taskName, use the registered handler if it exists.
 		if handler, ok := t.handlers[taskName]; ok {
 			handled = true
-			// Capture the handler in XRay automatically
-			err = xray.Capture(ctx, "TaskHandler", func(ctx1 context.Context) error {
-				// Annotations can be searched in XRay.
-				// For example: annotation.TaskName = "mytask"
-				xray.AddAnnotation(ctx1, "TaskName", taskName)
-				xray.AddMetadata(ctx1, "TaskEvent", evt)
+			// Trace (defeault is to use XRay)
+			t.Tracer.Annotations = map[string]interface{}{
+				"TaskName": taskName,
+			}
+			t.Tracer.Metadata = map[string]interface{}{
+				"TaskEvent": evt,
+			}
+			err = t.Tracer.Capture(ctx, "TaskHandler", func(ctx1 context.Context) error {
+				t.Tracer.AddAnnotations(ctx1)
+				t.Tracer.AddMetadata(ctx1)
 				return handler(ctx, &evt)
 			})
 		}
@@ -45,13 +49,20 @@ func (t *Tasker) LambdaHandler(ctx context.Context, evt map[string]interface{}) 
 		if !handled {
 			// It's possible that the Tasker wasn't created with NewTasker, so check for this still.
 			if handler, ok := t.handlers["*"]; ok {
-				// Capture the handler in XRay automatically
-				err = xray.Capture(ctx, "TaskHandler", func(ctx1 context.Context) error {
-					xray.AddAnnotation(ctx1, "TaskName", taskName)
-					xray.AddAnnotation(ctx1, "FallthroughHandler", true)
-					xray.AddMetadata(ctx1, "TaskEvent", evt)
+				// Trace (defeault is to use XRay)
+				t.Tracer.Annotations = map[string]interface{}{
+					"TaskName":           taskName,
+					"FallthroughHandler": true,
+				}
+				t.Tracer.Metadata = map[string]interface{}{
+					"TaskEvent": evt,
+				}
+				err = t.Tracer.Capture(ctx, "TaskHandler", func(ctx1 context.Context) error {
+					t.Tracer.AddAnnotations(ctx1)
+					t.Tracer.AddMetadata(ctx1)
 					return handler(ctx, &evt)
 				})
+
 			}
 		}
 	}

@@ -18,7 +18,6 @@ import (
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
-	"github.com/aws/aws-xray-sdk-go/xray"
 )
 
 const (
@@ -48,6 +47,7 @@ type Router struct {
 	LoggingEnabled bool
 	URIVersion     string
 	GatewayPort    string
+	Tracer         TraceStrategy
 }
 
 var (
@@ -140,13 +140,16 @@ func (r *Router) LambdaHandler(ctx context.Context, req APIGatewayProxyRequest) 
 			// The middleware would need to write something back to the client.
 			// return NewProxyResponse(500, map[string]string{}, "", nil)
 		}
-		// Capture the handler in XRay automatically
-		err = xray.Capture(ctx, "RouteHandler", func(ctx1 context.Context) error {
-			// Annotations can be searched in XRay.
-			// For example: annotation.RequestPath CONTAINS "some/path/part"
-			xray.AddAnnotation(ctx1, "RequestPath", req.Path)
+		// Trac/capture the handler (in XRay by default) automatically
+		r.Tracer.Annotations = map[string]interface{}{
+			"RequestPath": req.Path,
+		}
+		err = r.Tracer.Capture(ctx, "RouteHandler", func(ctx1 context.Context) error {
+			r.Tracer.AddAnnotations(ctx1)
+			r.Tracer.AddMetadata(ctx1)
 			return handler.handler(ctx, &req, &res, params)
 		})
+
 		// TODO: look at environment variable to see if XRay was disabled (env var on lambda or when running local server)
 		// Then just call handler and not the xray part above.
 		// handler.handler(ctx, &req, &res, params)

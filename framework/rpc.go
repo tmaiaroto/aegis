@@ -9,12 +9,12 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	lambdaSDK "github.com/aws/aws-sdk-go/service/lambda"
-	"github.com/aws/aws-xray-sdk-go/xray"
 )
 
 // RPCRouter struct provides an interface to handle remote procedures (other Lambdas invoking the one listening via AWS SDK)
 type RPCRouter struct {
 	handlers map[string]RPCHandler
+	Tracer   TraceStrategy
 }
 
 // RPCHandler is similar to RPCHanlder
@@ -35,17 +35,15 @@ func (r *RPCRouter) LambdaHandler(ctx context.Context, evt map[string]interface{
 		// If there's a _rpcName, use the registered handler if it exists.
 		if handler, ok := r.handlers[procedureName]; ok {
 			handled = true
-			// Capture the handler in XRay automatically
-			err = xray.Capture(ctx, "RPCHandler", func(ctx1 context.Context) error {
-				// Annotations can be searched in XRay.
-				// For example: annotation.RPCName = "myProcedure"
-				xray.AddAnnotation(ctx1, "RPCName", procedureName)
-				// Not sure about including this. Want to be careful what gets logged.
-				// What if the event has sensitive info? Tasks were a bit easier because anyone browsing
-				// the AWS console could see the CloudWatch event rule with configured JSON. So logging it
-				// put it into XRay/CloudWatch...but...It was kinda already there. So this concern wasn't even
-				// thought of. Though it may be fair to revisit that choice too.
-				// xray.AddMetadata(ctx1, "RPCEvent", evt)
+			// Trace (default is to use XRay)
+			// Annotations can be searched in XRay.
+			// For example: annotation.RPCName = "myProcedure"
+			r.Tracer.Annotations = map[string]interface{}{
+				"RPCName": procedureName,
+			}
+			err = r.Tracer.Capture(ctx, "RPCHandler", func(ctx1 context.Context) error {
+				r.Tracer.AddAnnotations(ctx1)
+				r.Tracer.AddMetadata(ctx1)
 				response, err = handler(ctx, &evt)
 				return err
 			})
@@ -56,11 +54,14 @@ func (r *RPCRouter) LambdaHandler(ctx context.Context, evt map[string]interface{
 		if !handled {
 			// It's possible that the RPCRouter wasn't created with NewRPCRouter, so check for this still.
 			if handler, ok := r.handlers["*"]; ok {
-				// Capture the handler in XRay automatically
-				err = xray.Capture(ctx, "RPCHandler", func(ctx1 context.Context) error {
-					xray.AddAnnotation(ctx1, "RPCName", procedureName)
-					xray.AddAnnotation(ctx1, "FallthroughHandler", true)
-					// xray.AddMetadata(ctx1, "RPCEvent", evt)
+				// Capture the handler (in XRay by default) automatically
+				r.Tracer.Annotations = map[string]interface{}{
+					"RPCName":            procedureName,
+					"FallthroughHandler": true,
+				}
+				err = r.Tracer.Capture(ctx, "RPCHandler", func(ctx1 context.Context) error {
+					r.Tracer.AddAnnotations(ctx1)
+					r.Tracer.AddMetadata(ctx1)
 					response, err = handler(ctx, &evt)
 					return err
 				})
@@ -118,7 +119,10 @@ func RPC(ctx context.Context, functionName string, message map[string]interface{
 	// region? cross account?
 	svc := lambdaSDK.New(sess)
 	// Wrap in XRay so it gets logged and appears in service map
-	xray.AWS(svc.Client)
+	// TODO: We don't hav r *RPCRouter here...So we don't have a configurable interface to use...
+	// TraceStrategy.AWS()
+	// xray.AWS(svc.Client)
+	AWSClientTracer(svc.Client)
 
 	// TODO: Look into this more. So many interesting options here. InvocationType and LogType could be interesting outside of defaults
 	output, err := svc.InvokeWithContext(ctx, &lambdaSDK.InvokeInput{
@@ -131,7 +135,7 @@ func RPC(ctx context.Context, functionName string, message map[string]interface{
 		// here, so we'll need to set the qualifier at some point.
 	})
 
-	//
+	// Unmarshal response.
 	var resp map[string]interface{}
 	if err == nil {
 		err = json.Unmarshal(output.Payload, &resp)
