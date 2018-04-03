@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"log"
+	"time"
 
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/mitchellh/mapstructure"
@@ -14,6 +15,7 @@ type Handlers struct {
 	Router         *Router
 	Tasker         *Tasker
 	RPCRouter      *RPCRouter
+	S3ObjectRouter *S3ObjectRouter
 	DefaultHandler DefaultHandler
 }
 
@@ -27,6 +29,16 @@ func getType(evt map[string]interface{}) string {
 	// if APIGatewayProxyRequest
 	if keyInMap("httpMethod", evt) && keyInMap("path", evt) {
 		return "APIGatewayProxyRequest"
+	}
+
+	// if S3Event
+	if keyInMap("Records", evt) {
+		records := evt["Records"].([]interface{})
+		if len(records) > 0 {
+			if keyInMap("s3", records[0].(map[string]interface{})) {
+				return "S3Event"
+			}
+		}
 	}
 
 	// TODO: Look into this again later...It turns out that scheduled events from CloudWatch
@@ -77,7 +89,9 @@ func (h *Handlers) eventHandler(ctx context.Context, evt map[string]interface{})
 	var err error
 	// TODO: This isn't exactly reflection, it's a map.
 	// But we do need to look at the signature to make a determination.
-	switch getType(evt) {
+	evtType := getType(evt)
+	log.Println("Incoming Lambda event type: ", evtType)
+	switch evtType {
 	case "APIGatewayProxyRequest":
 		var e APIGatewayProxyRequest
 		// This mapstructure package does use reflection.
@@ -87,6 +101,7 @@ func (h *Handlers) eventHandler(ctx context.Context, evt map[string]interface{})
 		if err == nil {
 			return h.Router.LambdaHandler(ctx, e)
 		}
+		log.Println("Could not decode APIGatewayProxyRequest event", err)
 	case "AegisTask":
 		// Task handlers have no return
 		// Tasker takes a simple map[string]interface{} - not a struct (like some other events).
@@ -94,6 +109,22 @@ func (h *Handlers) eventHandler(ctx context.Context, evt map[string]interface{})
 		return nil, nil
 	case "AegisRPC":
 		return h.RPCRouter.LambdaHandler(ctx, evt)
+	case "S3Event":
+		var e S3Event
+		decoder, _ := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
+			// Event time format: 2018-04-02T17:09:32.273Z
+			// mapstructure does not handle string to time.Time automatically so we need to use a hook
+			DecodeHook: mapstructure.StringToTimeHookFunc(time.RFC3339Nano),
+			Result:     &e,
+		})
+
+		// decodeErr := mapstructure.Decode(evt, &e)
+		decodeErr := decoder.Decode(evt)
+		if decodeErr == nil {
+			err = h.S3ObjectRouter.LambdaHandler(ctx, e)
+		} else {
+			log.Println("Could not decode S3Event", decodeErr)
+		}
 	default:
 		log.Println("Could not determine Lambda event type, using DefaultHandler.")
 		// If a default handler is not set, return an error about it.

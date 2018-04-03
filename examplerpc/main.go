@@ -27,11 +27,16 @@ func root(ctx context.Context, req *aegis.APIGatewayProxyRequest, res *aegis.API
 	lc, _ := lambdacontext.FromContext(ctx)
 
 	// RPC example
+	// rpcPayload := map[string]interface{}{
+	// 	"_rpcName": "procedure",
+	// 	"foo":      "bar",
+	// }
+	// resp, rpcErr := aegis.RPC(ctx, "aegis_example", rpcPayload)
 	rpcPayload := map[string]interface{}{
-		"_rpcName": "procedure",
-		"foo":      "bar",
+		"_rpcName":  "lookup",
+		"ipAddress": req.RequestContext.Identity.SourceIP,
 	}
-	resp, rpcErr := aegis.RPC(ctx, "aegis_example", rpcPayload)
+	resp, rpcErr := aegis.RPC(ctx, "aegis_geoip", rpcPayload)
 	log.Println(rpcErr)
 
 	res.JSON(200, map[string]interface{}{"event": resp, "context": lc})

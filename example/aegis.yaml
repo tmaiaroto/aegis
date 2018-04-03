@@ -12,6 +12,19 @@ lambda:
   #   foo: bar
   # sourceZip: Archive.zip
   # role: arn:aws:iam::12345:role/aegis_lambda_function
+bucketTriggers:
+  - bucket: aegis-incoming
+    filters:
+      - name: suffix
+        value: png
+      #- name: prefix
+      #  value: path/
+    eventNames:
+      - s3:ObjectCreated:*
+      - s3:ObjectRemoved:*
+      # ... there's a few and there's wildcards, see:
+      # https://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html#notification-how-to-event-types-and-destinations
+    disabled: false
 api:
   name: Example Aegis API
   description: An example API

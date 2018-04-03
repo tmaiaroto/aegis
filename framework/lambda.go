@@ -31,6 +31,9 @@ type (
 	// APIGatewayProxyRequestContext alias for APIGatewayProxyRequestContext
 	APIGatewayProxyRequestContext events.APIGatewayProxyRequestContext
 
+	// S3Event alias
+	S3Event events.S3Event
+
 	// CloudWatchEvent alias for CloudWatchEvent events
 	CloudWatchEvent events.CloudWatchEvent
 )

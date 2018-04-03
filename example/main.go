@@ -56,15 +56,22 @@ func main() {
 	rpcRouter := aegis.NewRPCRouter()
 	rpcRouter.Handle("procedure", handleProcedure)
 
+	// Handle S3 objects
+	s3Router := aegis.NewS3ObjectRouterForBucket("aegis-incoming")
+	// s3Router.Handle("s3:ObjectCreated:Put", "*.png", handleS3Upload)
+	// Put() is a shortcut for the above
+	s3Router.Put("*.png", handleS3Upload)
+
 	// Blocks. So this function would only be good for handling APIGatewayProxyRequest events
 	// router.Listen()
 	// Also blocks, but uses reflection to get the event type and then calls the appropriate handler
 	// This way, the same Go application can be used to handle multiple events.
 	// This is a microservice design consideration. To each their own.
 	handlers := aegis.Handlers{
-		Router:    router,
-		Tasker:    tasker,
-		RPCRouter: rpcRouter,
+		Router:         router,
+		Tasker:         tasker,
+		RPCRouter:      rpcRouter,
+		S3ObjectRouter: s3Router,
 	}
 	handlers.Listen()
 }
@@ -153,4 +160,11 @@ func handleProcedure(ctx context.Context, evt *map[string]interface{}) (map[stri
 	log.Println("Handling remote procedure!")
 	dereferenceEvt := *evt
 	return dereferenceEvt, nil
+}
+
+// Example S3 handler
+func handleS3Upload(ctx context.Context, evt *aegis.S3Event) error {
+	log.Println("Handling S3 upload!")
+	log.Println(evt)
+	return nil
 }

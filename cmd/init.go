@@ -31,9 +31,6 @@ const SrcPath = "./main.go"
 // YmlPath defines the path to the example aegis config file to be copied from bindata to the current working directory upon init
 const YmlPath = "./aegis.yaml"
 
-// TasksPath defines the path to look for CloudWatch Event Rules ("tasks") defined in JSON files
-const TasksPath = "./tasks"
-
 // initCmd represents the init command
 var initCmd = &cobra.Command{
 	Use:   "init",

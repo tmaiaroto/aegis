@@ -143,6 +143,7 @@ func (r *Router) LambdaHandler(ctx context.Context, req APIGatewayProxyRequest) 
 		// Trac/capture the handler (in XRay by default) automatically
 		r.Tracer.Annotations = map[string]interface{}{
 			"RequestPath": req.Path,
+			"Method":      req.HTTPMethod,
 		}
 		err = r.Tracer.Capture(ctx, "RouteHandler", func(ctx1 context.Context) error {
 			r.Tracer.AddAnnotations(ctx1)

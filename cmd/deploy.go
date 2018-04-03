@@ -25,7 +25,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
-	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -33,15 +32,14 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/apigateway"
-	"github.com/aws/aws-sdk-go/service/cloudwatchevents"
 	"github.com/aws/aws-sdk-go/service/iam"
 	"github.com/aws/aws-sdk-go/service/lambda"
 	"github.com/fatih/color"
 	"github.com/jhoonb/archivex"
 	"github.com/spf13/cobra"
-	"github.com/tdewolff/minify"
-	mJson "github.com/tdewolff/minify/json"
 	swagger "github.com/tmaiaroto/aegis/apigateway"
+	"github.com/tmaiaroto/aegis/cmd/config"
+	"github.com/tmaiaroto/aegis/cmd/deploy"
 	// TODO: Make it pretty :)
 	// https://github.com/gernest/wow?utm_source=golangweekly&utm_medium=email
 )
@@ -76,6 +74,9 @@ const aegisAppName = "aegis_app"
 // Deploy will build and deploy to AWS Lambda and API Gateway
 func Deploy(cmd *cobra.Command, args []string) {
 	appPath := ""
+
+	// This helps break up many of the functions/steps for deployment
+	deployer := deploy.NewDeployer(&cfg, getAWSSession())
 
 	// It is possible to pass a specific zip file from the config instead of building a new one (why would one? who knows, but I liked the pattern of using cfg)
 	if cfg.Lambda.SourceZip == "" {
@@ -136,6 +137,8 @@ func Deploy(cmd *cobra.Command, args []string) {
 
 	// Create (or update) the function
 	lambdaArn := createFunction(zipBytes)
+	// Set the lambdaArn on the deployer, many of its functions will need it
+	deployer.LambdaArn = lambdaArn
 
 	// Create the API Gateway API with proxy resource.
 	// This only needs to be done once as it shouldn't change and additional resources can't be configured.
@@ -173,11 +176,11 @@ func Deploy(cmd *cobra.Command, args []string) {
 	lambdaArnStr := *lambdaArn
 	fmt.Printf("\n\nCloudWatch Event Rules (Tasks) for:\n%v\n\n", lambdaArnStr)
 
-	for _, task := range getTasks() {
-		ruleArn := addCloudWatchEventRuleForLambda(task, lambdaArn)
-		// After the rule is added, we have to give it permissions to invoke the Lambda (even though we gave it a target)
-		addCloudWatchRulePermission(ruleArn)
-	}
+	// Tasks (CloudWatch event rules to trigger Lambda)
+	deployer.AddTasks()
+
+	// Bucket notifications (to trigger Lambda)
+	deployer.AddS3BucketNotifications()
 
 	// Clean up
 	if !cfg.App.KeepBuildFiles {
@@ -678,7 +681,7 @@ func updateAPI(apiID string, lambdaArn string) {
 }
 
 // deployAPI will create a stage and deploy the API
-func deployAPI(apiID string, stage deploymentStage) string {
+func deployAPI(apiID string, stage config.DeploymentStage) string {
 	svc := apigateway.New(getAWSSession())
 
 	// Must be one of: [58.2, 13.5, 28.4, 237, 0.5, 118, 6.1, 1.6]
@@ -768,34 +771,6 @@ func addAPIPermission(apiID string, lambdaArn string) {
 	}
 }
 
-// addCloudWatchRulePermission will add CloudWatch event rule permission to trigger Lambda
-func addCloudWatchRulePermission(eventArn string) {
-	// Both resources are created and the rule even looks like it should invoke the Lambda.
-	// But it won't without this permission.
-	// https://stackoverflow.com/questions/37571581/aws-cloudwatch-event-puttargets-not-adding-lambda-event-sources
-
-	svc := lambda.New(getAWSSession())
-
-	_, err := svc.AddPermission(&lambda.AddPermissionInput{
-		Action:       aws.String("lambda:InvokeFunction"),
-		FunctionName: aws.String(cfg.Lambda.FunctionName),
-		Principal:    aws.String("events.amazonaws.com"),
-		StatementId:  aws.String("aegis-cloudwatch-rule-invoke-lambda"), // (any string should do)
-		// EventSourceToken: aws.String("EventSourceToken"),
-		// Qualifier:        aws.String("Qualifier"),
-		// SourceAccount:    aws.String("SourceOwner"),
-		SourceArn: aws.String(eventArn),
-	})
-	if err != nil {
-		// Ignore "already exists" errors, that's fine. No apparent way to look up permissions before making the add call?
-		match, _ := regexp.MatchString("already exists", err.Error())
-		if !match {
-			fmt.Println("There was a problem setting permissions for the CloudWatch Rule to invoke the Lambda. Try again or go into AWS console and manually add the CloudWatch event rule trigger.")
-			fmt.Println(err.Error())
-		}
-	}
-}
-
 // addBinaryMediaTypes will update the API to specify valid binary media types
 func addBinaryMediaTypes(apiID string) {
 	svc := apigateway.New(getAWSSession())
@@ -815,71 +790,6 @@ func addBinaryMediaTypes(apiID string) {
 	if err != nil {
 		fmt.Println("There was a problem setting the binary media types for the API.")
 	}
-}
-
-// addCloudWatchEventRuleForLambda will add CloudWatch Event Rule for triggering the Lambda on a schedule with input
-func addCloudWatchEventRuleForLambda(t *task, lambdaArn *string) string {
-	state := "ENABLED"
-	if t.Disabled {
-		state = "DISABLED"
-	}
-	ruleArn := ""
-	// TODO: validation and log out errors/warnings?
-	if t.Schedule != "" {
-		svc := cloudwatchevents.New(getAWSSession())
-		ruleOutput, err := svc.PutRule(&cloudwatchevents.PutRuleInput{
-			Description: aws.String(t.Description),
-			// Again, name is all lowercase, filename without extension: <function name>_<file name>
-			// ie. for an example.json file, an event ARN/ID like: arn:aws:events:us-east-1:1234567890:rule/aegis_aegis_example
-			Name: aws.String(t.Name),
-			// IAM Role (either defined in aegix.yml or was set after creating role - either way, it should be on cfg by now)
-			RoleArn: aws.String(cfg.Lambda.Role),
-			// For example, "cron(0 20 * * ? *)" or "rate(5 minutes)"
-			ScheduleExpression: aws.String(t.Schedule),
-			// ENABLED or DISABLED
-			// In the Task JSON, the field is "disabled" so that when marshaling it defaults to false.
-			// This way it's optional in the JSON which makes it enabled by default.
-			State: aws.String(state),
-		})
-		if err != nil {
-			fmt.Println("There was a problem creating a CloudWatch Event Rule.")
-			fmt.Println(err)
-		} else {
-			ruleArn = *ruleOutput.RuleArn
-		}
-
-		jsonInput, _ := t.Input.MarshalJSON()
-		// Minify the JSON, trim whitespace, etc.
-		m := minify.New()
-		m.AddFuncRegexp(regexp.MustCompile("json$"), mJson.Minify)
-		jsonBytes, _ := m.Bytes("json", jsonInput)
-
-		var buffer bytes.Buffer
-		buffer.WriteString(string(jsonBytes))
-		inputTask := buffer.String()
-		buffer.Reset()
-
-		// Add the Lambda ARN as the target
-		_, err = svc.PutTargets(&cloudwatchevents.PutTargetsInput{
-			Rule: aws.String(t.Name),
-			Targets: []*cloudwatchevents.Target{
-				&cloudwatchevents.Target{
-					Arn:   lambdaArn,
-					Id:    aws.String(t.Name),
-					Input: aws.String(inputTask),
-				},
-			},
-		})
-
-		if err != nil {
-			fmt.Println("There was an error setting the CloudWatch Event Rule Target (Lambda function).")
-			fmt.Println(err)
-		} else {
-			fmt.Printf("%v %v\n", "Added/updated Task:", color.GreenString(t.Name))
-		}
-	}
-
-	return ruleArn
 }
 
 // getAccountInfoFromArn will extract the account ID and region from a given ARN
@@ -936,51 +846,4 @@ func getExecPath(name string) string {
 		os.Exit(-1)
 	}
 	return string(bytes.TrimSpace(out))
-}
-
-// getTasks will scan a `tasks` directory looking for JSON files (this is where all tasks should be kept)
-func getTasks() []*task {
-	var tasks []*task
-
-	// Don't proceed if the folder doesn't even exist.
-	// log.Println("Looking for tasks in:", TasksPath)
-	_, err := os.Stat(TasksPath)
-	if os.IsNotExist(err) {
-		return tasks
-	}
-
-	// Load the task definition files.
-	d, err := os.Open(TasksPath)
-	if err != nil {
-		log.Printf("error opening tasks path: %s", err)
-	}
-	defer d.Close()
-
-	files, err := d.Readdir(-1)
-	for _, file := range files {
-		if file.Mode().IsRegular() {
-			if strings.ToLower(filepath.Ext(file.Name())) == ".json" {
-				fp, err := filepath.EvalSymlinks(TasksPath + "/" + file.Name())
-				if err == nil {
-					raw, err := ioutil.ReadFile(fp)
-					if err == nil {
-						var t task
-						// The scheduled task file (a JSON file) should define most everything needed.
-						// The input, schedule, etc.
-						json.Unmarshal(raw, &t)
-						// Set a name based on the function name and file path.
-						// This makes it easier to update for future deploys.
-						// Do not allow a name override (for now - makes Tasker name matching easier, more conventional)
-						filename := file.Name()
-						extension := filepath.Ext(filename)
-						name := filename[0 : len(filename)-len(extension)]
-						t.Name = strings.ToLower(cfg.Lambda.FunctionName + "_" + name)
-						tasks = append(tasks, &t)
-					}
-				}
-			}
-		}
-	}
-
-	return tasks
 }

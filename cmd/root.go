@@ -16,7 +16,6 @@ package cmd
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -29,6 +28,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"github.com/tmaiaroto/aegis/cmd/config"
 )
 
 var cfgFile string
@@ -43,70 +43,8 @@ var RootCmd = &cobra.Command{
 	//	Run: func(cmd *cobra.Command, args []string) { },
 }
 
-// deploymentConfig holds the AWS Lambda configuration
-type deploymentConfig struct {
-	App struct {
-		Name           string
-		KeepBuildFiles bool
-		BuildFileName  string
-	}
-	AWS struct {
-		Region          string
-		Profile         string
-		AccessKeyID     string
-		SecretAccessKey string
-	}
-	Lambda struct {
-		Wrapper              string
-		Runtime              string
-		Handler              string
-		FunctionName         string
-		Alias                string
-		Description          string
-		MemorySize           int64
-		Role                 string
-		Timeout              int64
-		SourceZip            string
-		EnvironmentVariables map[string]*string
-		KMSKeyArn            string
-		VPC                  struct {
-			SecurityGroups []string
-			Subnets        []string
-		}
-		TraceMode               string
-		MaxConcurrentExecutions int64
-	}
-	API struct {
-		Name              string
-		Description       string
-		Cache             bool
-		CacheSize         string
-		Stages            map[string]deploymentStage
-		ResourceTimeoutMs int
-		BinaryMediaTypes  []*string
-	}
-}
-
-// deploymentStage defines an API Gateway stage and holds configuration options for it
-type deploymentStage struct {
-	Name        string
-	Description string
-	Variables   map[string]*string
-	Cache       bool
-	CacheSize   string
-}
-
-// task defines options for a CloudWatch event rule (scheduled task)
-type task struct {
-	Schedule    string          `json:"schedule"`
-	Input       json.RawMessage `json:"input"`
-	Disabled    bool            `json:"disabled"`
-	Description string          `json:"description"`
-	Name        string          `json:"-"` // Do not allow names to be set by JSON files (for now)
-}
-
 // cfg holds the Aegis configuration for the Lambda function, API Gateway settings, etc.
-var cfg deploymentConfig
+var cfg config.DeploymentConfig
 
 // awsCfg holds the AWS configuration and credentials
 var awsCfg aws.Config
@@ -184,8 +122,8 @@ func InitConfig() {
 	viper.SetDefault("api.resourceTimeoutMs", 29000)
 
 	// Default API stage (does not use caching, that comes with an additional cost)
-	viper.SetDefault("api.stages", map[string]deploymentStage{
-		"prod": deploymentStage{
+	viper.SetDefault("api.stages", map[string]config.DeploymentStage{
+		"prod": config.DeploymentStage{
 			Name:        "prod",
 			Description: "production stage",
 			Cache:       false, // no cache by default

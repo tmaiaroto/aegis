@@ -17,7 +17,7 @@ type RPCRouter struct {
 	Tracer   TraceStrategy
 }
 
-// RPCHandler is similar to RPCHanlder
+// RPCHandler is similar to and other router/handler but it returns a map[string]interface{} in addition to an error
 type RPCHandler func(context.Context, *map[string]interface{}) (map[string]interface{}, error)
 
 // LambdaHandler is a native AWS Lambda Go handler function. Handles a remote procedure call (invocation via SDK with a special event format).
