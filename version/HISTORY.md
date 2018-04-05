@@ -32,3 +32,9 @@ Not every possible service will likely ever covered, the focus will be on the co
 
 - S3 bucket notification triggers and router handler
 - begin restructuring/organization of functions for deploy command (Deployer interface)
+
+## 1.7.0
+
+- RPC handler receiver function changed to take evt value instead of pointer 
+  as a pointer would be redundant for map, better practice this way
+- being support for Cognito trigger events which also take and return a map value

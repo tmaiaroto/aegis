@@ -16,6 +16,7 @@ type Handlers struct {
 	Tasker         *Tasker
 	RPCRouter      *RPCRouter
 	S3ObjectRouter *S3ObjectRouter
+	CognitoRouter  *CognitoRouter
 	DefaultHandler DefaultHandler
 }
 
@@ -41,25 +42,6 @@ func getType(evt map[string]interface{}) string {
 		}
 	}
 
-	// TODO: Look into this again later...It turns out that scheduled events from CloudWatch
-	// will just send the static input JSON over alone by itself as a map. There will be
-	// no proper AWS Lambda event type struct. Context also apparently provides no insight
-	// that the Lambda was invoked by CloudWatch either.
-	// So it's up to Aegis to handle by convention.
-	//
-	// if CloudWatchEvent or AutoScalingEvent
-	// if keyInMap("DetailType", evt) && keyInMap("Source", evt) && keyInMap("Detail", evt) {
-	// 	switch t := evt["Detail"].(type) {
-	// 	case string:
-	// 		return "AutoScalingEvent"
-	// 	case json.RawMessage:
-	// 		return "CloudWatchEvent"
-	// 	default:
-	// 		_ = t
-	// 		return ""
-	// 	}
-	// }
-
 	// The convention will be that tasks are named with a `_taskName` key.
 	// This is known as an "AegisTask" and gets handled by Tasker.
 	if keyInMap("_taskName", evt) {
@@ -68,6 +50,16 @@ func getType(evt map[string]interface{}) string {
 
 	if keyInMap("_rpcName", evt) {
 		return "AegisRPC"
+	}
+
+	// if Cognito trigger
+	if keyInMap("userPoolId", evt) && keyInMap("triggerSource", evt) {
+		return "CognitoTrigger"
+	}
+
+	// if CognitoEvent
+	if keyInMap("identityPoolId", evt) && keyInMap("datasetRecords", evt) {
+		return "CognitoEvent"
 	}
 
 	return ""
@@ -94,9 +86,7 @@ func (h *Handlers) eventHandler(ctx context.Context, evt map[string]interface{})
 	switch evtType {
 	case "APIGatewayProxyRequest":
 		var e APIGatewayProxyRequest
-		// This mapstructure package does use reflection.
-		// An alternative to this would be to go back to JSON then to struct.
-		// TODO: consider this. does it really matter? is one way faster?
+		// The event contains no time/date, should decode just fine
 		err = mapstructure.Decode(evt, &e)
 		if err == nil {
 			return h.Router.LambdaHandler(ctx, e)
@@ -117,7 +107,6 @@ func (h *Handlers) eventHandler(ctx context.Context, evt map[string]interface{})
 			DecodeHook: mapstructure.StringToTimeHookFunc(time.RFC3339Nano),
 			Result:     &e,
 		})
-
 		// decodeErr := mapstructure.Decode(evt, &e)
 		decodeErr := decoder.Decode(evt)
 		if decodeErr == nil {
@@ -125,6 +114,11 @@ func (h *Handlers) eventHandler(ctx context.Context, evt map[string]interface{})
 		} else {
 			log.Println("Could not decode S3Event", decodeErr)
 		}
+	case "CognitoTrigger":
+		// There's so many different formats here, routing for each is a bit silly.
+		// So send map[string]interface{}
+		// The handler itself can unmarshal using structs found in cognito_trigger_types.go
+		return h.CognitoRouter.LambdaHandler(ctx, evt)
 	default:
 		log.Println("Could not determine Lambda event type, using DefaultHandler.")
 		// If a default handler is not set, return an error about it.

@@ -62,6 +62,10 @@ func main() {
 	// Put() is a shortcut for the above
 	s3Router.Put("*.png", handleS3Upload)
 
+	// Handle Cognito Triggers
+	cognitoRouter := aegis.NewCognitoRouter()
+	cognitoRouter.Handle("PreSignUp_SignUp", handleCognitoPreSignUp)
+
 	// Blocks. So this function would only be good for handling APIGatewayProxyRequest events
 	// router.Listen()
 	// Also blocks, but uses reflection to get the event type and then calls the appropriate handler
@@ -72,6 +76,7 @@ func main() {
 		Tasker:         tasker,
 		RPCRouter:      rpcRouter,
 		S3ObjectRouter: s3Router,
+		CognitoRouter:  cognitoRouter,
 	}
 	handlers.Listen()
 }
@@ -156,10 +161,9 @@ func taskerFallThrough(ctx context.Context, evt *map[string]interface{}) error {
 }
 
 // Example RPC handler
-func handleProcedure(ctx context.Context, evt *map[string]interface{}) (map[string]interface{}, error) {
+func handleProcedure(ctx context.Context, evt map[string]interface{}) (map[string]interface{}, error) {
 	log.Println("Handling remote procedure!")
-	dereferenceEvt := *evt
-	return dereferenceEvt, nil
+	return evt, nil
 }
 
 // Example S3 handler
@@ -167,4 +171,11 @@ func handleS3Upload(ctx context.Context, evt *aegis.S3Event) error {
 	log.Println("Handling S3 upload!")
 	log.Println(evt)
 	return nil
+}
+
+// Example cognito handler
+func handleCognitoPreSignUp(ctx context.Context, evt map[string]interface{}) (map[string]interface{}, error) {
+	log.Println("Handling Cognito Pre SignUp!")
+	log.Println(evt)
+	return evt, nil
 }

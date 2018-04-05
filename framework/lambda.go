@@ -34,6 +34,9 @@ type (
 	// S3Event alias
 	S3Event events.S3Event
 
+	// CognitoEvent alias (NOT a Cognito Trigger event, this is for sync)
+	CognitoEvent events.CognitoEvent
+
 	// CloudWatchEvent alias for CloudWatchEvent events
 	CloudWatchEvent events.CloudWatchEvent
 )

@@ -18,7 +18,7 @@ type RPCRouter struct {
 }
 
 // RPCHandler is similar to and other router/handler but it returns a map[string]interface{} in addition to an error
-type RPCHandler func(context.Context, *map[string]interface{}) (map[string]interface{}, error)
+type RPCHandler func(context.Context, map[string]interface{}) (map[string]interface{}, error)
 
 // LambdaHandler is a native AWS Lambda Go handler function. Handles a remote procedure call (invocation via SDK with a special event format).
 func (r *RPCRouter) LambdaHandler(ctx context.Context, evt map[string]interface{}) (map[string]interface{}, error) {
@@ -44,7 +44,7 @@ func (r *RPCRouter) LambdaHandler(ctx context.Context, evt map[string]interface{
 			err = r.Tracer.Capture(ctx, "RPCHandler", func(ctx1 context.Context) error {
 				r.Tracer.AddAnnotations(ctx1)
 				r.Tracer.AddMetadata(ctx1)
-				response, err = handler(ctx, &evt)
+				response, err = handler(ctx, evt)
 				return err
 			})
 		}
@@ -62,7 +62,7 @@ func (r *RPCRouter) LambdaHandler(ctx context.Context, evt map[string]interface{
 				err = r.Tracer.Capture(ctx, "RPCHandler", func(ctx1 context.Context) error {
 					r.Tracer.AddAnnotations(ctx1)
 					r.Tracer.AddMetadata(ctx1)
-					response, err = handler(ctx, &evt)
+					response, err = handler(ctx, evt)
 					return err
 				})
 			}
@@ -80,7 +80,7 @@ func (r *RPCRouter) Listen() {
 // NewRPCRouter simply returns a new RPCRouter struct and behaves a bit like Router, it even takes an optional rootHandler or "fall through" catch all
 func NewRPCRouter(rootHandler ...RPCHandler) *RPCRouter {
 	// The catch all is optional, if not provided, an empty handler is still called and it returns nothing.
-	handler := func(context.Context, *map[string]interface{}) (map[string]interface{}, error) {
+	handler := func(context.Context, map[string]interface{}) (map[string]interface{}, error) {
 		return map[string]interface{}{}, nil
 	}
 	if len(rootHandler) > 0 {
