@@ -25,6 +25,9 @@ import (
 	aegis "github.com/tmaiaroto/aegis/framework"
 )
 
+// AegisApp holds a bunch of services that each handler might need
+var AegisApp *aegis.Aegis
+
 func main() {
 	// Enable line numbers in logging
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
@@ -52,6 +55,13 @@ func main() {
 
 	router.Handle("POST", "/", postExample)
 
+	// Use AWS Cognito hosted pages for signin
+	router.Handle("GET", "/login", redirectToCognitoSignin)
+	// Callback for Cognito
+	router.Handle("GET", "/callback", cognitoCallback)
+	// After login example
+	router.Handle("GET", "/userinfo", cognitoProtected, jwtMiddleware)
+
 	// Handle RPCs
 	rpcRouter := aegis.NewRPCRouter()
 	rpcRouter.Handle("procedure", handleProcedure)
@@ -78,7 +88,32 @@ func main() {
 		S3ObjectRouter: s3Router,
 		CognitoRouter:  cognitoRouter,
 	}
-	handlers.Listen()
+	// This still works, but it skips service set up.
+	// Not using Cognito or any other service in your handlers? Great! Feel free to call this.
+	// handlers.Listen()
+	//
+	// Using the Aegis interface isn't even necessary in this case either. Especially if
+	// you don't want any custom logging, etc. The choice is yours.
+	// Of course handlers.Listen() is also entirely optional too. Each router/handler has
+	// the ability to be used by itself with lambda.Start(). Each router/handler has a
+	// LambdaHandler function for that. So, lambda.Start(router.LambdaHandler) for example.
+	// That's 3 ways to handle Lambdas.
+	// An RPC only Lambda for example may really wish to be thinner and not include
+	// all the service config, other handlers, etc.
+
+	AegisApp = aegis.New(handlers)
+	// The configuration is a function because config can come from a variety of sources
+	AegisApp.ConfigureCognitoAppClient(func(ctx context.Context, evt map[string]interface{}) interface{} {
+		return &aegis.CognitoAppClientConfig{
+			Region:      "us-east-1",
+			PoolID:      "xxxxx",
+			ClientID:    "xxxxx",
+			RedirectURI: "https://xxxxx.amazonaws.com/prod/callback",
+		}
+	})
+
+	AegisApp.Start()
+
 }
 
 func fallThrough(ctx context.Context, req *aegis.APIGatewayProxyRequest, res *aegis.APIGatewayProxyResponse, params url.Values) error {
@@ -146,6 +181,71 @@ func barMiddleware(ctx context.Context, req *aegis.APIGatewayProxyRequest, res *
 	log.Println("Bar!")
 	res.Body = "bar!"
 	return true
+}
+
+// Redirect to AWS Cognito hosted signin page
+func redirectToCognitoSignin(ctx context.Context, req *aegis.APIGatewayProxyRequest, res *aegis.APIGatewayProxyResponse, params url.Values) error {
+	log.Println("Redirect to login:", AegisApp.Cognito.HostedLoginURL)
+	res.Redirect(301, AegisApp.Cognito.HostedLoginURL)
+	// res.JSON(200, map[string]interface{}{"url": CAClient.HostedLoginURL})
+	return nil
+}
+
+// Handle oauth2 callback, will exchange code for token
+func cognitoCallback(ctx context.Context, req *aegis.APIGatewayProxyRequest, res *aegis.APIGatewayProxyResponse, params url.Values) error {
+	// Exchange code for token
+	tokens, err := AegisApp.Cognito.GetTokens(req.QueryStringParameters["code"], []string{"profile", "openid"})
+	if err != nil {
+		log.Println("Couldn't get access token", err)
+		res.JSONError(500, err)
+	} else {
+		// verify the token
+		_, err := AegisApp.Cognito.ParseAndVerifyJWT(tokens.IDToken)
+		if err == nil {
+			// Use/send whichever you need for your app
+			res.SetHeader("Set-Cookie", "access_token="+tokens.AccessToken+"; Domain=u7aq1oathb.execute-api.us-east-1.amazonaws.com; Secure; HttpOnly")
+			// convert to string
+			//res.SetHeader("Set-Cookie", "token_expiration="+token.ExpiresIn+"; Domain=u7aq1oathb.execute-api.us-east-1.amazonaws.com; Secure; HttpOnly")
+			res.Redirect(301, "https://u7aq1oathb.execute-api.us-east-1.amazonaws.com/prod/userinfo")
+		} else {
+			res.JSONError(401, errors.New("unauthorized, invalid token"))
+		}
+	}
+	// This is all a one time auth. It verifies the JWT but does nothing else with it.
+	// So it won't be held in cookies, etc. Users would need to go back to login all over again for a new code to exchange.
+	// See use case 26
+	// Better to use this in applications:
+	// https://github.com/aws/aws-amplify
+
+	return nil
+}
+
+// Example after successful login
+func cognitoProtected(ctx context.Context, req *aegis.APIGatewayProxyRequest, res *aegis.APIGatewayProxyResponse, params url.Values) error {
+	res.JSON(200, map[string]interface{}{"success": true})
+	return nil
+}
+
+func jwtMiddleware(ctx context.Context, req *aegis.APIGatewayProxyRequest, res *aegis.APIGatewayProxyResponse, params url.Values) bool {
+	jwtCookie, err := req.Cookie("access_token")
+	if err != nil {
+		log.Println("access_token not found in cookies", err)
+		allCookies, _ := req.Cookies()
+		log.Println("All cookies:", allCookies)
+		return false
+	}
+	// Check req Host and Referrer for increased protection
+
+	_, err = AegisApp.Cognito.ParseAndVerifyJWT(jwtCookie.Value)
+	// parsedToken, err := CAClient.ParseAndVerifyJWT(token.IDToken)
+	// if parsedToken.Claims ... some blah blah, or look up some user then if blah blah, then ok.
+	if err == nil {
+		log.Println("Could not verify JWT", err)
+		return true
+	}
+
+	// none shall pass
+	return false
 }
 
 // Example task handler

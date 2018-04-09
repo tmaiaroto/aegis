@@ -88,6 +88,18 @@ type CognitoTriggerPreAuthentication struct {
 	Response map[string]interface{} `json:"response"`
 }
 
+// CognitoTriggerTokenGeneration is invoked before the token generation, allowing you to customize the claims
+// in the identity token.
+// triggerSource: TokenGeneration_HostedAuth
+type CognitoTriggerTokenGeneration struct {
+	CognitoTriggerCommon
+	Request struct {
+		UserAttributes     map[string]interface{} `json:"userAttributes"`
+		GroupConfiguration map[string]interface{} `json:"groupConfiguration"`
+	} `json:"request"`
+	Response map[string]interface{} `json:"response"` // default is map[claimsOverrideDetails: <nil>]
+}
+
 // GetCognitoTriggerType returns the name of the struct for the Cognito trigger
 func GetCognitoTriggerType(evt map[string]interface{}) string {
 	// triggerSource key will have the Cognito trigger type, ie. PreSignUp_SignUp
@@ -102,6 +114,8 @@ func GetCognitoTriggerType(evt map[string]interface{}) string {
 		return "CognitoTriggerPostAuthentication"
 	case "PreAuthentication_Authentication":
 		return "CognitoTriggerPreAuthentication"
+	case "TokenGeneration_HostedAuth":
+		return "CognitoTriggerTokenGeneration"
 	}
 	return ""
 }

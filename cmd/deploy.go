@@ -539,6 +539,13 @@ func createOrUpdateAegisRole() string {
 			  {
 				"Effect": "Allow",
 				"Principal": {
+				  "Service": "cognito-identity.amazonaws.com"
+				},
+				  "Action": "sts:AssumeRole"
+			  },
+			  {
+				"Effect": "Allow",
+				"Principal": {
 				  "Service": "xray.amazonaws.com"
 				},
 				"Action": "sts:AssumeRole"
@@ -566,6 +573,16 @@ func createOrUpdateAegisRole() string {
 	})
 	if err != nil {
 		fmt.Println("There was a problem attaching AWSLambdaFullAccess managed policy to the IAM role for Lambda.")
+		fmt.Println(err)
+	}
+
+	// Then AmazonCognitoReadOnly
+	_, err = svc.AttachRolePolicy(&iam.AttachRolePolicyInput{
+		PolicyArn: aws.String("arn:aws:iam::aws:policy/AmazonCognitoReadOnly"),
+		RoleName:  aegisLambdaRoleName,
+	})
+	if err != nil {
+		fmt.Println("There was a problem attaching AmazonCognitoReadOnly managed policy to the IAM role for Lambda.")
 		fmt.Println(err)
 	}
 

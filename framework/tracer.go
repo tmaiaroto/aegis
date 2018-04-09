@@ -3,16 +3,15 @@ package framework
 import (
 	"context"
 
+	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-xray-sdk-go/xray"
 )
 
-// AWSClientTracer is an alias of xray.AWS. Overwrite if framework is to use a different client tracer.
-var AWSClientTracer = xray.AWS
-
 // TraceStrategy interface uses XRay by default. Any struct implementing this interface can be used instead.
 type TraceStrategy struct {
-	Annotations map[string]interface{}
-	Metadata    map[string]interface{}
+	Annotations     map[string]interface{}
+	Metadata        map[string]interface{}
+	AWSClientTracer func(c *client.Client)
 }
 
 // Capture traces the provided synchronous function by using XRay Cpature() which puts a beginning and closing subsegment around its execution

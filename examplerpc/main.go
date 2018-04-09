@@ -36,7 +36,10 @@ func root(ctx context.Context, req *aegis.APIGatewayProxyRequest, res *aegis.API
 		"_rpcName":  "lookup",
 		"ipAddress": req.RequestContext.Identity.SourceIP,
 	}
-	resp, rpcErr := aegis.RPC(ctx, "aegis_geoip", rpcPayload)
+	// resp, rpcErr := aegis.RPC(ctx, "aegis_geoip", rpcPayload)
+	// Use Aegis interface's RPC() call to trace. This is an untraced Lambda invocation.
+	// Which means it could be called outside of an event handler.
+	resp, rpcErr := aegis.RPC("aegis_geoip", rpcPayload)
 	log.Println(rpcErr)
 
 	res.JSON(200, map[string]interface{}{"event": resp, "context": lc})

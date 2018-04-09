@@ -102,7 +102,7 @@ func (r *RPCRouter) Handle(name string, handler RPCHandler) {
 }
 
 // RPC will make the remote procedure call (invoke another lambda)
-func RPC(ctx context.Context, functionName string, message map[string]interface{}) (map[string]interface{}, error) {
+func RPC(functionName string, message map[string]interface{}) (map[string]interface{}, error) {
 	sess, err := session.NewSession()
 	if err != nil {
 		log.Println("could not make remote procedure call, session could not be created")
@@ -118,15 +118,7 @@ func RPC(ctx context.Context, functionName string, message map[string]interface{
 
 	// region? cross account?
 	svc := lambdaSDK.New(sess)
-	// Wrap in XRay so it gets logged and appears in service map
-	// TODO: We don't hav r *RPCRouter here...So we don't have a configurable interface to use...
-	// TraceStrategy.AWS()
-	// xray.AWS(svc.Client)
-	AWSClientTracer(svc.Client)
-
-	// TODO: Look into this more. So many interesting options here. InvocationType and LogType could be interesting outside of defaults
-	output, err := svc.InvokeWithContext(ctx, &lambdaSDK.InvokeInput{
-		// ClientContext // TODO: think about this...
+	output, err := svc.Invoke(&lambdaSDK.InvokeInput{
 		FunctionName: aws.String(functionName),
 		// JSON bytes, sadly it does not pass just any old byte array. It's going to come in as a map to the handler.
 		// That's a map[string]interface{} from JSON. I saw byte array at first and got excited.

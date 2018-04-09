@@ -28,13 +28,29 @@ a lightweight set of helpers or framework to help build things faster. It's to b
 and flexible. 1.x will focus on adding more event router/handlers and helper functions.
 Not every possible service will likely ever covered, the focus will be on the common.
 
-## 1.6.0
+## 1.8.0
 
-- S3 bucket notification triggers and router handler
-- begin restructuring/organization of functions for deploy command (Deployer interface)
+- Added Cognito app client interface/helper (verify tokens, etc.)
+- Adjusted deploy command to add Cognito access to aegis lambda role
+- Added cookie helpers using Go's http package by creating fake http.Request
+  so reading cookies from API Gateway requests is now easy
+- Added an Aegis interface that helps manage various dependencies and services 
+  to capitalize on Lambda container re-use
+- *Breaking change* (minor): RPC() now invokes Lambdas without tracing support.
+  So context is not required as the frist argument. This allows an RPC call to be
+  made outside of a Lambda event handler. An additional RPC() method has been added
+  to the new Aegis interface. This uses the context set on Aegis for tracing (which
+  can be overridden). This function also does not require context to be passed.
+  This helps to eliminte passing dependencies just for things like tracing.
+- AWSClientTracer alias has been removed
 
 ## 1.7.0
 
 - RPC handler receiver function changed to take evt value instead of pointer 
   as a pointer would be redundant for map, better practice this way
 - being support for Cognito trigger events which also take and return a map value
+
+## 1.6.0
+
+- S3 bucket notification triggers and router handler
+- begin restructuring/organization of functions for deploy command (Deployer interface)

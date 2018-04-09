@@ -1,10 +1,12 @@
 package framework
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"encoding/xml"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"mime"
@@ -322,4 +324,29 @@ func (req *APIGatewayProxyRequest) GetJSONBody() (map[string]interface{}, error)
 		err = json.Unmarshal([]byte(b), &m)
 	}
 	return m, err
+}
+
+// getHTTPRequestWithCookies will return a new *http.Request (fake) with cookies, exposing functions for getting cookies.
+func (req *APIGatewayProxyRequest) getHTTPRequestWithCookies() (*http.Request, error) {
+	// log.Println("Cookie header:", req.GetHeader("Cookie"))
+	return http.ReadRequest(bufio.NewReader(strings.NewReader(fmt.Sprintf("GET / HTTP/1.0\r\nCookie: %s\r\n\r\n", req.GetHeader("Cookie")))))
+}
+
+// Cookie will get a cookie from the APIGatewayProxyRequest by parsing the header using Go's http package.
+func (req *APIGatewayProxyRequest) Cookie(name string) (*http.Cookie, error) {
+	fakeReq, err := req.getHTTPRequestWithCookies()
+	// log.Println("fake request:", fakeReq)
+	if err != nil {
+		return nil, err
+	}
+	return fakeReq.Cookie(name)
+}
+
+// Cookies will get all cookies from the APIGatewayProxyRequest by parsing the header using Go's http package.
+func (req *APIGatewayProxyRequest) Cookies() ([]*http.Cookie, error) {
+	fakeReq, err := req.getHTTPRequestWithCookies()
+	if err != nil {
+		return nil, err
+	}
+	return fakeReq.Cookies(), nil
 }

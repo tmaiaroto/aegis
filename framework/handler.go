@@ -25,8 +25,6 @@ type DefaultHandler func(context.Context, *map[string]interface{}) (interface{},
 
 // getType will determine which type of event is being sent
 func getType(evt map[string]interface{}) string {
-	// log.Println("evt:", evt)
-
 	// if APIGatewayProxyRequest
 	if keyInMap("httpMethod", evt) && keyInMap("path", evt) {
 		return "APIGatewayProxyRequest"

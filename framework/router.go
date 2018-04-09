@@ -132,13 +132,11 @@ func (r *Router) LambdaHandler(ctx context.Context, req APIGatewayProxyRequest) 
 		// Middleware must return true in order to continue.
 		// If it returns false, it will catch and halt everything.
 		if !runMiddleware(ctx, &req, &res, params, handler.middleware...) {
-			// TODO: Figure out what to do here. I'm not sure what makes sense.
-			// Should it return the response in its current state?
+			// Return the response in its current stage if middleware returns false.
+			// It is up to the middleware itself to set the response returned.
+			// Maybe some authentication failed? So maybe the middleware wants to return a message about that.
+			// But since it failed, it will not proceed any farther with the next middleware or route handler.
 			return res, nil
-			// Or should it return an error?
-			// Typically it leaves the request hanging if it returns false.
-			// The middleware would need to write something back to the client.
-			// return NewProxyResponse(500, map[string]string{}, "", nil)
 		}
 		// Trac/capture the handler (in XRay by default) automatically
 		r.Tracer.Annotations = map[string]interface{}{
