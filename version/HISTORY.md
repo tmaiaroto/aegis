@@ -28,6 +28,10 @@ a lightweight set of helpers or framework to help build things faster. It's to b
 and flexible. 1.x will focus on adding more event router/handlers and helper functions.
 Not every possible service will likely ever covered, the focus will be on the common.
 
+## 1.9.1
+
+ - `lambdaHandler` was added to the Handlers interface for backward compatibility.
+
 ## 1.9.0
 
 Unfortunately there are a few breaking changes with this release.

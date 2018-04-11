@@ -157,7 +157,15 @@ func (h *Handlers) eventHandler(ctx context.Context, d *HandlerDependencies, evt
 	return nil, err
 }
 
-// Listen will start a general listener which determines the proper handler to used based on incoming events
+// lambdaHandler is a handler used directly with AWS Lambda. It must match this signature.
+// However, it uses eventHandler which injects dependencies. In this case, there are no configured dependencies to inject.
+func (h *Handlers) lambdaHandler(ctx context.Context, evt map[string]interface{}) (interface{}, error) {
+	d := HandlerDependencies{}
+	return h.eventHandler(ctx, &d, evt)
+}
+
+// Listen will start a general listener which determines the proper handler to used based on incoming events.
+// NOTE: Using handlers directly this way skips on injecting dependencies into the handlers.
 func (h *Handlers) Listen() {
-	lambda.Start(h.eventHandler)
+	lambda.Start(h.lambdaHandler)
 }
