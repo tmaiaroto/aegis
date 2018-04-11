@@ -1,3 +1,17 @@
+// Copyright © 2016 Tom Maiaroto <tom@shift8creative.com>
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package framework
 
 import (
@@ -15,10 +29,10 @@ type CognitoRouter struct {
 }
 
 // CognitoHandler handles routed trigger events, note that these must return a map[string]interface{} response
-type CognitoHandler func(context.Context, map[string]interface{}) (map[string]interface{}, error)
+type CognitoHandler func(context.Context, *HandlerDependencies, map[string]interface{}) (map[string]interface{}, error)
 
 // LambdaHandler handles Cognito trigger events.
-func (r *CognitoRouter) LambdaHandler(ctx context.Context, evt map[string]interface{}) (map[string]interface{}, error) {
+func (r *CognitoRouter) LambdaHandler(ctx context.Context, d *HandlerDependencies, evt map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	handled := false
 	userPoolID := evt["userPoolId"].(string)
@@ -41,7 +55,8 @@ func (r *CognitoRouter) LambdaHandler(ctx context.Context, evt map[string]interf
 			err = r.Tracer.Capture(ctx, "CognitoHandler", func(ctx1 context.Context) error {
 				r.Tracer.AddAnnotations(ctx1)
 				r.Tracer.AddMetadata(ctx1)
-				response, err = handler(ctx, evt)
+				d.Tracer = &r.Tracer
+				response, err = handler(ctx1, d, evt)
 				return err
 			})
 		}
@@ -64,7 +79,8 @@ func (r *CognitoRouter) LambdaHandler(ctx context.Context, evt map[string]interf
 			err = r.Tracer.Capture(ctx, "CognitoHandler", func(ctx1 context.Context) error {
 				r.Tracer.AddAnnotations(ctx1)
 				r.Tracer.AddMetadata(ctx1)
-				response, err = handler(ctx, evt)
+				d.Tracer = &r.Tracer
+				response, err = handler(ctx, d, evt)
 				return err
 			})
 		}
@@ -81,7 +97,7 @@ func (r *CognitoRouter) Listen() {
 // NewCognitoRouter simply returns a new CognitoRouter struct and behaves a bit like Router, it even takes an optional rootHandler or "fall through" catch all
 func NewCognitoRouter(rootHandler ...CognitoHandler) *CognitoRouter {
 	// The catch all is optional, if not provided, an empty handler is still called and it returns nothing.
-	handler := func(context.Context, map[string]interface{}) (map[string]interface{}, error) {
+	handler := func(context.Context, *HandlerDependencies, map[string]interface{}) (map[string]interface{}, error) {
 		return map[string]interface{}{}, nil
 	}
 	if len(rootHandler) > 0 {
@@ -109,7 +125,7 @@ func NewCognitoRouterForPool(poolID string, rootHandler ...CognitoHandler) *Cogn
 
 // Handle will register a handler for a given Cognito trigger source
 // List of triggerSources here: https://docs.aws.amazon.com/cognito/latest/developerguide/cognito-user-pools-lambda-trigger-syntax-shared.html
-func (r *CognitoRouter) Handle(triggerSource string, handler func(context.Context, map[string]interface{}) (map[string]interface{}, error)) {
+func (r *CognitoRouter) Handle(triggerSource string, handler func(context.Context, *HandlerDependencies, map[string]interface{}) (map[string]interface{}, error)) {
 	if r.handlers == nil {
 		r.handlers = make(map[string]CognitoHandler)
 	}
@@ -117,7 +133,7 @@ func (r *CognitoRouter) Handle(triggerSource string, handler func(context.Contex
 }
 
 // PreSignUp is the same as Handle only the triggerSource is already implied. It handles any PreSignUp_SignUp event.
-func (r *CognitoRouter) PreSignUp(handler func(context.Context, map[string]interface{}) (map[string]interface{}, error)) {
+func (r *CognitoRouter) PreSignUp(handler func(context.Context, *HandlerDependencies, map[string]interface{}) (map[string]interface{}, error)) {
 	r.Handle("PreSignUp_SignUp", handler)
 }
 

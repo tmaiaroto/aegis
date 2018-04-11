@@ -1,3 +1,17 @@
+// Copyright © 2016 Tom Maiaroto <tom@shift8creative.com>
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package framework
 
 import (
@@ -22,13 +36,13 @@ type S3ObjectRouter struct {
 // So this handler actually is a struct with a Handler function like normal, but then also
 // an event type match and an object key ("file path") glob matcher.
 type S3ObjectHandler struct {
-	Handler func(context.Context, *S3Event) error
+	Handler func(context.Context, *HandlerDependencies, *S3Event) error
 	Event   string
 	// Key     string <-- not needed, the router's handlers map has the key match in its keys
 }
 
 // LambdaHandler handles S3 events.
-func (r *S3ObjectRouter) LambdaHandler(ctx context.Context, evt S3Event) error {
+func (r *S3ObjectRouter) LambdaHandler(ctx context.Context, d *HandlerDependencies, evt S3Event) error {
 	var err error
 	var g glob.Glob
 	handled := false
@@ -57,7 +71,8 @@ func (r *S3ObjectRouter) LambdaHandler(ctx context.Context, evt S3Event) error {
 						err = r.Tracer.Capture(ctx, "S3ObjectHandler", func(ctx1 context.Context) error {
 							r.Tracer.AddAnnotations(ctx1)
 							r.Tracer.AddMetadata(ctx1)
-							return handler.Handler(ctx, &evt)
+							d.Tracer = &r.Tracer
+							return handler.Handler(ctx1, d, &evt)
 						})
 					}
 					// TODO: think about some verbose setting for the framework.
@@ -83,7 +98,8 @@ func (r *S3ObjectRouter) LambdaHandler(ctx context.Context, evt S3Event) error {
 						err = r.Tracer.Capture(ctx, "S3ObjectHandler", func(ctx1 context.Context) error {
 							r.Tracer.AddAnnotations(ctx1)
 							r.Tracer.AddMetadata(ctx1)
-							return handler.Handler(ctx, &evt)
+							d.Tracer = &r.Tracer
+							return handler.Handler(ctx1, d, &evt)
 						})
 					}
 				}
@@ -104,7 +120,7 @@ func (r *S3ObjectRouter) Listen() {
 func NewS3ObjectRouter(rootHandler ...S3ObjectHandler) *S3ObjectRouter {
 	// The catch all is optional, if not provided, an empty handler is still called and it returns nothing.
 	handler := S3ObjectHandler{
-		Handler: func(context.Context, *S3Event) error {
+		Handler: func(context.Context, *HandlerDependencies, *S3Event) error {
 			return nil
 		},
 	}
@@ -132,7 +148,7 @@ func NewS3ObjectRouterForBucket(bucket string, rootHandler ...S3ObjectHandler) *
 }
 
 // Handle will register a handler for a given S3 object event and key name glob match
-func (r *S3ObjectRouter) Handle(event string, keyMatch string, handler func(context.Context, *S3Event) error) {
+func (r *S3ObjectRouter) Handle(event string, keyMatch string, handler func(context.Context, *HandlerDependencies, *S3Event) error) {
 	if r.handlers == nil {
 		r.handlers = make(map[string]S3ObjectHandler)
 	}
@@ -143,47 +159,47 @@ func (r *S3ObjectRouter) Handle(event string, keyMatch string, handler func(cont
 }
 
 // Created is the same as Handle only the event is already implied. It handles any ObjectCreated event.
-func (r *S3ObjectRouter) Created(keyMatch string, handler func(context.Context, *S3Event) error) {
+func (r *S3ObjectRouter) Created(keyMatch string, handler func(context.Context, *HandlerDependencies, *S3Event) error) {
 	r.Handle("s3:ObjectCreated:*", keyMatch, handler)
 }
 
 // Put is the same as Handle only the event is already implied.
-func (r *S3ObjectRouter) Put(keyMatch string, handler func(context.Context, *S3Event) error) {
+func (r *S3ObjectRouter) Put(keyMatch string, handler func(context.Context, *HandlerDependencies, *S3Event) error) {
 	r.Handle("s3:ObjectCreated:Put", keyMatch, handler)
 }
 
 // Post is the same as Handle only the event is already implied.
-func (r *S3ObjectRouter) Post(keyMatch string, handler func(context.Context, *S3Event) error) {
+func (r *S3ObjectRouter) Post(keyMatch string, handler func(context.Context, *HandlerDependencies, *S3Event) error) {
 	r.Handle("s3:ObjectCreated:Post", keyMatch, handler)
 }
 
 // Copy is the same as Handle only the event is already implied.
-func (r *S3ObjectRouter) Copy(keyMatch string, handler func(context.Context, *S3Event) error) {
+func (r *S3ObjectRouter) Copy(keyMatch string, handler func(context.Context, *HandlerDependencies, *S3Event) error) {
 	r.Handle("s3:ObjectCreated:Copy", keyMatch, handler)
 }
 
 // CompleteMultipartUpload is the same as Handle only the event is already implied.
-func (r *S3ObjectRouter) CompleteMultipartUpload(keyMatch string, handler func(context.Context, *S3Event) error) {
+func (r *S3ObjectRouter) CompleteMultipartUpload(keyMatch string, handler func(context.Context, *HandlerDependencies, *S3Event) error) {
 	r.Handle("s3:ObjectCreated:CompleteMultipartUpload", keyMatch, handler)
 }
 
 // Removed is the same as Handle only the event is already implied. It handles any ObjectRemoved event.
-func (r *S3ObjectRouter) Removed(keyMatch string, handler func(context.Context, *S3Event) error) {
+func (r *S3ObjectRouter) Removed(keyMatch string, handler func(context.Context, *HandlerDependencies, *S3Event) error) {
 	r.Handle("s3:ObjectRemoved:*", keyMatch, handler)
 }
 
 // Delete is the same as Handle only the event is already implied.
-func (r *S3ObjectRouter) Delete(keyMatch string, handler func(context.Context, *S3Event) error) {
+func (r *S3ObjectRouter) Delete(keyMatch string, handler func(context.Context, *HandlerDependencies, *S3Event) error) {
 	r.Handle("s3:ObjectRemoved:Delete", keyMatch, handler)
 }
 
 // DeleteMarkerCreated is the same as Handle only the event is already implied.
-func (r *S3ObjectRouter) DeleteMarkerCreated(keyMatch string, handler func(context.Context, *S3Event) error) {
+func (r *S3ObjectRouter) DeleteMarkerCreated(keyMatch string, handler func(context.Context, *HandlerDependencies, *S3Event) error) {
 	r.Handle("s3:ObjectRemoved:DeleteMarkerCreated", keyMatch, handler)
 }
 
 // ReducedRedundancyLostObject is the same as Handle only the event is already implied.
-func (r *S3ObjectRouter) ReducedRedundancyLostObject(keyMatch string, handler func(context.Context, *S3Event) error) {
+func (r *S3ObjectRouter) ReducedRedundancyLostObject(keyMatch string, handler func(context.Context, *HandlerDependencies, *S3Event) error) {
 	r.Handle("s3:ReducedRedundancyLostObject", keyMatch, handler)
 }
 

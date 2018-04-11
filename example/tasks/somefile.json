@@ -1,8 +1,0 @@
-{
-    "schedule": "rate(1 minute)",
-    "disabled": true,
-    "input": {
-        "_taskName": "test",
-        "foo": "bar"
-    }
-}

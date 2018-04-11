@@ -1,3 +1,17 @@
+// Copyright © 2016 Tom Maiaroto <tom@shift8creative.com>
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package framework
 
 import (
@@ -6,6 +20,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/mitchellh/mapstructure"
 )
@@ -20,8 +35,15 @@ type Handlers struct {
 	DefaultHandler DefaultHandler
 }
 
+// HandlerDependencies defines dependencies to be injected into each handler
+type HandlerDependencies struct {
+	Services *Services
+	Log      *logrus.Logger
+	Tracer   *TraceStrategy
+}
+
 // DefaultHandler is used when the message type can't be identified as anything else, completely optional to use
-type DefaultHandler func(context.Context, *map[string]interface{}) (interface{}, error)
+type DefaultHandler func(context.Context, *HandlerDependencies, *map[string]interface{}) (interface{}, error)
 
 // getType will determine which type of event is being sent
 func getType(evt map[string]interface{}) string {
@@ -73,7 +95,7 @@ func keyInMap(k string, m map[string]interface{}) bool {
 
 // eventHandler is a general handler that accepts an interface and determines which hanlder to use based on the event.
 // See: https://godoc.org/github.com/aws/aws-lambda-go/lambda#Start
-func (h *Handlers) eventHandler(ctx context.Context, evt map[string]interface{}) (interface{}, error) {
+func (h *Handlers) eventHandler(ctx context.Context, d *HandlerDependencies, evt map[string]interface{}) (interface{}, error) {
 	// log.Println("Determining type of event for:", evt)
 
 	var err error
@@ -87,16 +109,16 @@ func (h *Handlers) eventHandler(ctx context.Context, evt map[string]interface{})
 		// The event contains no time/date, should decode just fine
 		err = mapstructure.Decode(evt, &e)
 		if err == nil {
-			return h.Router.LambdaHandler(ctx, e)
+			return h.Router.LambdaHandler(ctx, d, e)
 		}
 		log.Println("Could not decode APIGatewayProxyRequest event", err)
 	case "AegisTask":
 		// Task handlers have no return
 		// Tasker takes a simple map[string]interface{} - not a struct (like some other events).
-		h.Tasker.LambdaHandler(ctx, evt)
+		h.Tasker.LambdaHandler(ctx, d, evt)
 		return nil, nil
 	case "AegisRPC":
-		return h.RPCRouter.LambdaHandler(ctx, evt)
+		return h.RPCRouter.LambdaHandler(ctx, d, evt)
 	case "S3Event":
 		var e S3Event
 		decoder, _ := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
@@ -108,7 +130,7 @@ func (h *Handlers) eventHandler(ctx context.Context, evt map[string]interface{})
 		// decodeErr := mapstructure.Decode(evt, &e)
 		decodeErr := decoder.Decode(evt)
 		if decodeErr == nil {
-			err = h.S3ObjectRouter.LambdaHandler(ctx, e)
+			err = h.S3ObjectRouter.LambdaHandler(ctx, d, e)
 		} else {
 			log.Println("Could not decode S3Event", decodeErr)
 		}
@@ -116,17 +138,17 @@ func (h *Handlers) eventHandler(ctx context.Context, evt map[string]interface{})
 		// There's so many different formats here, routing for each is a bit silly.
 		// So send map[string]interface{}
 		// The handler itself can unmarshal using structs found in cognito_trigger_types.go
-		return h.CognitoRouter.LambdaHandler(ctx, evt)
+		return h.CognitoRouter.LambdaHandler(ctx, d, evt)
 	default:
 		log.Println("Could not determine Lambda event type, using DefaultHandler.")
 		// If a default handler is not set, return an error about it.
 		// It's essentially an unhandled Lambda invocation at this point.
 		if h.DefaultHandler == nil {
-			h.DefaultHandler = func(context.Context, *map[string]interface{}) (interface{}, error) {
+			h.DefaultHandler = func(context.Context, *HandlerDependencies, *map[string]interface{}) (interface{}, error) {
 				return nil, errors.New("unhandled event")
 			}
 		}
-		return h.DefaultHandler(ctx, &evt)
+		return h.DefaultHandler(ctx, d, &evt)
 	}
 
 	if err != nil {

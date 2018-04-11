@@ -1,3 +1,17 @@
+// Copyright © 2016 Tom Maiaroto <tom@shift8creative.com>
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package framework
 
 import (
@@ -274,10 +288,13 @@ func (c *CognitoAppClient) ParseAndVerifyJWT(t string) (*jwt.Token, error) {
 			err = claims.Valid()
 			if err == nil {
 				// Then check that `aud` matches the app client id
-				if claims.VerifyAudience(c.ClientID, true) {
+				// (if `aud` even exists on the token, second arg is a "required" option)
+				if claims.VerifyAudience(c.ClientID, false) {
 					return token, nil
+				} else {
+					err = errors.New("token audience does not match client id")
+					log.Println("Invalid audience for id token")
 				}
-				log.Println("Invalid audience for id token")
 			} else {
 				log.Println("Invalid claims for id token")
 				log.Println(err)

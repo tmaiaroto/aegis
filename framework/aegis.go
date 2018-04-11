@@ -59,20 +59,34 @@ var Log = logrus.New()
 // more convenient to use this main interface to avoid unnecessary SDK calls, etc.
 type Aegis struct {
 	Handlers
-	Cognito         *CognitoAppClient
-	configurations  map[string]func(context.Context, map[string]interface{}) interface{}
 	Log             *logrus.Logger
 	AWSClientTracer func(c *client.Client)
 	Tracer          TraceStrategy
 	TraceContext    context.Context
+	Services
+	Filters struct {
+		Handler struct {
+			BeforeServices []func(*context.Context, *map[string]interface{})
+			Before         []func(*context.Context, *map[string]interface{})
+			After          []func(*context.Context, *interface{})
+		}
+	}
+}
+
+// Services defines core framework services such as auth
+type Services struct {
+	Cognito        *CognitoAppClient
+	configurations map[string]func(context.Context, map[string]interface{}) interface{}
 }
 
 // New will return a new Aegis interface with handlers (many, but not all, handlers are routers with many handlers)
 func New(handlers Handlers) *Aegis {
 	return &Aegis{
-		Handlers:        handlers,
-		Log:             logrus.New(),
-		configurations:  make(map[string]func(context.Context, map[string]interface{}) interface{}),
+		Handlers: handlers,
+		Log:      logrus.New(),
+		Services: Services{
+			configurations: make(map[string]func(context.Context, map[string]interface{}) interface{}),
+		},
 		AWSClientTracer: xray.AWS,
 	}
 }
@@ -91,9 +105,9 @@ func (a *Aegis) Start() {
 	lambda.Start(a.aegisHandler)
 }
 
-// ConfigureCognitoAppClient will set up a Cognito app client for use in various handlers
-func (a *Aegis) ConfigureCognitoAppClient(cfg func(context.Context, map[string]interface{}) interface{}) {
-	a.configurations["cognito"] = cfg
+// ConfigureService will configure an AegisService
+func (a *Aegis) ConfigureService(name string, cfg func(context.Context, map[string]interface{}) interface{}) {
+	a.Services.configurations[name] = cfg
 }
 
 // aegisHandler configures services and determines how to handle the Lambda event
@@ -102,11 +116,15 @@ func (a *Aegis) aegisHandler(ctx context.Context, evt map[string]interface{}) (i
 		a.TraceContext = ctx
 	}
 
-	// beforeFilter for &evt?
-	// This would have `a` too, so even configurations can be altered based on particular events.
+	// Filters to run before anything is handled, even before services are configured.
+	if a.Filters.Handler.BeforeServices != nil {
+		for _, filter := range a.Filters.Handler.BeforeServices {
+			filter(&ctx, &evt)
+		}
+	}
 
 	// If a "cognito" configuration function was provided and Cognito has not been configured already
-	if sCfg, ok := a.configurations["cognito"]; ok && a.Cognito == nil {
+	if sCfg, ok := a.Services.configurations["cognito"]; ok && a.Services.Cognito == nil {
 		cognitoCfg := sCfg(ctx, evt).(*CognitoAppClientConfig)
 		cognitoCfg.TraceContext = a.TraceContext
 		cognitoCfg.AWSClientTracer = a.AWSClientTracer
@@ -123,7 +141,7 @@ func (a *Aegis) aegisHandler(ctx context.Context, evt map[string]interface{}) (i
 
 			// Configure Cognito App Client and set on Aegis struct
 			svc, err := NewCognitoAppClient(cognitoCfg)
-			a.Cognito = svc
+			a.Services.Cognito = svc
 			return err
 		})
 
@@ -133,12 +151,32 @@ func (a *Aegis) aegisHandler(ctx context.Context, evt map[string]interface{}) (i
 		}
 	}
 
-	// afterServiceFilter for &evt?
+	// Filters to run before handling the event (but after services have been configured).
+	if a.Filters.Handler.Before != nil {
+		for _, filter := range a.Filters.Handler.Before {
+			filter(&ctx, &evt)
+		}
+	}
+
+	// Dependencies to be injected into each event handler
+	d := HandlerDependencies{
+		Services: &a.Services,
+		Log:      a.Log,
+		Tracer:   &a.Tracer,
+	}
 
 	// This could be called directly of course, it would skip all of the service set up (if there were any configured)
-	return a.Handlers.eventHandler(ctx, evt)
+	res, err := a.Handlers.eventHandler(ctx, &d, evt)
 
-	// afterFilter for &evt?
+	// Filters to run after handling the event. Instead of getting a map[string]interface{} with the event,
+	// this filter gets an interface{} that is the response.
+	if a.Filters.Handler.After != nil {
+		for _, filter := range a.Filters.Handler.After {
+			filter(&ctx, &res)
+		}
+	}
+
+	return res, err
 }
 
 // RPC makes an Aegis remote procedure call (invokes another Lambda) with tracing support

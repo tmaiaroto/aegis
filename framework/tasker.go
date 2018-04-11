@@ -1,3 +1,17 @@
+// Copyright © 2016 Tom Maiaroto <tom@shift8creative.com>
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package framework
 
 import (
@@ -14,10 +28,10 @@ type Tasker struct {
 }
 
 // TaskHandler is similar to RouteHandler except there is no response or middleware
-type TaskHandler func(context.Context, *map[string]interface{}) error
+type TaskHandler func(context.Context, *HandlerDependencies, *map[string]interface{}) error
 
 // LambdaHandler is a native AWS Lambda Go handler function. Handles a CloudWatch event.
-func (t *Tasker) LambdaHandler(ctx context.Context, evt map[string]interface{}) error {
+func (t *Tasker) LambdaHandler(ctx context.Context, d *HandlerDependencies, evt map[string]interface{}) error {
 	var err error
 
 	handled := false
@@ -40,7 +54,8 @@ func (t *Tasker) LambdaHandler(ctx context.Context, evt map[string]interface{}) 
 			err = t.Tracer.Capture(ctx, "TaskHandler", func(ctx1 context.Context) error {
 				t.Tracer.AddAnnotations(ctx1)
 				t.Tracer.AddMetadata(ctx1)
-				return handler(ctx, &evt)
+				d.Tracer = &t.Tracer
+				return handler(ctx1, d, &evt)
 			})
 		}
 		// Otherwise, use the catch all (router "fallthrough" equivalent) handler.
@@ -60,7 +75,8 @@ func (t *Tasker) LambdaHandler(ctx context.Context, evt map[string]interface{}) 
 				err = t.Tracer.Capture(ctx, "TaskHandler", func(ctx1 context.Context) error {
 					t.Tracer.AddAnnotations(ctx1)
 					t.Tracer.AddMetadata(ctx1)
-					return handler(ctx, &evt)
+					d.Tracer = &t.Tracer
+					return handler(ctx, d, &evt)
 				})
 
 			}
@@ -78,7 +94,7 @@ func (t *Tasker) Listen() {
 // NewTasker simply returns a new Tasker struct and behaves a bit like Router, it even takes an optional rootHandler or "fall through" catch all
 func NewTasker(rootHandler ...TaskHandler) *Tasker {
 	// The catch all is optional, if not provided, an empty handler is still called, but nothing happens.
-	handler := func(context.Context, *map[string]interface{}) error { return nil }
+	handler := func(context.Context, *HandlerDependencies, *map[string]interface{}) error { return nil }
 	if len(rootHandler) > 0 {
 		handler = rootHandler[0]
 	}

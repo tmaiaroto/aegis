@@ -1,4 +1,18 @@
-// Borrowed from https://github.com/acmacalister/helm
+// Copyright © 2016 Tom Maiaroto <tom@shift8creative.com>
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// Parts borrowed from https://github.com/acmacalister/helm
 
 package framework
 
@@ -32,11 +46,11 @@ const (
 
 // RouteHandler is similar to "net/http" Handler, except there is no response writer.
 // Instead the *APIGatewayProxyResponse is manipulated and returned directly.
-type RouteHandler func(context.Context, *APIGatewayProxyRequest, *APIGatewayProxyResponse, url.Values) error
+type RouteHandler func(context.Context, *HandlerDependencies, *APIGatewayProxyRequest, *APIGatewayProxyResponse, url.Values) error
 
 // Middleware is just like the RouteHandler type, but has a boolean return. True
 // means to keep processing the rest of the middleware chain, false means end.
-type Middleware func(context.Context, *APIGatewayProxyRequest, *APIGatewayProxyResponse, url.Values) bool
+type Middleware func(context.Context, *HandlerDependencies, *APIGatewayProxyRequest, *APIGatewayProxyResponse, url.Values) bool
 
 // Router name says it all.
 type Router struct {
@@ -107,9 +121,9 @@ func (r *Router) DELETE(path string, handler RouteHandler, middleware ...Middlew
 }
 
 // runMiddleware loops over the slice of middleware and call to each of the middleware handlers.
-func runMiddleware(ctx context.Context, req *APIGatewayProxyRequest, res *APIGatewayProxyResponse, params url.Values, middleware ...Middleware) bool {
+func runMiddleware(ctx context.Context, d *HandlerDependencies, req *APIGatewayProxyRequest, res *APIGatewayProxyResponse, params url.Values, middleware ...Middleware) bool {
 	for _, m := range middleware {
-		if !m(ctx, req, res, params) {
+		if !m(ctx, d, req, res, params) {
 			return false // the middleware returned false, so end processing the chain.
 		}
 	}
@@ -117,7 +131,7 @@ func runMiddleware(ctx context.Context, req *APIGatewayProxyRequest, res *APIGat
 }
 
 // LambdaHandler is a native AWS Lambda Go handler function (no more shim).
-func (r *Router) LambdaHandler(ctx context.Context, req APIGatewayProxyRequest) (APIGatewayProxyResponse, error) {
+func (r *Router) LambdaHandler(ctx context.Context, d *HandlerDependencies, req APIGatewayProxyRequest) (APIGatewayProxyResponse, error) {
 	// url.Values are typically used for qureystring parameters.
 	// However, this router uses them for path params.
 	// Querystring parameters can be picked up from the *Event though.
@@ -131,7 +145,7 @@ func (r *Router) LambdaHandler(ctx context.Context, req APIGatewayProxyRequest) 
 	if handler := node.methods[req.HTTPMethod]; handler != nil {
 		// Middleware must return true in order to continue.
 		// If it returns false, it will catch and halt everything.
-		if !runMiddleware(ctx, &req, &res, params, handler.middleware...) {
+		if !runMiddleware(ctx, d, &req, &res, params, handler.middleware...) {
 			// Return the response in its current stage if middleware returns false.
 			// It is up to the middleware itself to set the response returned.
 			// Maybe some authentication failed? So maybe the middleware wants to return a message about that.
@@ -146,14 +160,21 @@ func (r *Router) LambdaHandler(ctx context.Context, req APIGatewayProxyRequest) 
 		err = r.Tracer.Capture(ctx, "RouteHandler", func(ctx1 context.Context) error {
 			r.Tracer.AddAnnotations(ctx1)
 			r.Tracer.AddMetadata(ctx1)
-			return handler.handler(ctx, &req, &res, params)
+
+			// Set the injected tracer to this router Tracer (was Aegis interface's tracer).
+			// This is important. It allows annotations to be added by handlers to be traced automatically.
+			// This means the end user does not need to set up their own tracer. They can hook into the current trace.
+			d.Tracer = &r.Tracer
+			// I believe ctx1 is actually the same as ctx in this case. Capture() makes no copy of context.
+			// Context is immutable. So... To not be confusing, we'll use ctx1.
+			return handler.handler(ctx1, d, &req, &res, params)
 		})
 
 		// TODO: look at environment variable to see if XRay was disabled (env var on lambda or when running local server)
 		// Then just call handler and not the xray part above.
 		// handler.handler(ctx, &req, &res, params)
 	} else {
-		r.rootHandler(ctx, &req, &res, params)
+		r.rootHandler(ctx, d, &req, &res, params)
 	}
 
 	// Returning an error from this handler is how AWS Lambda works, but when dealing with API Gateway, it doesn't make for
@@ -183,6 +204,8 @@ type gatewayHandler Router
 func (h gatewayHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// --> Build the request by converting HTTP request to Lambda Event
 	ctx, req := h.requestToProxyRequest(r)
+	// TODO: Move all this to Aegis interface so we can add dependencies
+	d := &HandlerDependencies{}
 
 	// -<>- Normal handling of Lambda Event with Aegis Router.
 	// It looks just like the closure given to RunStream with Listen(), except that we aren't going
@@ -195,14 +218,14 @@ func (h gatewayHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if handler := node.methods[req.HTTPMethod]; handler != nil {
 		// Middleware must return true in order to continue.
 		// If it returns false, it will catch and halt everything.
-		if !runMiddleware(ctx, req, &res, params, handler.middleware...) {
+		if !runMiddleware(ctx, d, req, &res, params, handler.middleware...) {
 			// <-- Send the response
 			h.proxyResponseToHTTPResponse(&res, w)
 			return
 		}
-		handler.handler(ctx, req, &res, params)
+		handler.handler(ctx, d, req, &res, params)
 	} else {
-		h.rootHandler(ctx, req, &res, params)
+		h.rootHandler(ctx, d, req, &res, params)
 	}
 
 	// <-- Send the response
