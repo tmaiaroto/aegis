@@ -28,6 +28,14 @@ a lightweight set of helpers or framework to help build things faster. It's to b
 and flexible. 1.x will focus on adding more event router/handlers and helper functions.
 Not every possible service will likely ever covered, the focus will be on the common.
 
+## 1.9.2
+
+- Added a `HostedLogoutURL` field to the `CognitoAppClient` struct. This will help
+  handlers automatically redirect users to Cognito hosted logout page.
+- Added a Cognito example
+- Added a basic "hello world" example
+- Fixed/updated `aegis init` boilerplate (that hello world example)
+
 ## 1.9.1
 
  - `lambdaHandler` was added to the Handlers interface for backward compatibility.

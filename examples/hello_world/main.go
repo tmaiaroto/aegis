@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"net/url"
+
 	"github.com/aws/aws-lambda-go/lambdacontext"
 	aegis "github.com/tmaiaroto/aegis/framework"
 )
@@ -12,7 +13,7 @@ func main() {
 	// Handle an APIGatewayProxyRequest event with a URL reqeust path Router
 	router := aegis.NewRouter(fallThrough)
 	router.Handle("GET", "/", root, helloMiddleware)
-	
+
 	// Use an Aegis interface to inject optional dependencies into handlers
 	// and start listening for events.
 	app := aegis.New(aegis.Handlers{

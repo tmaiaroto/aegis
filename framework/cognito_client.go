@@ -45,8 +45,10 @@ type CognitoAppClient struct {
 	WellKnownJWKs            *jwk.Set
 	BaseURL                  string
 	HostedLoginURL           string
+	HostedLogoutURL          string
 	HostedSignUpURL          string
 	RedirectURI              string
+	LogoutRedirectURI        string
 	TokenEndpoint            string
 	Base64BasicAuthorization string
 	Tracer                   TraceStrategy
@@ -54,12 +56,13 @@ type CognitoAppClient struct {
 
 // CognitoAppClientConfig defines required info to build a new CognitoAppClient
 type CognitoAppClientConfig struct {
-	Region          string                 `json:"region"`
-	PoolID          string                 `json:"poolId"`
-	ClientID        string                 `json:"clientId"`
-	RedirectURI     string                 `json:"redirectUri"`
-	TraceContext    context.Context        `json:"-"`
-	AWSClientTracer func(c *client.Client) `json:"-"`
+	Region            string                 `json:"region"`
+	PoolID            string                 `json:"poolId"`
+	ClientID          string                 `json:"clientId"`
+	RedirectURI       string                 `json:"redirectUri"`
+	LogoutRedirectURI string                 `json:"logoutRedirectUri"`
+	TraceContext      context.Context        `json:"-"`
+	AWSClientTracer   func(c *client.Client) `json:"-"`
 }
 
 // CognitoToken defines a token struct for JSON responses from Cognito TOKEN endpoint
@@ -76,10 +79,11 @@ type CognitoToken struct {
 func NewCognitoAppClient(cfg *CognitoAppClientConfig) (*CognitoAppClient, error) {
 	var err error
 	c := &CognitoAppClient{
-		Region:      cfg.Region,
-		UserPoolID:  cfg.PoolID,
-		ClientID:    cfg.ClientID,
-		RedirectURI: cfg.RedirectURI,
+		Region:            cfg.Region,
+		UserPoolID:        cfg.PoolID,
+		ClientID:          cfg.ClientID,
+		RedirectURI:       cfg.RedirectURI,
+		LogoutRedirectURI: cfg.LogoutRedirectURI,
 	}
 
 	// Set the PoolType, it contains a bunch of useful info
@@ -185,6 +189,15 @@ func (c *CognitoAppClient) getURLs() {
 		buffer.WriteString("&redirect_uri=")
 		buffer.WriteString(c.RedirectURI)
 		c.HostedLoginURL = buffer.String()
+		buffer.Reset()
+
+		// Set the HostedLogoutURL
+		buffer.WriteString(baseURL)
+		buffer.WriteString("/logout?response_type=code&client_id=")
+		buffer.WriteString(c.ClientID)
+		buffer.WriteString("&redirect_uri=")
+		buffer.WriteString(c.RedirectURI)
+		c.HostedLogoutURL = buffer.String()
 		buffer.Reset()
 
 		// Set the HostedSignUpURL
