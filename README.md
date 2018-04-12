@@ -2,117 +2,98 @@
 
 [![License Apache 2](https://img.shields.io/badge/license-Apache%202-blue.svg)](https://github.com/tmaiaroto/aegis/blob/master/LICENSE) [![godoc aegis](https://img.shields.io/badge/godoc-reference-blue.svg)](http://godoc.org/github.com/tmaiaroto/aegis) [![Build Status](https://travis-ci.org/tmaiaroto/aegis.svg?branch=master)](https://travis-ci.org/tmaiaroto/aegis) [![Go Report Card](https://goreportcard.com/badge/github.com/tmaiaroto/aegis)](https://goreportcard.com/report/github.com/tmaiaroto/aegis)
 
-A simple utility for deploying a Golang based Lambda with an API using   
-AWS API Gateway's `ANY` method with a `{proxy+}` path to handle any request.
+Aegis is both a simple deploy tool and framework. It's primary goal is to help you write
+microservices in the AWS cloud quickly and easily. They are mutually exclusive tools.
 
-This results in a very easy solution for building serverless APIs with Go,  
-resulting in a single Lambda and a very minimal API Gateway.
+Aegis is not intended to be an infrastructure management tool. It will never be
+as feature rich as tools like [Terraform](https://www.terraform.io). It's goal is
+to assist in the development of microservices - not the maintenance of infrastructure.
+
+Likewise the framework is rather lightweight as well. It may never have helpers and
+features for every AWS product under the sun. It provides a conventional framework
+to help you build serverless microservices faster. It removes a lot of boilerplate.
 
 ### Getting Started
 
-You'll need an AWS account of course. You'll also want to have your credentials  
-in your user's local directory where AWS CLI likes to keep them. If you already  
-use AWS CLI, then you won't have to do anything new. If not, getting your credentials  
-setup is probably easiest by following AWS CLI instructions. Note that you can   
-also pass keys via the CLI or by setting environment variables.
+You'll need an AWS account of course. You'll also want to have your credentials setup
+as you would for using AWS CLI. Note that you can also pass AWS credentials via the 
+CLI or by setting environment variables.
 
-Install Aegis, then create an `aegis.yaml` file and configure your Lambda.
+Get Aegis of course. Use the normal `go get github.com/tmaiaroto/aegis`.
+Ensure the `aegis` binary is in your executable path. You can build a fresh copy
+from the code in this repository or download the binary from the releases section
+of the GitHub project site. If you want to use the framework though, you'll need to
+use go get anyway.
 
-AWS Lambda for Go works a little differently than when working with Node.js functions.
-Each handler function will be passed a given event type instead of a JavaScript object.
-This means, you must write handlers that use certain structs.
-See: https://github.com/aws/aws-lambda-go/tree/master/events
+You can find some examples in the `examples` directory of this repo. Aegis also comes
+with a command to setup some boilerplate code in a clean directory using `aegis init`.
+Note that it will not overwrite any existing files.
 
-The most common handler is likely to handle requests from AWS API Gateway.
-So you can reference the `example` directory from this repo to help you out there. Or you can  
-copy some example files to get you started with using API Gateway and Lambda with Go:
+Work with your code and check settings in `aegis.yaml`. When you're ready, you can deploy
+with `aegis deploy` to upload your Lambda and setup some resources.
 
-```
-aegis init
-```
+Aegis' deploy command will set up the Lambda function, an optional API Gateway, IAM roles,
+CloudWatch event rules, and other various triggers and permissions for your Lambda function.
+You're able to choose a specific IAM role if you like too. Just set it in `aegis.yaml`.
 
-Then in your Go project directory run:
+If you're deploying an API, the CLI output will show you the URL for it along with other
+helpful information.
 
-```
-aegis deploy
-```
+The Aegis framework works by handling events (how anything using AWS Lambda works). The way
+in which it does this though is via "routers." This means your Lambda is actually able to
+handle multiple types of events if you so choose.
 
-If everything is configured properly, this should upload your Lambda and setup an API for you.  
-The CLI output will return the URL to you, but you can of course also see this in your AWS console.
+Many people will want to write one handler for one Lambda, but that's not a mandate of Lambda.
+So feel free to architect your microservices how you like.
 
-Aegis has a handler that will act as a router of the sorts. It will let you register a function to 
-handle incoming requests for any path and HTTP method. It isn't an HTTP router per se, as it doesn't 
-work with HTTP requests/responses, but it reads very much the same way.
-
-The router also supports middleware.
-
-```go
-
-import aegis "github.com/tmaiaroto/aegis/framework"
-
-func main() {
-    router := aegis.NewRouter(fallThrough)
-    router.Handle("GET", "/", root)
-    router.Listen()
-}
-
-func fallThrough(ctx context.Context, evt *aegis.APIGatewayProxyRequest, res *aegis.APIGatewayProxyResponse, params url.Values) error {
-    res.StatusCode = 404
-    return nil
-}
-
-func root(ctx context.Context, evt *aegis.APIGatewayProxyRequest, res *aegis.APIGatewayProxyResponse, params url.Values) error {
-    res.Body = "body for root path"
-    res.Headers = map[string]string{"Content-Type": "text/plain"}
-    return nil
-}
-```
-
-Note that structs in Aegis' framework package (APIGatewayProxyRequest, APIGatewayProxyResponse, etc.) are
-simply references to the underlying AWS Go Lambda package's structs. However, there is some additional
-functionality composed on to them with the router.
+There are several types of routers. You can handle incoming HTTP requests via API Gateway using
+various HTTP methods and paths. You can handle incoming S3 events. You can handle scheduled Lambda
+invocations using CloudWatch rules. You can even handle invocations from other Lambdas ("RPCs").
 
 #### Logging
 
-Go's normal logging will work and end up in CloudWatch. Additionally, logrus is available under `lambda.Log`  
-and a hook has been added for CloudWatch. Additional hooks can be added for other centralized logging solutions.
+Go's normal logging will work and end up in CloudWatch. Additionally, logrus is available under the `Aegis.Log`.
+You'll need to set up a new Aegis interface with `framework.New()`. For example:
 
-#### Testing Locally
+```
+import (
+    aegis "github.com/tmaiaroto/aegis"
+)
 
-Sometimes it's handy to test your Lambda function before deploying to AWS. Aegis allows you to do so if you  
-are using its router. While a `router.Listen()` is used for Lambda \(via stdio\), a `router.Gateway()` is   
-used for starting a local web server \(you can configure the port by setting `router.GatewayPort` it's  
-`:9999` by default\).
+func main() {
+    app := aegis.New(&aegis.Handlers{})
+    app.Log.Println("log stuff")
+    app.Log.Error(errors.New("bad stuff"))
+}
+```
 
-When writing your app using the router and making this gateway, you can simply use `go run main.go`   
-for example and test your Lambda without even building your app let alone deploying to AWS.
+Also note that `Log` is injected into each handler's dependencies. So you can pick it up from the second
+argument, right after context.
 
-This makes it very convenient to test while you develop, but keep in mind that not all data  
-normally found in a Lambda Event and Context are available to you.
+Logrus was chosen here. So you can configure the interface with any instance of Logrus and you can use any
+plugin for Logrus. Send logs to your Slack for fun. Go nuts.
 
-Also keep in mind that there is no Lambda for IAM roles to be assigned to. So your local AWS credentials   
-will need to be valid for any AWS services you want to use.
+```
+func handler(ctx context.Context, d *aegis.HandlerDependencies, evt map[string]interface{}) {
+    d.Log.Println("go nuts")
+}
+```
 
-### About the Project
+All internal framework logs use standard Go `log` and will end up in CloudWatch.
 
-There's a growing list of serverless frameworks and utilities out there. Some are maturing quite  
-nicely given the technology is still changing. This project was built for a very specific purpose.  
-It focuses solely on running Go in a single AWS Lambda with API Gateway. There are a few helpers and
-special event handlers to help you out as well. Though in terms of a "framework," it's lightweight and
-completely optional. You could simply use Aegis to build, zip, and deploy your functions along with setting
-up an API Gateway and some CloudWatch events. You don't need to opt into it's "framework" package.
+#### Tracing
 
-If you need more than that, here's a list of serverless resources specifically for Go: [https://github.com/SerifAndSemaphore/go-serverless-list](https://github.com/SerifAndSemaphore/go-serverless-list)
+Aegis uses AWS XRay by default, though you can change the tracing strategy. You just need to implement
+the interface. All event handlers are automatically traced with annotations and metadata if applicable.
 
-I suspect some of the existing serverless frameworks will support API Gateway with Lambda Proxy   
-in the future. Again, this is a very new space and everyone's research is kinda in different directions,  
-but I imagine much of it will start to consolidate. I will try to keep this tool working with any AWS SDK   
-changes or otherwise put a giant notice in this readme with an alternative solution.
+You are able to add to these annoations and metadata. You are also free to use XRay in your handlers
+yourself. A `Tracer` will be injected into each handler.
 
-So the other reason for this project is education. The code is simple and straight forward and  
-I've tried to leave hlepful comments. So you can certainly read through it and learn.
+#### Contributing
 
-Special thanks to [@tj](https://github.com/tj) and [@mweagle](https://github.com/mweagle) for their  
-help with this. There were a few things that weren't clear along the way and they really took the   
-time to help me out. Thanks to the other people and projects out there too.
+Please feel free to contribute (see CONTRIBUTING.md). Though outside of actual pull requests with code,
+please file issues. If you notice something broken, speak up. If you have an idea for a feature, put it
+in an issue. Feedback is perhaps one of the best ways to contribute. So don't feel compelled to code.
 
+Keep in mind that not all ideas can be implemented. There is a design direction for this project and
+only so much time. Though it's still good to share ideas.
