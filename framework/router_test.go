@@ -45,6 +45,11 @@ func TestRouter(t *testing.T) {
 		})
 	})
 
+	Convey("Should be able to add Router level middleware", t, func() {
+		testRouter.Use(testMiddleware)
+		So(testRouter.middleware, ShouldHaveLength, 1)
+	})
+
 	testRouter.GET("/path", testHandler)
 	testRouter.POST("/path", testHandler)
 	testRouter.PUT("/path", testHandler)

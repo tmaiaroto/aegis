@@ -77,6 +77,11 @@ func NewRouter(rootHandler RouteHandler) *Router {
 	return &Router{tree: &node, rootHandler: rootHandler, URIVersion: ""}
 }
 
+// Use will set middleware on the Router that gets used by all handled routes
+func (r *Router) Use(middleware ...Middleware) {
+	r.middleware = append(r.middleware, middleware...)
+}
+
 // Handle takes an http handler, method and pattern for a route.
 func (r *Router) Handle(method, path string, handler RouteHandler, middleware ...Middleware) {
 	if path[0] != '/' {
@@ -139,6 +144,12 @@ func (r *Router) LambdaHandler(ctx context.Context, d *HandlerDependencies, req 
 
 	var res APIGatewayProxyResponse
 	var err error
+
+	// First run the Router middleware added with Use().
+	// This keeps middleware predictable and cascading.
+	if !runMiddleware(ctx, d, &req, &res, params, r.middleware...) {
+		return res, nil
+	}
 
 	// use the Path and HTTPMethod from the event to figure out the route
 	node, _ := r.tree.traverse(strings.Split(req.Path, "/")[1:], params)
@@ -213,6 +224,14 @@ func (h gatewayHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// TODO: refactor this to make a new handler that also works with a router. There's a tiny bit of repetition with this and what's in Listen()
 	params := url.Values{}
 	var res APIGatewayProxyResponse
+
+	// First run the Router middleware (gatewayHanlder in this case) added with Use().
+	// This keeps middleware predictable and cascading.
+	if !runMiddleware(ctx, d, req, &res, params, h.middleware...) {
+		h.proxyResponseToHTTPResponse(&res, w)
+		return
+	}
+
 	// use the Path and HTTPMethod from the event to figure out the route
 	node, _ := h.tree.traverse(strings.Split(req.Path, "/")[1:], params)
 	if handler := node.methods[req.HTTPMethod]; handler != nil {
