@@ -78,11 +78,9 @@ type Aegis struct {
 
 // Services defines core framework services such as auth
 type Services struct {
-	Cognito                    *CognitoAppClient
-	configurations             map[string]func(context.Context, map[string]interface{}) interface{}
-	LambdaEnvironmentVariables map[string]*string
-	APIGatewayStageVariables   map[string]*string
-	Variables                  map[string]string
+	Cognito        *CognitoAppClient
+	Variables      map[string]string
+	configurations map[string]func(context.Context, map[string]interface{}) interface{}
 }
 
 // New will return a new Aegis interface with handlers (many, but not all, handlers are routers with many handlers)
