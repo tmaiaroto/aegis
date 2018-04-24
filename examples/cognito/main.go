@@ -40,10 +40,11 @@ func main() {
 		}
 
 		return &aegis.CognitoAppClientConfig{
-			// The following three you'll need to fill in
+			// The following three you'll need to fill in or use secrets.
+			// See README for more info, but set secrets using aegis CLI and update aegis.yaml as needed.
 			Region:   "us-east-1",
-			PoolID:   "us-east-1_Xxxxx",
-			ClientID: "xxxxx",
+			PoolID:   AegisApp.GetVariable("PoolID"),
+			ClientID: AegisApp.GetVariable("ClientID"),
 			// This is just automatic for the example, you would likely replace this too
 			RedirectURI:       "https://" + host + "/" + stage + "/callback",
 			LogoutRedirectURI: "https://" + host + "/" + stage + "/",

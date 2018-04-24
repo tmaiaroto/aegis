@@ -16,17 +16,20 @@ package framework
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"log"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/aws/aws-lambda-go/lambdacontext"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/aws/session"
 	lambdaSDK "github.com/aws/aws-sdk-go/service/lambda"
 	"github.com/aws/aws-xray-sdk-go/xray"
+	"github.com/mitchellh/mapstructure"
 )
 
 // The types here are aliasing AWS Lambda's events package types. This is so Aegis can add some additional functionality.
@@ -75,8 +78,11 @@ type Aegis struct {
 
 // Services defines core framework services such as auth
 type Services struct {
-	Cognito        *CognitoAppClient
-	configurations map[string]func(context.Context, map[string]interface{}) interface{}
+	Cognito                    *CognitoAppClient
+	configurations             map[string]func(context.Context, map[string]interface{}) interface{}
+	LambdaEnvironmentVariables map[string]*string
+	APIGatewayStageVariables   map[string]*string
+	Variables                  map[string]string
 }
 
 // New will return a new Aegis interface with handlers (many, but not all, handlers are routers with many handlers)
@@ -110,11 +116,56 @@ func (a *Aegis) ConfigureService(name string, cfg func(context.Context, map[stri
 	a.Services.configurations[name] = cfg
 }
 
+// setAegisVariables will set Aegis variables (on `a.Services.Variables`) to be used by Services and user handler code.
+func (a *Aegis) setAegisVariables(ctx context.Context, evt map[string]interface{}) {
+	// Aegis variables follow a convention for being set.
+	// First the Lambda environment variables are used.
+	// Then the API Gateway stage variables.
+	// So stage variables can override keys from Lambda environment variables.
+	// However, both are still very available if the user wants to look them up.
+	// A a developer/user, it'll be important to understand where to set variables depending on the event type/handler as well
+	// as the architectural strategy (one function per "environment" with multiple API stages, or multiple functions/gateways?).
+
+	if a.Services.Variables == nil {
+		a.Services.Variables = make(map[string]string)
+	}
+
+	// Lambda environment variables first
+	lc, _ := lambdacontext.FromContext(ctx)
+	if len(lc.ClientContext.Env) > 0 {
+		for k, v := range lc.ClientContext.Env {
+			a.Services.Variables[k] = v
+		}
+	}
+
+	// API Gateway stage variables can override values set by Lambda environment variables
+	if getType(evt) == "APIGatewayProxyRequest" {
+		var e APIGatewayProxyRequest
+		// The event contains no time/date, should decode just fine
+		err := mapstructure.Decode(evt, &e)
+		if err == nil && len(e.StageVariables) > 0 {
+			for k, v := range e.StageVariables {
+				a.Services.Variables[k] = v
+				// Try to base64 decode it, because API Gateway stage variables may be encoded because
+				// they do not support certain special characters, which is a big problem for sensitive
+				// credentials that often include special characters.
+				sDec, err := base64.StdEncoding.DecodeString(v)
+				if err == nil {
+					a.Services.Variables[k] = string(sDec)
+				}
+			}
+		}
+	}
+}
+
 // aegisHandler configures services and determines how to handle the Lambda event
 func (a *Aegis) aegisHandler(ctx context.Context, evt map[string]interface{}) (interface{}, error) {
 	if a.TraceContext == nil {
 		a.TraceContext = ctx
 	}
+
+	// Set "Aegis Variables" for use by both service configurations and handlers.
+	a.setAegisVariables(ctx, evt)
 
 	// Filters to run before anything is handled, even before services are configured.
 	if a.Filters.Handler.BeforeServices != nil {

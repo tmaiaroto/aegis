@@ -11,6 +11,23 @@ lambda:
 api:
   name: Example Cognito Aegis API
   description: An example API with auth using Cognito
+  stages:
+    prod:
+      name: prod
+      variables:
+        # BecomesLowerCase: value
+        # In order to support case sensitive keys use the following:
+        # Special characters get base64 encoded to work with API Gateway
+        # b64encode: secretEncodedForSpecialChars!@#
+        poolid:
+          key: PoolID
+          value: <cognitoExample.PoolID>
+        clientid:
+          key: ClientID
+          value: <cognitoExample.ClientID>
+        # set the above using Aegis CLI, ex. `aegis secret store cognitoExample PoolID xx`
+        # keep in mind that viper is being used to load YAML and while YAML itself is case-sensitive, viper is not
+        # so optionally set variables as maps instead of just key value pairs
   # A "prod" stage will be created automatically. You can define stages here as well as stage variables.
   # These stage variables are passed in the event message to your Lambda function.
   # stages:

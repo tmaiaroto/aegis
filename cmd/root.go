@@ -20,6 +20,7 @@ import (
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/apigateway"
 	"github.com/aws/aws-sdk-go/service/lambda"
 	// "github.com/fatih/color"
@@ -162,4 +163,28 @@ func InitConfig() {
 // SetAwsCfg will set awsCfg values using an aws.Config struct
 func SetAwsCfg(config aws.Config) {
 	awsCfg = config
+}
+
+// getAWSSession will return a session based on options passed to aegis
+func getAWSSession() *session.Session {
+	// get new credentials if not set
+	if awsCfg.Credentials == nil {
+		awsCfg.Credentials = setCredentials()
+	}
+
+	// session options
+	opts := session.Options{
+		Config:  awsCfg,
+		Profile: cfg.AWS.Profile,
+	}
+
+	// Note: New() has been deprecated from aws-sdk-go
+	sess, err := session.NewSessionWithOptions(opts)
+	if err != nil {
+		fmt.Println("There was a problem creating a session with AWS. Make sure you have credentials configured.")
+		fmt.Println(err.Error())
+		os.Exit(-1)
+	}
+
+	return sess
 }

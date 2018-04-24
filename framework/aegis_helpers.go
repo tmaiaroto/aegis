@@ -12,17 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmd
+package framework
 
 import (
-	"testing"
-
-	. "github.com/smartystreets/goconvey/convey"
+	"os"
 )
 
-func TestRootCmd(t *testing.T) {
-	Convey("Should initialize default config options", t, func() {
-		InitConfig()
-		So(cfg.AWS.Region, ShouldEqual, "us-east-1")
-	})
+// GetVariable will retrieve an "Aegis Variable" from Services.Variables or OS environment variable fallback
+func (a *Aegis) GetVariable(key string) string {
+	valueStr := ""
+
+	if val, ok := a.Services.Variables[key]; ok {
+		valueStr = val
+	}
+
+	// Still empty? Try plain environment variable.
+	if valueStr == "" {
+		valueStr = os.Getenv(key)
+	}
+	return valueStr
 }

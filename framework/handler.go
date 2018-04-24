@@ -40,6 +40,7 @@ type HandlerDependencies struct {
 	Services *Services
 	Log      *logrus.Logger
 	Tracer   *TraceStrategy
+	Custom   map[string]interface{}
 }
 
 // DefaultHandler is used when the message type can't be identified as anything else, completely optional to use

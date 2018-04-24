@@ -28,6 +28,17 @@ a lightweight set of helpers or framework to help build things faster. It's to b
 and flexible. 1.x will focus on adding more event router/handlers and helper functions.
 Not every possible service will likely ever covered, the focus will be on the common.
 
+## 1.10.0
+
+- Add ability to work with AWS Secret Manager from CLI `aegis secret` command
+- Can now set Lambda environment variables and API Gateway stage variables in `aegis.yaml` 
+  by referring to values in AWS Secret Manager in the format of: `<secretName.key>`
+- `aegis.yaml` API Gateway stage variables now support case sensitive keys by defining
+  values as maps in the YAML since Viper lowercases keys
+- Helper functions added to retrieve "Aegis Variables" which is a convention around
+  the priority of variables to use (Lambda environment, API GW stage, os env)
+- Added `Custom` (`map[string]interface{}`) to `HandlerDependencies` for custom needs
+
 ## 1.9.3
 
 - Added Router level middleware (it runs first before the individual route's)

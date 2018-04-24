@@ -12,17 +12,32 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmd
+package framework
 
 import (
+	"os"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-func TestRootCmd(t *testing.T) {
-	Convey("Should initialize default config options", t, func() {
-		InitConfig()
-		So(cfg.AWS.Region, ShouldEqual, "us-east-1")
+func TestAegisHelpers(t *testing.T) {
+	Convey("GetVariable()", t, func() {
+		a := New(Handlers{})
+		testVars := map[string]string{"foo": "bar"}
+		a.Services.Variables = testVars
+
+		Convey("Should be able to return a variable value given its key", func() {
+			val := a.GetVariable("foo")
+			So(val, ShouldEqual, "bar")
+		})
+
+		Convey("Should return an OS environment variable fallback", func() {
+			os.Setenv("testvar", "notbar")
+			val := a.GetVariable("testvar")
+			So(val, ShouldEqual, "notbar")
+			os.Setenv("testvar", "")
+		})
 	})
+
 }
