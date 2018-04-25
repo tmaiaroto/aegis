@@ -28,6 +28,10 @@ a lightweight set of helpers or framework to help build things faster. It's to b
 and flexible. 1.x will focus on adding more event router/handlers and helper functions.
 Not every possible service will likely ever covered, the focus will be on the common.
 
+## 1.10.1
+
+- Added the ability to use standard middleware (Go's http.Handler interface)
+
 ## 1.10.0
 
 - Add ability to work with AWS Secret Manager from CLI `aegis secret` command

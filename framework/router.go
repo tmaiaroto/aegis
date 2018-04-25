@@ -32,6 +32,7 @@ import (
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/justinas/alice"
 )
 
 const (
@@ -57,6 +58,7 @@ type Router struct {
 	tree           *node
 	rootHandler    RouteHandler
 	middleware     []Middleware
+	stdMiddleware  []func(h http.Handler) http.Handler
 	l              *log.Logger
 	LoggingEnabled bool
 	URIVersion     string
@@ -77,9 +79,15 @@ func NewRouter(rootHandler RouteHandler) *Router {
 	return &Router{tree: &node, rootHandler: rootHandler, URIVersion: ""}
 }
 
-// Use will set middleware on the Router that gets used by all handled routes
+// Use will set middleware on the Router that gets used by all handled routes.
 func (r *Router) Use(middleware ...Middleware) {
 	r.middleware = append(r.middleware, middleware...)
+}
+
+// UseStandard will set stdMiddleware on the Router that gets used by all handled routes.
+// This is standard, idiomatic, Go http.Handler middleware.
+func (r *Router) UseStandard(middleware ...func(h http.Handler) http.Handler) {
+	r.stdMiddleware = append(r.stdMiddleware, middleware...)
 }
 
 // Handle takes an http handler, method and pattern for a route.
@@ -135,6 +143,42 @@ func runMiddleware(ctx context.Context, d *HandlerDependencies, req *APIGatewayP
 	return true
 }
 
+// runStandardMiddleware will proxy events to standard http so that standard middleware can be used, then return back.
+func runStandardMiddleware(ctx context.Context, req *APIGatewayProxyRequest, middleware ...func(http.Handler) http.Handler) (APIGatewayProxyResponse, error) {
+	var res APIGatewayProxyResponse
+	var err error
+
+	if middleware != nil && len(middleware) > 0 {
+		var constructors []alice.Constructor
+		for _, m := range middleware {
+			constructors = append(constructors, m)
+		}
+
+		emptyHandler := func(w http.ResponseWriter, req *http.Request) {
+		}
+		adapter := NewHandlerAdapter(emptyHandler)
+
+		// Use a small helper like Alice here
+		chained := alice.New(constructors...).Then(adapter.HandlerFunc)
+		// Apollo is a fork of Alice and might also be nice if we want context to pass through.
+		// Although the Proxy() function will take context and will apply it to the http Request.
+		// So it's available to middleware, it just isn't part of the function signature.
+		// chained := apollo.New(constructors...).With(ctx).Then(adapter.HandlerFunc)
+		adapter.Handler = chained
+
+		// proxyResp, err := adapter.Proxy(events.APIGatewayProxyRequest(*req)) // <-- empty handler by itself
+		proxyResp, err := adapter.Proxy(ctx, events.APIGatewayProxyRequest(*req)) // <-- alice chained middleware plus empty handler
+
+		if err == nil {
+			res = APIGatewayProxyResponse(proxyResp)
+		} else {
+			log.Println("Error getting response from adapter.Proxy()", err)
+		}
+	}
+
+	return res, err
+}
+
 // LambdaHandler is a native AWS Lambda Go handler function (no more shim).
 func (r *Router) LambdaHandler(ctx context.Context, d *HandlerDependencies, req APIGatewayProxyRequest) (APIGatewayProxyResponse, error) {
 	// url.Values are typically used for qureystring parameters.
@@ -142,11 +186,21 @@ func (r *Router) LambdaHandler(ctx context.Context, d *HandlerDependencies, req 
 	// Querystring parameters can be picked up from the *Event though.
 	params := url.Values{}
 
-	var res APIGatewayProxyResponse
-	var err error
+	// These used to be just declared here. But now runStandardMiddleware() will declare them
+	// since it runs first and has to run first. If not using any standard middleware, it will
+	// effectively be no different than what it used to be.
+	// var res APIGatewayProxyResponse
+	// var err error
 
-	// First run the Router middleware added with Use().
-	// This keeps middleware predictable and cascading.
+	// First run the standard http middleware added with UseStandard().
+	// Note: Standard http middleawre does not get nearly as many args as Aegis middleware.
+	// It is not possible to access any of Aegis' HandlerDependencies in standard middleware
+	// even if we were to pass them here because it's function signature simply doesn't consider
+	// anything like that. It literally only deals with the request. Though the context will
+	// be added to the request with Proxy().
+	res, err := runStandardMiddleware(ctx, &req, r.stdMiddleware...)
+
+	// Then run the Router middleware added with Use().
 	if !runMiddleware(ctx, d, &req, &res, params, r.middleware...) {
 		return res, nil
 	}

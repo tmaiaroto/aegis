@@ -15,6 +15,7 @@
 package main
 
 import (
+
 	//"encoding/json"
 	"bytes"
 	"context"
@@ -23,6 +24,7 @@ import (
 	"net/url"
 
 	aegis "github.com/tmaiaroto/aegis/framework"
+	"github.com/unrolled/secure"
 )
 
 // AegisApp holds a bunch of services that each handler might need
@@ -50,18 +52,18 @@ func main() {
 	// Handle with a URL reqeust path Router
 	router := aegis.NewRouter(fallThrough)
 
+	// Aegis can use standard middleware as well.
+	// So it's real easy to use something like this secure package.
+	// That will help us add some headers for security.
+	secureMiddleware := secure.New(secure.Options{
+		FrameDeny: true,
+	})
+	router.UseStandard(secureMiddleware.Handler)
+
 	router.Handle("GET", "/", root)
 	router.Handle("GET", "/blah/:thing", somepath, fooMiddleware, barMiddleware)
 
 	router.Handle("POST", "/", postExample)
-
-	// Use AWS Cognito hosted pages for signin
-	router.Handle("GET", "/login", redirectToCognitoSignin)
-	// Callback for Cognito
-	router.Handle("GET", "/callback", cognitoCallback)
-	// After login example
-	// router.Handle("GET", "/userinfo", cognitoProtected, jwtMiddleware)
-	router.Handle("GET", "/userinfo", cognitoProtected, aegis.ValidAccessTokenMiddleware)
 
 	// Handle RPCs
 	rpcRouter := aegis.NewRPCRouter()
@@ -73,10 +75,6 @@ func main() {
 	// Put() is a shortcut for the above
 	s3Router.Put("*.png", handleS3Upload)
 
-	// Handle Cognito Triggers
-	cognitoRouter := aegis.NewCognitoRouter()
-	cognitoRouter.Handle("PreSignUp_SignUp", handleCognitoPreSignUp)
-
 	// Blocks. So this function would only be good for handling APIGatewayProxyRequest events
 	// router.Listen()
 	// Also blocks, but uses reflection to get the event type and then calls the appropriate handler
@@ -87,7 +85,6 @@ func main() {
 		Tasker:         tasker,
 		RPCRouter:      rpcRouter,
 		S3ObjectRouter: s3Router,
-		CognitoRouter:  cognitoRouter,
 	}
 	// This still works, but it skips service set up.
 	// Not using Cognito or any other service in your handlers? Great! Feel free to call this.
@@ -103,16 +100,6 @@ func main() {
 	// all the service config, other handlers, etc.
 
 	AegisApp = aegis.New(handlers)
-	// The configuration is a function because config can come from a variety of sources
-	AegisApp.ConfigureService("cognito", func(ctx context.Context, evt map[string]interface{}) interface{} {
-		return &aegis.CognitoAppClientConfig{
-			Region:      "us-east-1",
-			PoolID:      "xxxxxx",
-			ClientID:    "xxxxxx",
-			RedirectURI: "xxxxxx",
-		}
-	})
-
 	AegisApp.Start()
 }
 
@@ -183,70 +170,6 @@ func barMiddleware(ctx context.Context, d *aegis.HandlerDependencies, req *aegis
 	return true
 }
 
-// Redirect to AWS Cognito hosted signin page
-func redirectToCognitoSignin(ctx context.Context, d *aegis.HandlerDependencies, req *aegis.APIGatewayProxyRequest, res *aegis.APIGatewayProxyResponse, params url.Values) error {
-	log.Println("Redirect to login:", AegisApp.Services.Cognito.HostedLoginURL)
-	res.Redirect(301, AegisApp.Services.Cognito.HostedLoginURL)
-	// res.JSON(200, map[string]interface{}{"url": CAClient.HostedLoginURL})
-	return nil
-}
-
-// Handle oauth2 callback, will exchange code for token
-func cognitoCallback(ctx context.Context, d *aegis.HandlerDependencies, req *aegis.APIGatewayProxyRequest, res *aegis.APIGatewayProxyResponse, params url.Values) error {
-	// Exchange code for token
-	tokens, err := AegisApp.Services.Cognito.GetTokens(req.QueryStringParameters["code"], []string{"profile", "openid"})
-	if err != nil {
-		log.Println("Couldn't get access token", err)
-		res.JSONError(500, err)
-	} else {
-		// verify the token
-		_, err := d.Services.Cognito.ParseAndVerifyJWT(tokens.IDToken)
-		if err == nil {
-			// Use/send whichever you need for your app
-			res.SetHeader("Set-Cookie", "access_token="+tokens.AccessToken+"; Domain=u7aq1oathb.execute-api.us-east-1.amazonaws.com; Secure; HttpOnly")
-			// convert to string
-			//res.SetHeader("Set-Cookie", "token_expiration="+token.ExpiresIn+"; Domain=u7aq1oathb.execute-api.us-east-1.amazonaws.com; Secure; HttpOnly")
-			res.Redirect(301, "https://u7aq1oathb.execute-api.us-east-1.amazonaws.com/prod/userinfo")
-		} else {
-			res.JSONError(401, errors.New("unauthorized, invalid token"))
-		}
-	}
-	// This is all a one time auth. It verifies the JWT but does nothing else with it.
-	// So it won't be held in cookies, etc. Users would need to go back to login all over again for a new code to exchange.
-	// See use case 26
-	// Better to use this in applications:
-	// https://github.com/aws/aws-amplify
-
-	return nil
-}
-
-// Example after successful login
-func cognitoProtected(ctx context.Context, d *aegis.HandlerDependencies, req *aegis.APIGatewayProxyRequest, res *aegis.APIGatewayProxyResponse, params url.Values) error {
-	res.JSON(200, map[string]interface{}{"success": true})
-	return nil
-}
-
-func jwtMiddleware(ctx context.Context, d *aegis.HandlerDependencies, req *aegis.APIGatewayProxyRequest, res *aegis.APIGatewayProxyResponse, params url.Values) bool {
-	jwtCookie, err := req.Cookie("access_token")
-	if err != nil {
-		log.Println("access_token not found in cookies", err)
-		allCookies, _ := req.Cookies()
-		log.Println("All cookies:", allCookies)
-		return false
-	}
-	// Check req Host and Referrer for increased protection
-
-	_, err = d.Services.Cognito.ParseAndVerifyJWT(jwtCookie.Value)
-	// if parsedToken.Claims ... some blah blah, or look up some user then if blah blah, then ok.
-	if err == nil {
-		log.Println("Could not verify JWT", err)
-		return true
-	}
-
-	// none shall pass
-	return false
-}
-
 // Example task handler
 func handleTask(ctx context.Context, d *aegis.HandlerDependencies, evt *map[string]interface{}) error {
 	log.Println("Handling task!", evt)
@@ -270,11 +193,4 @@ func handleS3Upload(ctx context.Context, d *aegis.HandlerDependencies, evt *aegi
 	log.Println("Handling S3 upload!")
 	log.Println(evt)
 	return nil
-}
-
-// Example cognito handler
-func handleCognitoPreSignUp(ctx context.Context, d *aegis.HandlerDependencies, evt map[string]interface{}) (map[string]interface{}, error) {
-	log.Println("Handling Cognito Pre SignUp!")
-	log.Println(evt)
-	return evt, nil
 }
