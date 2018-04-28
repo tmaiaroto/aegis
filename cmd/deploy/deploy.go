@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// package deploy is purely for organization, the deploy.go command file was getting absurdly long
+// Package deploy is purely for organization, the deploy.go command file was getting absurdly long
 package deploy
 
 import (
@@ -117,15 +117,6 @@ func (d *Deployer) CreateFunction(zipBytes []byte) *string {
 		return &arn
 	}
 
-	// TODO: May want to look into just updating the function code too.
-	// https://docs.aws.amazon.com/sdk-for-go/api/service/lambda/#Lambda.UpdateFunctionCode
-	// ...when no aegis.yaml config changes have been made. That would require some sort of local state
-	// to be held to compare against. Then of course we run into the same concerns Terraform did with that.
-	// I don't want to hold a remote state for working with others. I think that might be overcomplicating things.
-	// Perhaps if the local state file doesn't exist, do a full deploy. Else, use it to compare (looking for new
-	// settings or Lambda environment variables, etc.) and then just update the code if nothing needs to change.
-	// This is purely quality of life improvement here. It will make the deploy command run faster.
-
 	// Otherwise, update the Lambda function
 	updatedArn := d.updateFunction(zipBytes)
 	d.LambdaArn = updatedArn
@@ -184,8 +175,25 @@ func (d *Deployer) updateFunction(zipBytes []byte) *string {
 	// Set concurrency limit, if configured
 	d.updateFunctionMaxConcurrency(svc)
 
-	fmt.Printf("%v %v %v %v%v\n\n", "Updated Lambda function:", color.GreenString(arn), "(version ", *f.Version, ")")
+	fmt.Printf("%v %v %v %v%v\n\n", "Updated Lambda function:", color.GreenString(arn), "(version", *f.Version, ")")
 	return &arn
+}
+
+// UpdateFunctionCode updates the Lambda function code and publishes a new version - no configuration changes
+func (d *Deployer) UpdateFunctionCode(zipBytes []byte) error {
+	// https://docs.aws.amazon.com/sdk-for-go/api/service/lambda/#Lambda.UpdateFunctionCode
+	svc := lambda.New(d.AWSSession)
+
+	f, err := svc.UpdateFunctionCode(&lambda.UpdateFunctionCodeInput{
+		FunctionName: aws.String(d.Cfg.Lambda.FunctionName),
+		Publish:      aws.Bool(true),
+		ZipFile:      zipBytes,
+	})
+
+	if err == nil {
+		fmt.Printf("Updated Lambda function: %v %v %v%v\n\n", color.GreenString(d.Cfg.Lambda.FunctionName), "(version", *f.Version, ")")
+	}
+	return err
 }
 
 // createOrUpdateAlias will handle the Lambda function alias

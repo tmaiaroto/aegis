@@ -31,6 +31,7 @@ Not every possible service will likely ever covered, the focus will be on the co
 ## 1.10.1
 
 - Added the ability to use standard middleware (Go's http.Handler interface)
+- Added `update` CLI command for updating Lambda function code only (faster than full deploy)
 
 ## 1.10.0
 
