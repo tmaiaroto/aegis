@@ -20,9 +20,9 @@ import (
 	"log"
 	"time"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/mitchellh/mapstructure"
+	"github.com/sirupsen/logrus"
 )
 
 // Handlers defines a set of Aegis framework Lambda handlers
