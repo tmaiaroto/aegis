@@ -25,6 +25,27 @@ bucketTriggers:
       # ... there's a few and there's wildcards, see:
       # https://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html#notification-how-to-event-types-and-destinations
     disabled: false
+sesRules:
+  - ruleName: aegis-test
+    enabled: true
+    requireTLS: false
+    scanEnabled: true
+    # ruleSet: ... optional string, defaults to aegis-default-rule-set
+    # invocationType: Event # default to Event, RequestResponse is other option less common and has to return in 30 seconds
+    # snsTopicArn: ... optional SNS topic to also notify - SNS setup is outside aegis deploy for now
+    recipients:
+      - test@ses.serifandsemaphore.io
+    # Confusingly, the SES incoming email events do NOT include the body
+    # If an S3 action is set, then it will save the entire e-mail in an S3 bucket (with a few options)
+    # So the following define that action (this config does not have the concept of actions, they're merged here)
+    # Also, an S3 bucketTrigger could be used to pick up the e-mail in its entirety OR the an SES event can be
+    # used because it will provide a message ID that can be looked for in S3.
+    s3Bucket: "aegis-incoming"
+    # subdirectory
+    s3ObjectKeyPrefix: "ses_"
+    s3encryptMessage: false
+    # s3KMSKeyArn: ... s3encryptMessage will use the default KMS key for encrypting email if true unless this is provided
+    # s3SNSTopicArn: "sometopic" ... an optional SNS topic to publish when messages are saved to S3, different from the SNS topic about the event
 api:
   name: Example Aegis API
   description: An example API

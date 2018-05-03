@@ -64,6 +64,7 @@ type DeploymentConfig struct {
 		BinaryMediaTypes  []*string
 	}
 	BucketTriggers []BucketTrigger
+	SESRules       []SESRule
 }
 
 // DeploymentStage defines an API Gateway stage and holds configuration options for it
@@ -90,6 +91,23 @@ type BucketTrigger struct {
 	Filters    []*s3.FilterRule
 	EventNames []*string
 	Disabled   bool
+}
+
+// SESRule defines options for an SES Recipeint Rule
+type SESRule struct {
+	RuleName          string   `json:"ruleName"`
+	Enabled           bool     `json:"enabled"`
+	RequireTLS        bool     `json:"requireTLS"`
+	ScanEnabled       bool     `json:"scanEnabled"`
+	RuleSet           string   `json:"ruleSet"`
+	InvocationType    string   `json:"invocationType"` // either Event or RequestResponse
+	SNSTopicArn       string   `json:"snsTopicArn"`
+	Recipients        []string `json:"recipients"`
+	S3Bucket          string   `json:"s3Bucket"`
+	S3ObjectKeyPrefix string   `json:"s3ObjectKeyPrefix"`
+	S3EncryptMessage  bool     `json:"s3encryptMessage"`
+	S3KMSKeyArn       string   `json:"s3KMSKeyArn"`
+	S3SNSTopicArn     string   `json:"s3SNSTopicArn"`
 }
 
 // bucketTriggers:

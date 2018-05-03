@@ -16,6 +16,7 @@ package framework
 
 import (
 	"context"
+	"errors"
 	"log"
 
 	"github.com/aws/aws-lambda-go/lambda"
@@ -43,6 +44,11 @@ type S3ObjectHandler struct {
 
 // LambdaHandler handles S3 events.
 func (r *S3ObjectRouter) LambdaHandler(ctx context.Context, d *HandlerDependencies, evt S3Event) error {
+	// If an incoming event can be matched to this router, but the router has no registered handlers
+	// or if one hasn't been added to aegis.Handlers{}.
+	if r == nil {
+		return errors.New("no handlers registered for S3ObjectRouter")
+	}
 	var err error
 	var g glob.Glob
 	handled := false
@@ -111,7 +117,7 @@ func (r *S3ObjectRouter) LambdaHandler(ctx context.Context, d *HandlerDependenci
 	return err
 }
 
-// Listen will start an S3 even listener that handles incoming object based events (put, delete, etc.)
+// Listen will start an S3 event listener that handles incoming object based events (put, delete, etc.)
 func (r *S3ObjectRouter) Listen() {
 	lambda.Start(r.LambdaHandler)
 }

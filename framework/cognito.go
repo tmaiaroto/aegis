@@ -16,6 +16,7 @@ package framework
 
 import (
 	"context"
+	"errors"
 	"log"
 
 	"github.com/aws/aws-lambda-go/lambda"
@@ -43,6 +44,12 @@ func (r *CognitoRouter) LambdaHandler(ctx context.Context, d *HandlerDependencie
 	// What if an empty map is intended?
 	// defaultResponse := evt["response"].(map[string]interface{})
 	var response map[string]interface{}
+
+	// If an incoming event can be matched to this router, but the router has no registered handlers
+	// or if one hasn't been added to aegis.Handlers{}.
+	if r == nil {
+		return response, errors.New("no handlers registered for CognitoRouter")
+	}
 
 	if r.PoolID == "" || r.PoolID == userPoolID {
 		if handler, ok := r.handlers[triggerSource]; ok {

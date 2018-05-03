@@ -52,6 +52,9 @@ type (
 
 	// CloudWatchEvent alias for CloudWatchEvent events
 	CloudWatchEvent events.CloudWatchEvent
+
+	// SimpleEmailEvent alias for SES Email events (recipient rules)
+	SimpleEmailEvent events.SimpleEmailEvent
 )
 
 // Log uses Logrus for logging and will hook to CloudWatch...But could also be used to hook to other centralized logging services.

@@ -31,6 +31,7 @@ type Handlers struct {
 	Tasker         *Tasker
 	RPCRouter      *RPCRouter
 	S3ObjectRouter *S3ObjectRouter
+	SESRouter      *SESRouter
 	CognitoRouter  *CognitoRouter
 	DefaultHandler DefaultHandler
 }
@@ -53,12 +54,17 @@ func getType(evt map[string]interface{}) string {
 		return "APIGatewayProxyRequest"
 	}
 
-	// if S3Event
+	// if S3Event or SimpleEmailEvent
 	if keyInMap("Records", evt) {
 		records := evt["Records"].([]interface{})
 		if len(records) > 0 {
+			// S3
 			if keyInMap("s3", records[0].(map[string]interface{})) {
 				return "S3Event"
+			}
+			// SES
+			if keyInMap("ses", records[0].(map[string]interface{})) {
+				return "SimpleEmailEvent"
 			}
 		}
 	}
@@ -134,6 +140,20 @@ func (h *Handlers) eventHandler(ctx context.Context, d *HandlerDependencies, evt
 			err = h.S3ObjectRouter.LambdaHandler(ctx, d, e)
 		} else {
 			log.Println("Could not decode S3Event", decodeErr)
+		}
+	case "SimpleEmailEvent":
+		var e SimpleEmailEvent
+		decoder, _ := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
+			// Event time format: 2018-04-02T17:09:32.273Z
+			// mapstructure does not handle string to time.Time automatically so we need to use a hook
+			DecodeHook: mapstructure.StringToTimeHookFunc(time.RFC3339Nano),
+			Result:     &e,
+		})
+		decodeErr := decoder.Decode(evt)
+		if decodeErr == nil {
+			err = h.SESRouter.LambdaHandler(ctx, d, e)
+		} else {
+			log.Println("Could not decode SimpleEmailEvent", decodeErr)
 		}
 	case "CognitoTrigger":
 		// There's so many different formats here, routing for each is a bit silly.

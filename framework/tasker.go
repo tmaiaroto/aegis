@@ -16,6 +16,7 @@ package framework
 
 import (
 	"context"
+	"errors"
 
 	"github.com/aws/aws-lambda-go/lambda"
 )
@@ -32,6 +33,11 @@ type TaskHandler func(context.Context, *HandlerDependencies, *map[string]interfa
 
 // LambdaHandler is a native AWS Lambda Go handler function. Handles a CloudWatch event.
 func (t *Tasker) LambdaHandler(ctx context.Context, d *HandlerDependencies, evt map[string]interface{}) error {
+	// If an incoming event can be matched to this router, but the router has no registered handlers
+	// or if one hasn't been added to aegis.Handlers{}.
+	if t == nil {
+		return errors.New("no handlers registered for Tasker")
+	}
 	var err error
 
 	handled := false

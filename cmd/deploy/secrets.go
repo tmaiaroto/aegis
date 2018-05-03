@@ -29,12 +29,7 @@ import (
 // for other keys within the same secret
 var retrievedSecrets map[string]interface{}
 
-// AddLambdaSecrets will add values from AWS Secrets Manager to Lambda environment variables
-func (d *Deployer) AddLambdaSecrets() {
-
-}
-
-// This won't add secrets itself. They are actually added by existing deploy functions.
+// Secrets are added by existing deploy functions.
 // For Lambda env vars, it's added by the Lambda create/update input struct.
 // Using:
 // d.Cfg.Lambda.EnvironmentVariables

@@ -28,6 +28,13 @@ a lightweight set of helpers or framework to help build things faster. It's to b
 and flexible. 1.x will focus on adding more event router/handlers and helper functions.
 Not every possible service will likely ever covered, the focus will be on the common.
 
+## 1.11.0
+
+- Added SES integration; configure rules in `aegis.yaml` and handle with `SESRouter` handlers
+- Fixed bug when handling with nil Router, it will now return an error explaining that no
+  handleres have been set to handle the event (this can occur if a router was registered,
+  but not added to aegis.Handlers{}, leading to some confusion)
+
 ## 1.10.1
 
 - Added the ability to use standard middleware (Go's http.Handler interface)

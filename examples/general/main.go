@@ -49,6 +49,10 @@ func main() {
 	tasker := aegis.NewTasker(taskerFallThrough)
 	tasker.Handle("test", handleTask)
 
+	// Handle incoming emails
+	sesReceiver := aegis.NewSESRouter()
+	sesReceiver.Handle("*@ses.serifandsemaphore.io", handleEmail)
+
 	// Handle with a URL reqeust path Router
 	router := aegis.NewRouter(fallThrough)
 
@@ -85,6 +89,7 @@ func main() {
 		Tasker:         tasker,
 		RPCRouter:      rpcRouter,
 		S3ObjectRouter: s3Router,
+		SESRouter:      sesReceiver,
 	}
 	// This still works, but it skips service set up.
 	// Not using Cognito or any other service in your handlers? Great! Feel free to call this.
@@ -191,6 +196,12 @@ func handleProcedure(ctx context.Context, d *aegis.HandlerDependencies, evt map[
 // Example S3 handler
 func handleS3Upload(ctx context.Context, d *aegis.HandlerDependencies, evt *aegis.S3Event) error {
 	log.Println("Handling S3 upload!")
+	log.Println(evt)
+	return nil
+}
+
+func handleEmail(ctx context.Context, d *aegis.HandlerDependencies, evt *aegis.SimpleEmailEvent) error {
+	log.Println("Handling an incoming e-mail!")
 	log.Println(evt)
 	return nil
 }

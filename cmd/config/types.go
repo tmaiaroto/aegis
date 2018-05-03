@@ -58,12 +58,17 @@ type PolicyStatement struct {
 	Sid       string             `json:"Sid"`
 	Effect    string             `json:"Effect"`
 	Principal StatementPrincipal `json:"Principal"`
-	Action    []string           `json:"Action"`
-	Resource  string             `json:"Resource"`
-	// Condition TODO? Not yet used by aegis
+	Action    interface{}        `json:"Action"`   // can be string or []string
+	Resource  interface{}        `json:"Resource"` // can be string or []string
+	Condition StatementCondition `json:"Condition"`
 }
 
 // StatementPrincipal defines a generic AWS policy statement principal (TODO: see what else there is besides Service in here)
 type StatementPrincipal struct {
 	Service string `json:"Service"`
+}
+
+// StatementCondition defines a generic AWS policy statement condition (TODO: Add more fields as needed)
+type StatementCondition struct {
+	StringEquals map[string]string `json:"StringEquals"`
 }

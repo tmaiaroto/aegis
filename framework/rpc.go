@@ -17,6 +17,7 @@ package framework
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"log"
 
 	"github.com/aws/aws-lambda-go/lambda"
@@ -38,6 +39,11 @@ type RPCHandler func(context.Context, *HandlerDependencies, map[string]interface
 func (r *RPCRouter) LambdaHandler(ctx context.Context, d *HandlerDependencies, evt map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	var response map[string]interface{}
+	// If an incoming event can be matched to this router, but the router has no registered handlers
+	// or if one hasn't been added to aegis.Handlers{}.
+	if r == nil {
+		return response, errors.New("no handlers registered for RPCRouter")
+	}
 
 	handled := false
 	procedureName := ""

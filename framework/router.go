@@ -181,6 +181,12 @@ func runStandardMiddleware(ctx context.Context, req *APIGatewayProxyRequest, mid
 
 // LambdaHandler is a native AWS Lambda Go handler function (no more shim).
 func (r *Router) LambdaHandler(ctx context.Context, d *HandlerDependencies, req APIGatewayProxyRequest) (APIGatewayProxyResponse, error) {
+	// If an incoming event can be matched to this router, but the router has no registered handlers
+	// or if one hasn't been added to aegis.Handlers{}.
+	if r == nil {
+		return APIGatewayProxyResponse{}, errors.New("no handlers registered for Router")
+	}
+
 	// url.Values are typically used for qureystring parameters.
 	// However, this router uses them for path params.
 	// Querystring parameters can be picked up from the *Event though.

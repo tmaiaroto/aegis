@@ -166,15 +166,20 @@ func Deploy(cmd *cobra.Command, args []string) {
 		fmt.Printf("%v %v %v\n", color.GreenString(key), "API URL:", color.GreenString(invokeURL))
 	}
 
-	// Tasks - set CloudWatch scheduled events
-	lambdaArnStr := *lambdaArn
-	fmt.Printf("\n\nCloudWatch Event Rules (Tasks) for:\n%v\n\n", lambdaArnStr)
-
 	// Tasks (CloudWatch event rules to trigger Lambda)
+	fmt.Printf("\n")
 	deployer.AddTasks()
 
 	// Bucket notifications (to trigger Lambda)
+	fmt.Printf("\n")
 	deployer.AddS3BucketNotifications()
+
+	// SES Recipient Rules (to trigger Lambda)
+	if cfg.SESRules != nil && len(cfg.SESRules) > 0 {
+		fmt.Printf("\n")
+		deployer.AddSESPermission(lambdaArn)
+		deployer.AddSESRules()
+	}
 
 	// Clean up
 	if !cfg.App.KeepBuildFiles {
