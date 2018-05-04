@@ -18,7 +18,8 @@
     "X-Amz-Cf-Id": "ekjIPhCoWuazdKIji2IdEy4G9DG1AgwunkAbTDE_Me93l_kprnBQPr==",
     "X-Forwarded-For": "71.189.200.100, 55.239.200.100",
     "X-Forwarded-Port": "443",
-    "X-Forwarded-Proto": "https"
+    "X-Forwarded-Proto": "https",
+    "Cookie": "yummy_cookie=choco; tasty_cookie=strawberry"
   },
   "httpMethod": "GET",
   "isBase64Encoded": false,

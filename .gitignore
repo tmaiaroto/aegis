@@ -1,5 +1,6 @@
 vendor/*/
 !vendor/vendor.json
 .DS_Store
+.vscode
 .sensitive
 aegis

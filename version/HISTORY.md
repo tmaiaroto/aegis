@@ -28,6 +28,15 @@ a lightweight set of helpers or framework to help build things faster. It's to b
 and flexible. 1.x will focus on adding more event router/handlers and helper functions.
 Not every possible service will likely ever covered, the focus will be on the common.
 
+## 1.11.1
+
+- Added test cases
+- Fixed Aegis handler Filters to pass `evt` by value not pointer
+- Also altered function signature of `After` filter to include both the `interface{}` and
+  the `error` that normally is returned from the handler
+- Add `HTMLError()` helper function
+- Fixed `XMLError()` helper function
+
 ## 1.11.0
 
 - Added SES integration; configure rules in `aegis.yaml` and handle with `SESRouter` handlers

@@ -109,7 +109,7 @@ func (h *Handlers) eventHandler(ctx context.Context, d *HandlerDependencies, evt
 	// TODO: This isn't exactly reflection, it's a map.
 	// But we do need to look at the signature to make a determination.
 	evtType := getType(evt)
-	log.Println("Incoming Lambda event type: ", evtType)
+	// log.Println("Incoming Lambda event type: ", evtType)
 	switch evtType {
 	case "APIGatewayProxyRequest":
 		var e APIGatewayProxyRequest

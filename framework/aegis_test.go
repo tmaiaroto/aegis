@@ -14,4 +14,132 @@
 
 package framework
 
-// TODO: Add tests.
+import (
+	"context"
+	"encoding/json"
+	"net/url"
+	"testing"
+
+	"github.com/sirupsen/logrus"
+
+	. "github.com/smartystreets/goconvey/convey"
+)
+
+func TestAegis(t *testing.T) {
+
+	// Mock API Gateway Router handler and Aegis interface
+	handlers := Handlers{
+		Router: NewRouter(func(ctx context.Context, d *HandlerDependencies, req *APIGatewayProxyRequest, res *APIGatewayProxyResponse, params url.Values) error {
+			res.JSON(200, req)
+			return nil
+		}),
+	}
+	a := New(handlers)
+	// Mock context and event
+	ctx := context.Background()
+	evt := map[string]interface{}{
+		"httpMethod": "GET",
+		"path":       "/",
+		"stageVariables": map[string]string{
+			"foo": "bar",
+			"b64": "aGVsbG8gd29ybGQ=",
+		},
+		"requestContext": map[string]interface{}{
+			"stage": "dev",
+		},
+	}
+
+	Convey("New()", t, func() {
+		Convey("Should be return a new Aegis interface", func() {
+			So(a, ShouldHaveSameTypeAs, &Aegis{})
+		})
+	})
+
+	Convey("ConfigureLogger()", t, func() {
+		var logger = logrus.New()
+		logger.SetLevel(logrus.WarnLevel)
+		a.ConfigureLogger(logger)
+		Convey("Should allow a `*logrus.Logger` to replace the default `Log`", func() {
+			So(a.Log.Level.String(), ShouldEqual, "warning")
+		})
+	})
+
+	Convey("ConfigureService()", t, func() {
+		a.ConfigureService("myservice", func(ctx context.Context, evt map[string]interface{}) interface{} {
+			return map[string]string{"config": "value"}
+		})
+		Convey("Should set configurations for Services", func() {
+			So(a.Services.configurations, ShouldContainKey, "myservice")
+		})
+	})
+
+	Convey("setAegisVariables()", t, func() {
+		a.setAegisVariables(ctx, evt)
+		Convey("Should set variables from API Gateway stage variables", func() {
+			So(a.Variables, ShouldContainKey, "foo")
+		})
+
+		Convey("Should handle base64 encoded values from API Gateway stage variables", func() {
+			So(a.Variables, ShouldContainKey, "b64")
+			So(a.Variables["b64"], ShouldEqual, "hello world")
+		})
+	})
+
+	Convey("aegisHandler()", t, func() {
+		a.Filters.Handler.BeforeServices = []func(*context.Context, map[string]interface{}){
+			func(ctx *context.Context, evt map[string]interface{}) {
+				evt["queryStringParameters"] = map[string]string{"alter": "event"}
+			},
+		}
+
+		a.Filters.Handler.Before = []func(*context.Context, map[string]interface{}){
+			func(ctx *context.Context, evt map[string]interface{}) {
+				evt["queryStringParameters"].(map[string]string)["another"] = "alteration"
+			},
+		}
+
+		a.Filters.Handler.After = []func(*context.Context, interface{}, error) (interface{}, error){
+			func(ctx *context.Context, res interface{}, err error) (interface{}, error) {
+				// You need to know something about the response here in order to apply a filter to it
+				// In this case, it's an API Gateway Proxy Response so it's asserted: res.(APIGatewayProxyResponse)
+
+				var apiGWResJSON map[string]interface{}
+				if err := json.Unmarshal([]byte(res.(APIGatewayProxyResponse).Body), &apiGWResJSON); err != nil {
+					panic(err)
+				}
+				apiGWResJSON["alteredResponse"] = "test"
+
+				// A new interface{} and error get returned, overwriting the previous
+				newRes := res.(APIGatewayProxyResponse)
+				newRes.JSON(200, apiGWResJSON)
+				return newRes, err
+			},
+		}
+
+		res, err := a.aegisHandler(ctx, evt)
+		apiGWRes := res.(APIGatewayProxyResponse)
+		// The json decoded response to assert against
+		var jsonRes map[string]interface{}
+		if err := json.Unmarshal([]byte(apiGWRes.Body), &jsonRes); err != nil {
+			panic(err)
+		}
+
+		Convey("Should handle a Lambda event", func() {
+			// So(apiGWRes.Body, ShouldEqual, "Success")
+			So(apiGWRes.StatusCode, ShouldEqual, 200)
+			So(err, ShouldBeNil)
+		})
+
+		Convey("Should apply `BeforeServices` filters", func() {
+			So(jsonRes["queryStringParameters"].(map[string]interface{}), ShouldContainKey, "alter")
+		})
+
+		Convey("Should apply `Before` filters", func() {
+			So(jsonRes["queryStringParameters"].(map[string]interface{}), ShouldContainKey, "another")
+		})
+
+		Convey("Should apply `After` filters", func() {
+			So(jsonRes, ShouldContainKey, "alteredResponse")
+		})
+	})
+}

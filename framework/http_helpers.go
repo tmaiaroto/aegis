@@ -186,6 +186,18 @@ func (res *APIGatewayProxyResponse) JSONError(status int, e error) {
 	res.Error(status, e)
 }
 
+// HTMLError will return an error message in HTML with a status code.
+func (res *APIGatewayProxyResponse) HTMLError(status int, e error) {
+	res.SetHeader(HeaderContentType, MIMETextHTMLCharsetUTF8)
+	res.Error(status, e)
+}
+
+// XMLError will return an error message in XML with a status code.
+func (res *APIGatewayProxyResponse) XMLError(status int, e error) {
+	res.SetHeader(HeaderContentType, MIMEApplicationXMLCharsetUTF8)
+	res.Error(status, e)
+}
+
 // Redirect redirects the request with status code.
 func (res *APIGatewayProxyResponse) Redirect(status int, url string) {
 	if status < http.StatusMultipleChoices || status > http.StatusTemporaryRedirect {
@@ -220,13 +232,20 @@ func (res *APIGatewayProxyResponse) SetBodyError(e error) {
 			res.Body = string(data)
 		}
 	case MIMEApplicationXML, MIMEApplicationXMLCharsetUTF8:
-		data, err := xml.MarshalIndent(struct {
-			ErrStr string `xml:"error"`
-		}{
-			ErrStr: e.Error(),
+		type xmlError struct {
+			XMLName xml.Name `xml:"error"`
+			Message string   `xml:"message"`
+		}
+		data, err := xml.MarshalIndent(xmlError{
+			Message: e.Error(),
 		}, "  ", "    ")
 		if err == nil {
-			res.Body = string(data)
+			var buffer bytes.Buffer
+			buffer.WriteString(xml.Header)
+			buffer.WriteString("\n")
+			buffer.WriteString(string(data))
+			res.Body = buffer.String()
+			buffer.Reset()
 		}
 	case MIMETextHTML, MIMETextHTMLCharsetUTF8:
 		var buffer bytes.Buffer

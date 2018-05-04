@@ -72,9 +72,9 @@ type Aegis struct {
 	Services
 	Filters struct {
 		Handler struct {
-			BeforeServices []func(*context.Context, *map[string]interface{})
-			Before         []func(*context.Context, *map[string]interface{})
-			After          []func(*context.Context, *interface{})
+			BeforeServices []func(*context.Context, map[string]interface{})
+			Before         []func(*context.Context, map[string]interface{})
+			After          []func(*context.Context, interface{}, error) (interface{}, error)
 		}
 	}
 }
@@ -133,7 +133,7 @@ func (a *Aegis) setAegisVariables(ctx context.Context, evt map[string]interface{
 
 	// Lambda environment variables first
 	lc, _ := lambdacontext.FromContext(ctx)
-	if len(lc.ClientContext.Env) > 0 {
+	if lc != nil && len(lc.ClientContext.Env) > 0 {
 		for k, v := range lc.ClientContext.Env {
 			a.Services.Variables[k] = v
 		}
@@ -171,7 +171,7 @@ func (a *Aegis) aegisHandler(ctx context.Context, evt map[string]interface{}) (i
 	// Filters to run before anything is handled, even before services are configured.
 	if a.Filters.Handler.BeforeServices != nil {
 		for _, filter := range a.Filters.Handler.BeforeServices {
-			filter(&ctx, &evt)
+			filter(&ctx, evt)
 		}
 	}
 
@@ -206,7 +206,7 @@ func (a *Aegis) aegisHandler(ctx context.Context, evt map[string]interface{}) (i
 	// Filters to run before handling the event (but after services have been configured).
 	if a.Filters.Handler.Before != nil {
 		for _, filter := range a.Filters.Handler.Before {
-			filter(&ctx, &evt)
+			filter(&ctx, evt)
 		}
 	}
 
@@ -221,10 +221,11 @@ func (a *Aegis) aegisHandler(ctx context.Context, evt map[string]interface{}) (i
 	res, err := a.Handlers.eventHandler(ctx, &d, evt)
 
 	// Filters to run after handling the event. Instead of getting a map[string]interface{} with the event,
-	// this filter gets an interface{} that is the response.
+	// this filter gets the interface{} and error that would normally be returned. It presents an opportunity
+	// to change the entire return values.
 	if a.Filters.Handler.After != nil {
 		for _, filter := range a.Filters.Handler.After {
-			filter(&ctx, &res)
+			res, err = filter(&ctx, res, err)
 		}
 	}
 
