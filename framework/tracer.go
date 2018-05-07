@@ -55,3 +55,12 @@ func (t *TraceStrategy) AddMetadata(ctx context.Context) {
 		}
 	}
 }
+
+// BeginSegment will begin a new trace segment, useful when running locally as AWS Lambda already does this
+func (t *TraceStrategy) BeginSegment(ctx context.Context, name string) (context.Context, interface{}) {
+	// By default we're just using xray's BeginSegment(), but if xray is not used, then
+	// something else needs to return a context and interface{} (which is ignored when running locally).
+	// Note: It is possible to use xray locally still. You just need AWS credentials configured.
+	// The context returned by xray.Beginsegment() is enough to use xray like normal.
+	return xray.BeginSegment(ctx, name)
+}

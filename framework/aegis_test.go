@@ -17,7 +17,9 @@ package framework
 import (
 	"context"
 	"encoding/json"
+	"net/http/httptest"
 	"net/url"
+	"strings"
 	"testing"
 
 	"github.com/sirupsen/logrus"
@@ -140,6 +142,38 @@ func TestAegis(t *testing.T) {
 
 		Convey("Should apply `After` filters", func() {
 			So(jsonRes, ShouldContainKey, "alteredResponse")
+		})
+	})
+
+	Convey("requestToProxyRequest()", t, func() {
+		Convey("Should take an HTTP request and format a Lambda Event", func() {
+			localHandler := standAloneHandler{}
+			r := httptest.NewRequest("GET", "/?foo=bar", strings.NewReader("some body to be read"))
+			r.Header.Set("User-Agent", "aegis-test")
+
+			_, req := localHandler.requestToProxyRequest(r)
+
+			So(req.Body, ShouldEqual, "some body to be read")
+			So(req.Headers, ShouldContainKey, "User-Agent")
+			So(req.QueryStringParameters, ShouldContainKey, "foo")
+
+		})
+	})
+
+	Convey("proxyResponseToHTTPResponse()", t, func() {
+		Convey("Should take a Lambda Proxy response and format an HTTP response", func() {
+			localHandler := standAloneHandler{}
+			res := APIGatewayProxyResponse{
+				StatusCode: 200,
+				Headers:    map[string]string{"Content-Type": "application/json"},
+			}
+			rw := httptest.NewRecorder()
+			localHandler.proxyResponseToHTTPResponse(&res, nil, rw)
+
+			result := rw.Result()
+			rw.Flush()
+			So(result.StatusCode, ShouldEqual, 200)
+			So(result.Header.Get("Content-Type"), ShouldEqual, "application/json")
 		})
 	})
 }

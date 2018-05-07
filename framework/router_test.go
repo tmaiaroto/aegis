@@ -16,7 +16,6 @@ package framework
 
 import (
 	"context"
-	"net/http/httptest"
 	"net/url"
 	"strings"
 	"testing"
@@ -103,35 +102,4 @@ func TestRouter(t *testing.T) {
 		})
 	})
 
-	Convey("requestToProxyRequest", t, func() {
-		Convey("Should take an HTTP request and format a Lambda Event", func() {
-			gwHandler := gatewayHandler{}
-			r := httptest.NewRequest("GET", "/?foo=bar", strings.NewReader("some body to be read"))
-			r.Header.Set("User-Agent", "aegis-test")
-
-			_, req := gwHandler.requestToProxyRequest(r)
-
-			So(req.Body, ShouldEqual, "some body to be read")
-			So(req.Headers, ShouldContainKey, "User-Agent")
-			So(req.QueryStringParameters, ShouldContainKey, "foo")
-
-		})
-	})
-
-	Convey("proxyResponseToHTTPResponse", t, func() {
-		Convey("Should take a Lambda Proxy response and format an HTTP response", func() {
-			gwHandler := gatewayHandler{}
-			res := APIGatewayProxyResponse{
-				StatusCode: 200,
-				Headers:    map[string]string{"Content-Type": "application/json"},
-			}
-			rw := httptest.NewRecorder()
-			gwHandler.proxyResponseToHTTPResponse(&res, rw)
-
-			result := rw.Result()
-			rw.Flush()
-			So(result.StatusCode, ShouldEqual, 200)
-			So(result.Header.Get("Content-Type"), ShouldEqual, "application/json")
-		})
-	})
 }

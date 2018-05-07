@@ -28,6 +28,18 @@ a lightweight set of helpers or framework to help build things faster. It's to b
 and flexible. 1.x will focus on adding more event router/handlers and helper functions.
 Not every possible service will likely ever covered, the focus will be on the common.
 
+## 1.12.0
+
+- Moved local HTTP server to Aegis interface; it will eventually handle more than just
+  HTTP requests (which mimicks APIGatewayProxyRequest) - this creates a very small breaking
+  change, the old `router.Gateway()` is simply replaced by `app.StartServer()` where app
+  is an instance of Aegis interface
+- Moved test cases accordingly, many of the functions to convert requests/responses
+  were simply moved
+- Added `StartSingle()` which takes an `--event` flag when running the binary for the
+  event and returns a pretty printed result (optional) or error message to the CLI
+  (also can flag `--pretty` for this and `--nolog` to hide any log output from the app)
+
 ## 1.11.1
 
 - Added test cases
