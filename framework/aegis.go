@@ -311,7 +311,7 @@ func (h standAloneHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// We need the event to come from JSON for the field names (ie. "httpMethod" instead of struct field HTTPMethod)
 	// So just marshal to JSON
 	evtJSON, _ := json.Marshal(req)
-	log.Println(string(evtJSON))
+	// log.Println(string(evtJSON))
 	// and unmarshal the event as map[string]interface{}
 	// It's a little repetitive, aegisHandler() will convert to struct again.
 	// The other option is to have requestToProxyRequest() return a map[string]interface{} instead.
