@@ -4,3 +4,4 @@ vendor/*/
 .vscode
 .sensitive
 aegis
+public
