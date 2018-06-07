@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Pages on Aegis: An AWS Serverless Framework for Golang </title>
+    <link>/pages/</link>
+    <description>Recent content in Pages on Aegis: An AWS Serverless Framework for Golang </description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    
+	<atom:link href="/pages/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title></title>
+      <link>/pages/router/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>/pages/router/</guid>
+      <description>Aegis Router (API Gateway) The most popular event handler is the Router. While there are actually several interfaces to route events to handler, this one handles &amp;ldquo;HTTP&amp;rdquo; requests coming in as events via API Gateway.</description>
+    </item>
+    
+  </channel>
+</rss>
