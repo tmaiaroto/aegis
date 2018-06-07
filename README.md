@@ -97,3 +97,7 @@ in an issue. Feedback is perhaps one of the best ways to contribute. So don't fe
 
 Keep in mind that not all ideas can be implemented. There is a design direction for this project and
 only so much time. Though it's still good to share ideas.
+
+#### Running Tests
+
+Goconvey is used for testing, just be sure to exclude the `docs` directory. For example: `goconvey -excludedDirs docs`

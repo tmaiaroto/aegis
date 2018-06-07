@@ -32,7 +32,7 @@ func TestTasker(t *testing.T) {
 	// TODO: Figure out how to run tests with XRay
 	// testTaskerVal := 0
 	// testCtx := context.Background()
-	// testHandler := func(testCtx context.Context, evt *map[string]interface{}) error {
+	// testHandler := func(testCtx context.Context, evt map[string]interface{}) error {
 	// 	testTaskerVal = 1
 	// 	return nil
 	// }

@@ -176,13 +176,13 @@ func barMiddleware(ctx context.Context, d *aegis.HandlerDependencies, req *aegis
 }
 
 // Example task handler
-func handleTask(ctx context.Context, d *aegis.HandlerDependencies, evt *map[string]interface{}) error {
+func handleTask(ctx context.Context, d *aegis.HandlerDependencies, evt map[string]interface{}) error {
 	log.Println("Handling task!", evt)
 	return nil
 }
 
 // Example task handler catch all
-func taskerFallThrough(ctx context.Context, d *aegis.HandlerDependencies, evt *map[string]interface{}) error {
+func taskerFallThrough(ctx context.Context, d *aegis.HandlerDependencies, evt map[string]interface{}) error {
 	log.Println("Handling task!", evt)
 	return nil
 }
