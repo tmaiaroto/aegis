@@ -5,7 +5,8 @@ div.main-nav-wrapper {
     width: 100%;
     height: 30px;
     z-index: 1000;
-    background: #000;
+    background: #333;
+    border-bottom: 1px solid #000;
     color: #fff;
 }
 
@@ -38,6 +39,9 @@ ul.main-menu li > a, ul.main-menu-sidebar li > a {
     font-weight: normal;
 }
 
+ul.main-menu li > a {
+    font-weight: bold;
+}
 ul.main-menu li.active a, ul.main-menu-sidebar li.active a {
     font-weight: bold;
 }

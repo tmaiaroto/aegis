@@ -1,0 +1,20 @@
+aside.note-info {
+    color: #00529B;
+    background-color: #BDE5F8;
+    text-shadow: none;
+}
+aside.note-success {
+    color: #4F8A10;
+    background-color: #DFF2BF;
+    text-shadow: none;
+}
+aside.note-warning {
+    color: #9F6000;
+    background-color: #FEEFB3;
+    text-shadow: none;
+}
+aside.note-error {
+    color: #D8000C;
+    background-color: #FFD2D2;
+    text-shadow: none;
+}

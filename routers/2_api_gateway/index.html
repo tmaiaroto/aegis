@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta content="IE=edge,chrome=1" http-equiv="X-UA-Compatible">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-    <title>Routers</title>
+    <title></title>
     <link href='/aegis/slate/stylesheets/monokai.css' rel="stylesheet" media="screen" />
 <link href='/aegis/slate/stylesheets/screen.css' rel="stylesheet" media="screen" />
 <link href='/aegis/slate/stylesheets/print.css' rel="stylesheet" media="print" />
@@ -128,22 +128,6 @@
         <div class="content">
             
     
-        <h1 class="toc-ignore">Routers</h1>
-
-<p>First things first. The <a href="https://github.com/aws/aws-lambda-go" target="_blank">AWS Lambda Go package</a>
-is used by Aegis. In fact, it&rsquo;s basically required for native Go support in Lambda. I don&rsquo;t think anyone wants
-to write a competing package (why??). However, that package is designed to be lightweight. It does not include
-a bunch of creature comforts. That&rsquo;s where Aegis routers come in handy.</p>
-
-<p>Above all else, there is a default handler that can be used for any incoming Lambda event. This is called
-the <code>DefaultHandler</code>. Aegis routers aim to make life easier without hiding all of the unknowns in life. You
-can always handle incoming JSON event messages as maps.</p>
-
-<p>However, there&rsquo;s some very helpful routers to help direct events to your handlers. You&rsquo;re probably looking
-to use a framework because you don&rsquo;t want to write all that logic yourself, right?</p>
-
-    
-        
 
 <h1 id="api-gateway-router">API Gateway Router</h1>
 
@@ -243,91 +227,6 @@ but sets a <code>StatusCode</code> of 404.</p>
 
 <p>Aegis&rsquo; router also supports middleware. Standard Go http library middleware at that.</p>
 
-    
-        
-
-<h1 id="tasker">Tasker</h1>
-
-<p>The <code>Tasker</code> is an interface to route scheduled jobs or &ldquo;tasks&rdquo; that your Lambda may perform. This works
-in conjunction with CloudWatch Rules. So you&rsquo;ll need to have events setn to your Lambda from CloudWatch.</p>
-<div class="highlight"><pre class="chroma"><code class="language-json" data-lang="json"><span class="p">{</span>
-    <span class="nt">&#34;schedule&#34;</span><span class="p">:</span> <span class="s2">&#34;rate(1 minute)&#34;</span><span class="p">,</span>
-    <span class="nt">&#34;disabled&#34;</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span>
-    <span class="nt">&#34;input&#34;</span><span class="p">:</span> <span class="p">{</span>
-        <span class="nt">&#34;_taskName&#34;</span><span class="p">:</span> <span class="s2">&#34;test&#34;</span><span class="p">,</span>
-        <span class="nt">&#34;foo&#34;</span><span class="p">:</span> <span class="s2">&#34;bar&#34;</span>
-    <span class="p">}</span>
-<span class="p">}</span></code></pre></div>
-<p>Aegis makes this easy to do through a conventional approach. You need not configure CloudWatch events
-manually (though you can of course). You also don&rsquo;t add them to your <code>aegis.yaml</code> or anything like that.
-It&rsquo;s much easier; you&rsquo;ll just add a <code>tasks</code> directory at the root of your source code where you run
-<code>aegis deploy</code>. Within this directory, you can include JSON files for each scheduled task you&rsquo;d like
-to set up.</p>
-
-<h3 id="task-json-definition-format">Task JSON Definition Format</h3>
-
-<p>The first key being <code>schedule</code> which takes a CloudWatch Event Rule expression (ie. &ldquo;rate&rdquo; or crontab format).
-The optional <code>disabled</code> key in your JSON task definition can disable your CloudWatch rule so you don&rsquo;t
-need to delete it just to turn it off for a while.</p>
-
-<p>Then you have the <code>input</code> key which contains an object that has your event message. This can be anything
-you want. It comes in to your handler as a <code>map[string]interface{}</code> and is &ldquo;static JSON&rdquo; in terms of
-the CloudWatch Rule configuration.</p>
-
-<p>There is a conventional <code>_taskName</code> key in your payload that you need to be aware of. This is what gets
-matched by the <code>Tasker</code> in order to delegate to your handlers.</p>
-
-<aside class="info">
-Note that tasks are routed by exact match.
-</aside>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="nx">tasker</span> <span class="o">:=</span> <span class="nx">aegis</span><span class="p">.</span><span class="nx">NewTasker</span><span class="p">(</span><span class="nx">taskerFallThrough</span><span class="p">)</span>
-<span class="nx">tasker</span><span class="p">.</span><span class="nx">Handle</span><span class="p">(</span><span class="s">&#34;test&#34;</span><span class="p">,</span> <span class="nx">handleTestTask</span><span class="p">)</span></code></pre></div>
-<blockquote>
-<p>The handler should look familiar, excpet that the event is simply a map</p>
-</blockquote>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="c1">// Example task handler
-</span><span class="c1"></span><span class="kd">func</span> <span class="nx">handleTestTask</span><span class="p">(</span><span class="nx">ctx</span> <span class="nx">context</span><span class="p">.</span><span class="nx">Context</span><span class="p">,</span> <span class="nx">d</span> <span class="o">*</span><span class="nx">aegis</span><span class="p">.</span><span class="nx">HandlerDependencies</span><span class="p">,</span> <span class="nx">evt</span> <span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kd">interface</span><span class="p">{})</span> <span class="kt">error</span> <span class="p">{</span>
-	<span class="nx">log</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="s">&#34;Handling task!&#34;</span><span class="p">,</span> <span class="nx">evt</span><span class="p">)</span>
-	<span class="k">return</span> <span class="kc">nil</span>
-<span class="p">}</span></code></pre></div>
-<h3 id="handling-tasks">Handling Tasks</h3>
-
-<p>Like the API Gateway Proxy Request <code>Router</code>, <code>Tasker</code> has a &ldquo;fall through&rdquo; or &ldquo;catch all&rdquo; as well.
-It&rsquo;s function signature is no different than any other task handler. This fall through handler is also
-optional. You can call <code>aegis.NewTasker()</code> to use just as well. In that case, if your configured <code>Tasker</code>
-does not match any task names, it will not route those events and they won&rsquo;t be handled.</p>
-
-    
-        
-
-<h1 id="rpc-router">RPC Router</h1>
-
-<p>This interface allows &ldquo;RPC&rdquo; (remote procedure calls) to be handled. In Aegis&rsquo; world, that is to say a Lambda invoking
-another Lambda.</p>
-
-    
-        
-
-<h1 id="s3-object-router">S3 Object Router</h1>
-
-<p>This interface will route S3 object events to handlers.</p>
-
-    
-        
-
-<h1 id="ses-router">SES Router</h1>
-
-<p>This interface will route AWS SES (simple e-mail service) events to the appropriate handlers. This can
-be based on an e-mail address match exact or in part.</p>
-
-    
-        
-
-<h1 id="cognito-router">Cognito Router</h1>
-
-<p>There are some AWS Cognito specific events that can be routed as well.</p>
-
-    
 
         </div>
         <div class="dark-box">

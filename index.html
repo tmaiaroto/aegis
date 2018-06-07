@@ -6,37 +6,49 @@
     <meta content="IE=edge,chrome=1" http-equiv="X-UA-Compatible">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
     <title></title>
-    <link href='/slate/stylesheets/monokai.css' rel="stylesheet" media="screen" />
-<link href='/slate/stylesheets/screen.css' rel="stylesheet" media="screen" />
-<link href='/slate/stylesheets/print.css' rel="stylesheet" media="print" />
+    <link href='/aegis/slate/stylesheets/monokai.css' rel="stylesheet" media="screen" />
+<link href='/aegis/slate/stylesheets/screen.css' rel="stylesheet" media="screen" />
+<link href='/aegis/slate/stylesheets/print.css' rel="stylesheet" media="print" />
 
-    <link href='/css/menu.css' rel="stylesheet"/>
+    <link href='/aegis/css/menu.css' rel="stylesheet"/>
+    <link href='/aegis/css/alerts.css' rel="stylesheet"/>
+    <link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.0.13/css/solid.css" integrity="sha384-drdlAcijFWubhOfj9OS/gy2Gs34hVhVT90FgJLzrldrLI+7E7lwBxmanEEhKTRTS" crossorigin="anonymous">
+<link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.0.13/css/fontawesome.css" integrity="sha384-LDuQaX4rOgqi4rbWCyWj3XVBlgDzuxGy/E6vWN6U7c25/eSJIwyKhy9WgZCHQWXz" crossorigin="anonymous">
     
-<script src='/slate/javascripts/all.js'></script>
+<script src='/aegis/slate/javascripts/all.js'></script>
 
     
 </head>
 <body class="index" data-languages="[ &#34;go&#34; ]">
     <div class="main-nav-wrapper">
         <ul class="main-menu">
-            <li class="">
-    
-    <a href="/#" target="_blank">About Page(&#34;&#34;)</a>
+            <li class="active">
+    <a href="/#">Getting Started</a>
 </li>
 
 
     
     <li class="">
-            <a href="/routers/" title="Aegis Routers">Routers</a>
+        <a href="/aegis/routers/" title="Aegis Routers">Routers</a>
     </li>
     
 
     
     <li class="">
-            <a href="/services/" title="Aegis Services">Services</a>
+        <a href="/aegis/handler-dependencies/" title="Aegis Dependencies">Dependencies</a>
     </li>
     
 
+    
+    <li class="">
+        <a href="/aegis/helpers/" title="Aegis Helpers">Helpers</a>
+    </li>
+    
+
+    
+    <li class="">
+        <a href="/aegis/cli/" title="Aegis Command Line Interface">CLI</a>
+    </li>
     
 
         </ul>
@@ -44,12 +56,12 @@
     <a href="#" id="nav-button">
         <span>
         NAV
-        <img src='/slate/images/navbar.png'/>
+        <img src='/aegis/slate/images/navbar.png'/>
       </span>
     </a>
     <div class="tocify-wrapper">
         
-         <img src='/images/logo.png' />
+         <img src='/aegis/images/logo.png' />
         
         <div class="lang-selector">
             
@@ -59,37 +71,56 @@
          
         <aside class="main-menu-sidebar-wrapper">
     <ul class="main-menu-sidebar">
-        <li class="">
-    
-    <a href="/#" target="_blank">About Page(&#34;&#34;)</a>
+        <li class="active">
+    <a href="/#">Getting Started</a>
 </li>
 
 
     
     <li class="">
-            <a href="/routers/" title="Aegis Routers">Routers</a>
+        <a href="/aegis/routers/" title="Aegis Routers">Routers</a>
     </li>
     
 
     
     <li class="">
-            <a href="/services/" title="Aegis Services">Services</a>
+        <a href="/aegis/handler-dependencies/" title="Aegis Dependencies">Dependencies</a>
     </li>
     
 
+    
+    <li class="">
+        <a href="/aegis/helpers/" title="Aegis Helpers">Helpers</a>
+    </li>
+    
+
+    
+    <li class="">
+        <a href="/aegis/cli/" title="Aegis Command Line Interface">CLI</a>
+    </li>
     
 
     </ul>
 </aside>
         
         <div class="search">
-            <input type="text" class="search" id="input-search" placeholder='Search This Page'>
+            <input type="text" class="search" id="input-search" placeholder='Search This Section'>
         </div>
         <ul class="search-results"></ul>
         
         <div id="toc">
         </div>
          
+        
+        <ul class="toc-footer">
+            
+            <li><a href='#'>Sign Up for a Developer Key</a></li>
+            
+            <li>Documentation Powered by <a href="https://github.com/bep/docuapi" target="_blank">DocuAPI</a></li>
+            
+            <li>Hugo Theme by <a href="https://github.com/bep" target="_blank">bep</a></li>
+            
+        </ul>
         
         
     </div>
@@ -99,7 +130,7 @@
             
     
 
-<h1 id="aegis">Aegis</h1>
+<h1 id="about-aegis">About Aegis</h1>
 
 <h3 id="an-aws-serverless-framework-for-golang">An AWS Serverless Framework for Golang</h3>
 
@@ -109,7 +140,11 @@
 
 <p>Likewise the framework is rather lightweight as well. It may never have helpers and features for every AWS product under the sun. It provides a conventional framework to help you build serverless microservices faster. It removes a lot of boilerplate.</p>
 
-<h2 id="goals-philosophies">Goals &amp; Philosophies</h2>
+<h1 id="getting-started">Getting Started</h1>
+
+<p>To get started&hellip;</p>
+
+<h1 id="goals-philosophies">Goals &amp; Philosophies</h1>
 
 <p>Knowing what Aegis <em>is</em> and knowing what <em>does</em> and <em>why</em> are different things. Don&rsquo;t use any tool or framework based on what it is, you
 want to use one based on what it does and why it does it. More to the point, you want to use a framework if its goals and philosphies are
@@ -118,7 +153,7 @@ in line with your own project&rsquo;s needs.</p>
 <p>Clearly, if you&rsquo;re still reading, your projects uses Go or you are considering using Go. Ok, but what about some of these other
 considerations?</p>
 
-<h3 id="devsecops">DevSecOps</h3>
+<h2 id="devsecops">DevSecOps</h2>
 
 <p>One of the goals of this project is to provide consideration for &ldquo;development security operations&rdquo; or DevSecOps. This is kind of an
 extension of normal DevOps in that it also brings security into the fold.</p>
@@ -130,7 +165,7 @@ CI/CD tools, logging, and so on.</p>
 
 <p>Aegis also uses XRay by default to help you gain visibility into your stack, though you can switch it out for something else too.</p>
 
-<h3 id="convention-over-configuration">Convention over Configuration</h3>
+<h2 id="convention-over-configuration">Convention over Configuration</h2>
 
 <p>It&rsquo;s a recurring theme in many solid frameworks. Complex configurations will slow down development and increase maintenance. Where it
 makes sense, having sensible defaults and conventions is smart. For example, accepting any request through API Gateway to then handle
@@ -143,7 +178,7 @@ up and use.</p>
 <p>You can&rsquo;t completely avoid configuration of course. There is an <code>aegis.yaml</code> file afterall and AWS requires a lot of things to be
 configured. However, where it makes sense, you&rsquo;ll see the convetion over configuration theme througout the framework.</p>
 
-<h3 id="serverless-patterns">Serverless Patterns</h3>
+<h2 id="serverless-patterns">Serverless Patterns</h2>
 
 <p>There are several approaches when building serverless functions and &ldquo;microservices.&rdquo; You can take the approach of logically
 separating your Lambdas to handle all events for a certain service (like Domain Driven Design). Another approach is to handle
@@ -152,7 +187,7 @@ just one event for a service per Lambda resulting in many different functions.</
 <p>Aegis allows you to architect your application in any way you like. It doesn&rsquo;t force you into creating one Lambda per API Gateway
 route or per event handled. You can if you like, but you don&rsquo;t need to. You&rsquo;re free to come up with your own conventions.</p>
 
-<h3 id="vendor-lock-in">Vendor Lock-In</h3>
+<h2 id="vendor-lock-in">Vendor Lock-In</h2>
 
 <p>Yes, there is a little bit of that going on here. The decision to use AWS was made. A line in the sand was drawn. Though you
 are free to cross that line in some cases. Just because your application runs on AWS Lambda, doesn&rsquo;t mean you can&rsquo;t use services
@@ -175,6 +210,17 @@ of Amazon.</p>
 
 <p>Services can be injected as dependencies into handlers, so it&rsquo;s pretty straight forward to configure and use something from
 another provider in your handlers with some sanity on configuration and code re-use.</p>
+
+<h1 id="additional-reading">Additional Reading</h1>
+
+<p>Outside of this documentation here, you can find a variety of articles that illustrate both how to use Aegis as well as some
+example use cases for AWS Lambda with Aegis.</p>
+
+<p><a href="https://serifandsemaphore.io/a-cognito-protected-serverless-api-with-golang-in-minutes-a054c9f50cf3" target="_blank">A Cognito Protected API in Minutes</a><br />
+Shows how to quickly deploy an Aegis API that uses a Cognito to secure it.</p>
+
+<p><a href="https://serifandsemaphore.io/aws-lambda-geoip-golang-microservice-with-aegis-91bae736c1b2" target="_blank">Quickly Deploy a GeoIP Microservice</a><br />
+Shows you how to quickly deploy a microservice that returns the requesting client&rsquo;s geolocation based on their IP.</p>
 
 
         </div>

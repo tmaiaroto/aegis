@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Handler-dependencies on DocuAPI Example Site</title>
+    <link>https://tmaiaroto.github.io/aegis/handler-dependencies/</link>
+    <description>Recent content in Handler-dependencies on DocuAPI Example Site</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    
+	<atom:link href="https://tmaiaroto.github.io/aegis/handler-dependencies/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title></title>
+      <link>https://tmaiaroto.github.io/aegis/handler-dependencies/custom/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://tmaiaroto.github.io/aegis/handler-dependencies/custom/</guid>
+      <description>Custom Handler Dependencies You can inject your own dependencies under the Custom field. This is great for 3rd party dependencies you wish to use.</description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>https://tmaiaroto.github.io/aegis/handler-dependencies/log/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://tmaiaroto.github.io/aegis/handler-dependencies/log/</guid>
+      <description>Log Aegis&amp;rsquo; Log dependency provides an adaptable way to log using the popular Go package lorgus.</description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>https://tmaiaroto.github.io/aegis/handler-dependencies/services/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://tmaiaroto.github.io/aegis/handler-dependencies/services/</guid>
+      <description>Services Handler dependencies contain Services too. These are AWS services like AWS Cognito for example. Any 3rd party service is on you to configure and add to the Custom dependencies to use.</description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>https://tmaiaroto.github.io/aegis/handler-dependencies/tracer/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://tmaiaroto.github.io/aegis/handler-dependencies/tracer/</guid>
+      <description>Tracer The Tracer dependency implements a TracingStrategy interface. By default, this is AWS X-Ray. However, you can add your own tracing strategy interfaces and use those instead if you wanted to use something other than X-Ray.
+Another reason you might provide a different tracing strategy is for running locally or unit testing. You may not wish to have X-Ray running all the time.</description>
+    </item>
+    
+  </channel>
+</rss>

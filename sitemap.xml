@@ -3,28 +3,87 @@
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   
   <url>
-    <loc>/</loc>
+    <loc>https://tmaiaroto.github.io/aegis/</loc>
   </url>
   
   <url>
-    <loc>/routers/</loc>
+    <loc>https://tmaiaroto.github.io/aegis/cli/1_cli/</loc>
   </url>
   
   <url>
-    <loc>/routers/api-gateway/</loc>
+    <loc>https://tmaiaroto.github.io/aegis/handler-dependencies/custom/</loc>
   </url>
   
   <url>
-    <loc>/services/</loc>
+    <loc>https://tmaiaroto.github.io/aegis/handler-dependencies/log/</loc>
   </url>
   
   <url>
-    <loc>/categories/</loc>
+    <loc>https://tmaiaroto.github.io/aegis/handler-dependencies/services/</loc>
+  </url>
+  
+  <url>
+    <loc>https://tmaiaroto.github.io/aegis/handler-dependencies/tracer/</loc>
+  </url>
+  
+  <url>
+    <loc>https://tmaiaroto.github.io/aegis/helpers/</loc>
+  </url>
+  
+  <url>
+    <loc>https://tmaiaroto.github.io/aegis/helpers/http/</loc>
+  </url>
+  
+  <url>
+    <loc>https://tmaiaroto.github.io/aegis/routers/1_routers/</loc>
+  </url>
+  
+  <url>
+    <loc>https://tmaiaroto.github.io/aegis/routers/2_api_gateway/</loc>
+  </url>
+  
+  <url>
+    <loc>https://tmaiaroto.github.io/aegis/routers/3_tasker/</loc>
+  </url>
+  
+  <url>
+    <loc>https://tmaiaroto.github.io/aegis/routers/4_rpc/</loc>
+  </url>
+  
+  <url>
+    <loc>https://tmaiaroto.github.io/aegis/routers/5_s3object/</loc>
+  </url>
+  
+  <url>
+    <loc>https://tmaiaroto.github.io/aegis/routers/6_ses/</loc>
+  </url>
+  
+  <url>
+    <loc>https://tmaiaroto.github.io/aegis/routers/7_cognito/</loc>
+  </url>
+  
+  <url>
+    <loc>https://tmaiaroto.github.io/aegis/categories/</loc>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>/tags/</loc>
+    <loc>https://tmaiaroto.github.io/aegis/cli/</loc>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://tmaiaroto.github.io/aegis/handler-dependencies/</loc>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://tmaiaroto.github.io/aegis/routers/</loc>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://tmaiaroto.github.io/aegis/tags/</loc>
     <priority>0</priority>
   </url>
   

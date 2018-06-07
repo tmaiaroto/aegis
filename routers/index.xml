@@ -1,22 +1,79 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes" ?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Aegis: An AWS Serverless Framework for Golang </title>
-    <link>/routers/</link>
-    <description>Recent content on Aegis: An AWS Serverless Framework for Golang </description>
+    <title>Routers on DocuAPI Example Site</title>
+    <link>https://tmaiaroto.github.io/aegis/routers/</link>
+    <description>Recent content in Routers on DocuAPI Example Site</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
     
-	<atom:link href="/routers/index.xml" rel="self" type="application/rss+xml" />
+	<atom:link href="https://tmaiaroto.github.io/aegis/routers/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
       <title></title>
-      <link>/routers/api-gateway/</link>
+      <link>https://tmaiaroto.github.io/aegis/routers/1_routers/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>/routers/api-gateway/</guid>
-      <description>Aegis API Gateway Router The most popular event handler is the Router. While there are actually several interfaces to route events to handler, this one handles &amp;ldquo;HTTP&amp;rdquo; requests coming in as events via API Gateway.</description>
+      <guid>https://tmaiaroto.github.io/aegis/routers/1_routers/</guid>
+      <description>Routers First things first. The AWS Lambda Go package is used by Aegis. In fact, it&amp;rsquo;s basically required for native Go support in Lambda. I don&amp;rsquo;t think anyone wants to write a competing package (why??). However, that package is designed to be lightweight. It does not include a bunch of creature comforts. That&amp;rsquo;s where Aegis routers come in handy.
+Above all else, there is a default handler that can be used for any incoming Lambda event.</description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>https://tmaiaroto.github.io/aegis/routers/2_api_gateway/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://tmaiaroto.github.io/aegis/routers/2_api_gateway/</guid>
+      <description>API Gateway Router  This should look familiar if you&amp;rsquo;ve built an HTTP RESTful API in Go before
+ package main import aegis &amp;#34;github.com/tmaiaroto/aegis/framework&amp;#34; func main() { // Handle an APIGatewayProxyRequest event with a URL request path Router  router := aegis.NewRouter(fallThrough) router.Handle(&amp;#34;GET&amp;#34;, &amp;#34;/&amp;#34;, handleRoot) // Register the handler  app := aegis.New(aegis.Handlers{ Router: router, }) // A blocking call that listens for events  app.Start() } // fallThrough handles any path that couldn&amp;#39;t be matched to another handler func fallThrough(ctx context.</description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>https://tmaiaroto.github.io/aegis/routers/3_tasker/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://tmaiaroto.github.io/aegis/routers/3_tasker/</guid>
+      <description>Tasker The Tasker is an interface to route scheduled jobs or &amp;ldquo;tasks&amp;rdquo; that your Lambda may perform. This works in conjunction with CloudWatch Rules. So you&amp;rsquo;ll need to have events setn to your Lambda from CloudWatch.
+{ &amp;#34;schedule&amp;#34;: &amp;#34;rate(1 minute)&amp;#34;, &amp;#34;disabled&amp;#34;: true, &amp;#34;input&amp;#34;: { &amp;#34;_taskName&amp;#34;: &amp;#34;test&amp;#34;, &amp;#34;foo&amp;#34;: &amp;#34;bar&amp;#34; } } Aegis makes this easy to do through a conventional approach. You need not configure CloudWatch events manually (though you can of course).</description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>https://tmaiaroto.github.io/aegis/routers/4_rpc/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://tmaiaroto.github.io/aegis/routers/4_rpc/</guid>
+      <description>RPC Router This interface allows &amp;ldquo;RPC&amp;rdquo; (remote procedure calls) to be handled. In Aegis&amp;rsquo; world, that is to say a Lambda invoking another Lambda.</description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>https://tmaiaroto.github.io/aegis/routers/5_s3object/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://tmaiaroto.github.io/aegis/routers/5_s3object/</guid>
+      <description>S3 Object Router This interface will route S3 object events to handlers.</description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>https://tmaiaroto.github.io/aegis/routers/6_ses/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://tmaiaroto.github.io/aegis/routers/6_ses/</guid>
+      <description>SES Router This interface will route AWS SES (simple e-mail service) events to the appropriate handlers. This can be based on an e-mail address match exact or in part.</description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>https://tmaiaroto.github.io/aegis/routers/7_cognito/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://tmaiaroto.github.io/aegis/routers/7_cognito/</guid>
+      <description>Cognito Router There are some AWS Cognito specific events that can be routed as well.</description>
     </item>
     
   </channel>
