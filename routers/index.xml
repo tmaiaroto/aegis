@@ -16,7 +16,7 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://tmaiaroto.github.io/aegis/routers/1_routers/</guid>
-      <description>Routers First things first. The AWS Lambda Go package is used by Aegis. In fact, it&amp;rsquo;s basically required for native Go support in Lambda. I don&amp;rsquo;t think anyone wants to write a competing package (why??). However, that package is designed to be lightweight. It does not include a bunch of creature comforts. That&amp;rsquo;s where Aegis routers come in handy.
+      <description>Routers First things first. The AWS Lambda Go package is used by Aegis. In fact, it&amp;rsquo;s basically required for native Go support in Lambda. I don&amp;rsquo;t think anyone wants to write a competing package (that&amp;rsquo;d be silly). However, that package is designed to be lightweight. It does not include a bunch of creature comforts. That&amp;rsquo;s where Aegis routers come in handy.
 Above all else, there is a default handler that can be used for any incoming Lambda event.</description>
     </item>
     
