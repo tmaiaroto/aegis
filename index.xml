@@ -62,7 +62,9 @@ Another reason you might provide a different tracing strategy is for running loc
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://tmaiaroto.github.io/aegis/helpers/http/</guid>
-      <description>HTTP (Proxy) Helpers Helpers here for working with API Gateway Proxy responses and requests.</description>
+      <description>API Gateway Proxy (HTTP) There are quite a few helpers for working with API Gateway Proxy responses and requests. You can read about all of them through Go documentation.
+ APIGatewayProxyResponse APIGatewayProxyRequest  Though let&amp;rsquo;s take a look at some of the more common ones here.
+APIGatewayProxyRequest API Gateway requests are not HTTP requests. They come into Lambda as JSON messages. The AWS Lambda Go package, and therefore Aegis, marshals these messages to structs.</description>
     </item>
     
     <item>

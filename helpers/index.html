@@ -123,9 +123,77 @@
     
         
 
-<h1 id="http-proxy-helpers">HTTP (Proxy) Helpers</h1>
+<h1 id="api-gateway-proxy-http">API Gateway Proxy (HTTP)</h1>
 
-<p>Helpers here for working with API Gateway Proxy responses and requests.</p>
+<p>There are quite a few helpers for working with API Gateway Proxy responses and requests. You can read about
+all of them through Go documentation.</p>
+
+<ul>
+<li><a href="https://godoc.org/github.com/tmaiaroto/aegis/framework#APIGatewayProxyResponse" target="_blank">APIGatewayProxyResponse</a></li>
+<li><a href="https://godoc.org/github.com/tmaiaroto/aegis/framework#APIGatewayProxyRequest" target="_blank">APIGatewayProxyRequest</a></li>
+</ul>
+
+<p>Though let&rsquo;s take a look at some of the more common ones here.</p>
+
+<h2 id="apigatewayproxyrequest">APIGatewayProxyRequest</h2>
+
+<p>API Gateway requests are not HTTP requests. They come into Lambda as JSON messages. The AWS Lambda Go package,
+and therefore Aegis, marshals these messages to structs. That&rsquo;s great, but it still doesn&rsquo;t give us an easy
+way to work with the request as if though it were an actual HTTP request. If you wanted to get a cookie, it
+would be rather annoying to be frank.</p>
+
+<p><strong>GetHeader()</strong></p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="nx">auth</span> <span class="o">:=</span> <span class="nx">req</span><span class="p">.</span><span class="nx">GetHeader</span><span class="p">(</span><span class="s">&#34;Authorization&#34;</span><span class="p">)</span>
+<span class="nx">cookiesString</span> <span class="o">:=</span> <span class="nx">req</span><span class="p">.</span><span class="nx">GetHeader</span><span class="p">(</span><span class="s">&#34;Cookie&#34;</span><span class="p">)</span></code></pre></div>
+<p>This will return a given header&rsquo;s value by name. Pretty easy, but you should note that getting the <code>Cookie</code>
+header isn&rsquo;t exactly going to be real useful by itself. You&rsquo;ll need to parse that string. What you&rsquo;ll get
+is a string like <span class="nowrap"><code>yummy_cookie=choco; tasty_cookie=strawberry</code></span>, which isn&rsquo;t
+great to then extract the one you&rsquo;re after.</p>
+
+<p><strong>Cookie() and Cookies()</strong></p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="nx">cookie</span> <span class="o">:=</span> <span class="nx">req</span><span class="p">.</span><span class="nx">Cookie</span><span class="p">(</span><span class="s">&#34;yummy_cookie&#34;</span><span class="p">)</span>
+<span class="nx">allCookies</span> <span class="o">:=</span> <span class="nx">req</span><span class="p">.</span><span class="nx">Cookies</span><span class="p">()</span></code></pre></div>
+<p>So this helper function does just that. It mimicks Go&rsquo;s standard <code>http</code> package. In fact, Go&rsquo;s standard
+package was used to create an empty HTTP request with just the cookie header set. That then allows the
+<code>Cookie()</code> function to be used. So when you call this function, the same exact function is called against
+Go&rsquo;s standard library using this fake request that was created.</p>
+
+<p>Obviously then, <code>Cookies()</code> calls the standard HTTP request&rsquo;s same name function. It returns <code>[]*Cookie</code>.</p>
+
+<p><strong>GetBody(), GetJSONBody(), and GetForm()</strong></p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="nx">bodyString</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">req</span><span class="p">.</span><span class="nx">GetBody</span><span class="p">()</span>
+<span class="nx">bodyMap</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">req</span><span class="p">.</span><span class="nx">GetJSONBody</span><span class="p">()</span>
+<span class="nx">formMap</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">req</span><span class="p">.</span><span class="nx">GetForm</span><span class="p">()</span></code></pre></div>
+<p>These helper functions are used for getting the body content of an API Gateway request. One will give you
+a string while the other will give you a map. It saves you from needing to decode some things.</p>
+
+<p><code>GetForm()</code> can be helpful if you made a multipart POST request. If will parse the form values and return
+to you a <span class="nowrap"><code>map[string]interface{}</code></span>.</p>
+
+<p><strong>UserAgent()</strong></p>
+
+<p>We don&rsquo;t actually need to parse headers or use <code>GetHeader()</code> just to get the <span class="nowrap"><code>User-Agent</code></span>,
+instead there&rsquo;s simply <span class="nowrap"><code>UserAgent()</code></span>.</p>
+
+<p><strong>IP()</strong></p>
+
+<p>AWS API Gateway will set the requesting client&rsquo;s IP address as well. So just like getting the <code>User-Agent</code>,
+you can simply get the IP address using <code>IP()</code>. Both of these values are under <span class="nowrap"><code>req.RequestContext.Identity</code></span>.
+So they aren&rsquo;t hard to get at, but you have to type and remember more.</p>
+
+<h2 id="apigatewayproxyresponse">APIGatewayProxyResponse</h2>
+
+<p>There are some great helper functions on the response struct as well. Obviously, these are all about returning
+data to the client. Things like the HTTP status code, body content, and more.</p>
+
+<p><strong>String(), HTML(), JSON(), JSONP(), XML(), and XMLPretty()</strong></p>
+
+<p>These are your basic body content helpers. They all take a <code>status</code> int value as their first argument. This
+automatically sets the status rather than requiring you to use <code>SetStatus()</code> or assign the struct property
+yourself. The second argument will then vary a little.</p>
+
+<p>Some methods will take an <code>interface{}</code> while others, like <code>HTML()</code> and <code>String()</code> will simply take a <code>string</code>.
+Those taking an interface are going to be doing a little bit of work of course.</p>
 
     
 
