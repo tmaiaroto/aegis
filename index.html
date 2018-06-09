@@ -22,7 +22,7 @@
     <div class="main-nav-wrapper">
         <ul class="main-menu">
             <li class="active">
-    <a href="/#">Getting Started</a>
+    <a href="/aegis/">Getting Started</a>
 </li>
 
 
@@ -69,7 +69,7 @@
         <aside class="main-menu-sidebar-wrapper">
     <ul class="main-menu-sidebar">
         <li class="active">
-    <a href="/#">Getting Started</a>
+    <a href="/aegis/">Getting Started</a>
 </li>
 
 
@@ -135,7 +135,50 @@
 
 <h1 id="getting-started">Getting Started</h1>
 
-<p>To get started&hellip;</p>
+<p>If you use Go and AWS already, you likely can skip the first step. If that&rsquo;s the case, the rest should take you about 5 minutes
+to get your first app up and running.</p>
+
+<h3 id="step-1">Step 1.</h3>
+
+<p>For starters, you&rsquo;re going to need <a href="https://golang.org/" target="_blank">Go</a> on your development machine. You&rsquo;ll also need
+an <a href="https://aws.amazon.com/" target="_blank">Amazon Web Services</a> account. Obvious enough, right?</p>
+
+<p>Then, make sure you have your <a href="https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/setup-credentials.html" target="_blank">
+Amazon credentials setup for development.</a> You should also be able to set environment variables when you use the <code>aegis</code> command
+line tool, but do you really want to do that each time? It gets annoying to type them out. Set the environment variables in a more
+permanent fashion or use an <code>~/.aws/credentials</code> file.</p>
+
+<p>It also wouldn&rsquo;t hurt for you to have <a href="https://aws.amazon.com/cli/" target="_blank">AWS CLI tools.</a> Though they shouldn&rsquo;t
+technically be necessary.</p>
+
+<h3 id="step-2">Step 2.</h3>
+
+<p>Then, you&rsquo;ll want to get Aegis. Go makes this easy, just run: <span class="nowrap"><code>go get github.com/tmaiaroto/aegis</code></span></p>
+
+<p>This should provide you with the <code>aegis</code> binary. If you can&rsquo;t run it from your command line, then you may need to add your Go
+bin path to your <code>PATH</code> (and however Windows, Powershell or whatever does it). This is probably a good time to also note that
+the Aegis CLI tool mostly assumes you&rsquo;re using Mac OS or Linux. It has not extensively been tested on Windows. Please feel free
+to submit some issues should there be any.</p>
+
+<h3 id="step-3">Step 3.</h3>
+
+<p>Go to a fresh directory where you want to create a new Go package and Aegis project, ie.
+<span class="nowrap"><code>~/go/src/github.com/your-user/your-project</code></span></p>
+
+<p>From there, run the following command: <code>aegis init</code></p>
+
+<p>This will provide you with a boilerplate <code>main.go</code> file to get you started as well as an <code>aegis.yaml</code> file. You&rsquo;ll likely want
+to open the YAML file and edit the names of things. Name your function, API, etc. Then you&rsquo;ll work with the Go file.</p>
+
+<h3 id="step-4">Step 4.</h3>
+
+<p>To deploy, run: <code>aegis deploy</code></p>
+
+<p>It will create an IAM role, the Lambda function, API Gateway, and any other resources needed. You&rsquo;ll see some output in your terminal
+with information about what&rsquo;s going on, where to access the API, etc.</p>
+
+<p>Congratulations, you should have a serverless application deployed now. Head on over to the <a href="/aegis/routers/">Routers section</a>
+to learn about how to handle various events.</p>
 
 <h1 id="goals-philosophies">Goals &amp; Philosophies</h1>
 
