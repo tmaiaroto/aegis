@@ -9,8 +9,7 @@
 <link href='/aegis/slate/stylesheets/screen.css' rel="stylesheet" media="screen" />
 <link href='/aegis/slate/stylesheets/print.css' rel="stylesheet" media="print" />
 
-    <link href='/aegis/css/menu.css' rel="stylesheet"/>
-    <link href='/aegis/css/alerts.css' rel="stylesheet"/>
+    <link href='/aegis/css/styles.css' rel="stylesheet"/>
     <link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.0.13/css/solid.css" integrity="sha384-drdlAcijFWubhOfj9OS/gy2Gs34hVhVT90FgJLzrldrLI+7E7lwBxmanEEhKTRTS" crossorigin="anonymous">
 <link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.0.13/css/fontawesome.css" integrity="sha384-LDuQaX4rOgqi4rbWCyWj3XVBlgDzuxGy/E6vWN6U7c25/eSJIwyKhy9WgZCHQWXz" crossorigin="anonymous">
     
@@ -18,7 +17,7 @@
 
     
 </head>
-<body class="index" data-languages="[ &#34;go&#34; ]">
+<body class="index" data-languages="">
     <div class="main-nav-wrapper">
         <ul class="main-menu">
             <li class="">
@@ -60,13 +59,11 @@
     </a>
     <div class="tocify-wrapper">
         
-         <img src='/aegis/images/logo.png' />
-        
-        <div class="lang-selector">
-            
-            <a href="#" data-language-name="go">Go</a>
-            
-        </div>
+         
+ <div id="logo-type">
+    <h1 class="toc-ignore">Aegis</h1>
+    <h2 class="toc-ignore">An AWS Serverless Framework for Go</h2>
+</div>
          
         <aside class="main-menu-sidebar-wrapper">
     <ul class="main-menu-sidebar">
@@ -113,8 +110,6 @@
         
         <ul class="toc-footer">
             
-            <li>Documentation Powered by <a href="https://github.com/bep/docuapi" target="_blank">DocuAPI</a></li>
-            
             <li>Hugo Theme by <a href="https://github.com/bep" target="_blank">bep</a></li>
             
         </ul>
@@ -139,6 +134,9 @@ can always handle incoming JSON event messages as maps.</p>
 
 <p>However, there&rsquo;s some very helpful routers to help direct events to your handlers. You&rsquo;re probably looking
 to use a framework because you don&rsquo;t want to write all that logic yourself, right?</p>
+
+<p>One last quick note: All of the routers you see below can be used on the same Lambda function. Aegis does not
+restrict your Lambda to handling just one type of event. The design of your functions is entirely up to you.</p>
 
     
         
@@ -233,8 +231,8 @@ codes, body content, headers, and more.</p>
 This will handle any request not matched by your router. A common handler in this case is simple one that does nothing,
 but sets a <code>StatusCode</code> of 404.</p>
 
-<aside class="note-warning">
-    Some routers in Aegis have optional fall through handlers. The API Gateway Router's fall through is not optional.
+<aside class="note-info">
+<i class="fas fa-info-circle"></i> Some routers in Aegis have optional fall through handlers. The API Gateway Router's fall through is not optional.
 </aside>
 
 <h2 id="middleware">Middleware</h2>
@@ -275,8 +273,8 @@ the CloudWatch Rule configuration.</p>
 <p>There is a conventional <code>_taskName</code> key in your payload that you need to be aware of. This is what gets
 matched by the <code>Tasker</code> in order to delegate to your handlers.</p>
 
-<aside class="info">
-Note that tasks are routed by exact match.
+<aside class="note-info">
+<i class="fas fa-info-circle"></i> Note that tasks are routed by exact match.
 </aside>
 <div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="nx">tasker</span> <span class="o">:=</span> <span class="nx">aegis</span><span class="p">.</span><span class="nx">NewTasker</span><span class="p">(</span><span class="nx">taskerFallThrough</span><span class="p">)</span>
 <span class="nx">tasker</span><span class="p">.</span><span class="nx">Handle</span><span class="p">(</span><span class="s">&#34;test&#34;</span><span class="p">,</span> <span class="nx">handleTestTask</span><span class="p">)</span></code></pre></div>
@@ -295,28 +293,206 @@ It&rsquo;s function signature is no different than any other task handler. This 
 optional. You can call <code>aegis.NewTasker()</code> to use just as well. In that case, if your configured <code>Tasker</code>
 does not match any task names, it will not route those events and they won&rsquo;t be handled.</p>
 
+<p>Obviously, there is no one to return a response message to in the case of a scheduled job. An <code>error</code>, or <code>nil</code>,
+must still be returned. Though the error would only be for the benefit of your tracing tool (ie. X-Ray will see it).</p>
+
+<p>The event in this case will be whatever you defined in the definition JSON. Often times you may find that the
+most important thing is the specific handler function itself is called and not so much this static JSON payload.</p>
+
     
         
 
 <h1 id="rpc-router">RPC Router</h1>
 
+<blockquote>
+<p>Route and handle by name</p>
+</blockquote>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="nx">main</span><span class="p">()</span> <span class="p">{</span>
+    <span class="nx">rpcRouter</span> <span class="o">:=</span> <span class="nx">aegis</span><span class="p">.</span><span class="nx">NewRPCRouter</span><span class="p">()</span>
+    <span class="nx">rpcRouter</span><span class="p">.</span><span class="nx">Handle</span><span class="p">(</span><span class="s">&#34;lookup&#34;</span><span class="p">,</span> <span class="nx">handleLookup</span><span class="p">)</span>
+
+    <span class="nx">app</span> <span class="o">:=</span> <span class="nx">aegis</span><span class="p">.</span><span class="nx">New</span><span class="p">(</span><span class="nx">aegis</span><span class="p">.</span><span class="nx">Handlers</span><span class="p">{</span>
+        <span class="c1">// Again, your one function can handle different event types
+</span><span class="c1"></span>        <span class="c1">// Router: router,
+</span><span class="c1"></span>        <span class="nx">RPCRouter</span><span class="p">:</span> <span class="nx">rpcRouter</span><span class="p">,</span>
+    <span class="p">})</span>
+    <span class="nx">app</span><span class="p">.</span><span class="nx">Start</span><span class="p">()</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nx">handleLookup</span><span class="p">(</span><span class="nx">ctx</span> <span class="nx">context</span><span class="p">.</span><span class="nx">Context</span><span class="p">,</span> <span class="nx">d</span> <span class="o">*</span><span class="nx">aegis</span><span class="p">.</span><span class="nx">HandlerDependencies</span><span class="p">,</span> <span class="nx">evt</span> <span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kd">interface</span><span class="p">{})</span> <span class="p">(</span><span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kd">interface</span><span class="p">{},</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">// Some GeoIP look would happen here and some data would be returned
+</span><span class="c1"></span>    <span class="k">return</span> <span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kt">string</span><span class="p">{</span><span class="s">&#34;city&#34;</span><span class="p">:</span> <span class="s">&#34;Somewhereville&#34;</span><span class="p">},</span> <span class="kc">nil</span>
+<span class="p">}</span></code></pre></div>
+<blockquote>
+<p>Example GeoIP lookup from another Lambda</p>
+</blockquote>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="nx">rpcPayload</span> <span class="o">:=</span> <span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kd">interface</span><span class="p">{}{</span>
+    <span class="s">&#34;_rpcName&#34;</span><span class="p">:</span>  <span class="s">&#34;lookup&#34;</span><span class="p">,</span>
+    <span class="c1">// or req.IP() if req is an APIGatewayProxyRequest
+</span><span class="c1"></span>    <span class="s">&#34;ipAddress&#34;</span><span class="p">:</span> <span class="nx">req</span><span class="p">.</span><span class="nx">RequestContext</span><span class="p">.</span><span class="nx">Identity</span><span class="p">.</span><span class="nx">SourceIP</span><span class="p">,</span>
+<span class="p">}</span>
+<span class="nx">resp</span><span class="p">,</span> <span class="nx">rpcErr</span> <span class="o">:=</span> <span class="nx">aegis</span><span class="p">.</span><span class="nx">RPC</span><span class="p">(</span><span class="s">&#34;aegis_geoip&#34;</span><span class="p">,</span> <span class="nx">rpcPayload</span><span class="p">)</span></code></pre></div>
 <p>This interface allows &ldquo;RPC&rdquo; (remote procedure calls) to be handled. In Aegis&rsquo; world, that is to say a Lambda invoking
-another Lambda.</p>
+another Lambda. So the immediate question you should have is, &ldquo;how do you know it&rsquo;s an invocation from another Lambda?&rdquo;
+Great question! We don&rsquo;t. Not really anyway. Plus, who&rsquo;s to say it has to be another Lambda invoking it? Technically,
+an RPC could come from any program that has access.</p>
+
+<p>The way that this router matches is, like <code>Tasker</code>, through conventions in the JSON message payload itself. In this case,
+instead of looking for a <code>_taskName</code> key, it&rsquo;ll be <span class="nowrap"><code>_rpcName</code></span> instead.</p>
+
+<aside class="note-warning">
+<i class="fas fa-exclamation-triangle"></i> Could your scheduled task that invokes your Lambda via CloudWatch rule trigger
+event also use an RPC handler? Yes, it could, but the idea is to be organized and leverage these conventions so you don't
+end up with unpredictable behavior.
+</aside>
+
+<p>Like <code>Tasker</code>, <code>RPCRouter</code> also has an optional fall through handler that you can pass to <code>NewRPCRouter()</code> when setting
+up the router. The handler function signature is very close to the <code>Tasker</code> handler functions as well.</p>
+
+<p>Unlike most other handlers, this one requires you to return more than just an error. A <code>map[string]interface{}</code> must be
+returned as well. What good would the RPC be without something coming back?</p>
+
+<p>Technically speaking, Aegis returns data on your <code>Router</code> handlers as well. It&rsquo;s just done for you automatically because
+working with API Gateway responses is predictable. The response struct is what gets returned and Aegis does that for you.
+However, in the case of an RPC, it&rsquo;s impossible to know exactly what you are going to return other than a map, because
+we know that Lambda works with JSON messages.</p>
+
+<p>Aegis has a top level help function, <code>RPC()</code>, that makes it a bit easier to invoke another Lambda. If you are looking
+to invoke one Lambda from another, this should just work for you without any extra effort as the default IAM role on your
+Lambdas through Aegis will permit Lambda invocation.</p>
+
+<p>If your needs are more complex than a simple call with a function name and map payload, you will need to use the AWS SDK
+to invoke the Lambda instead. Or if you didn&rsquo;t use Aegis to deploy your Lambdas (which would have set up an IAM role),
+and you have other special considerations - again, feel free to do your thing. Aegis&rsquo; helpers are not the only way to
+go about things.</p>
+
+<aside class="note-info">
+<i class="fas fa-info-circle"></i> Don't forget to return a map and an error (or nil) when handling RPCs.
+</aside>
 
     
         
 
 <h1 id="s3-object-router">S3 Object Router</h1>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="nx">main</span><span class="p">()</span> <span class="p">{</span>
+    <span class="nx">s3Router</span> <span class="o">:=</span> <span class="nx">aegis</span><span class="p">.</span><span class="nx">NewS3ObjectRouterForBucket</span><span class="p">(</span><span class="s">&#34;aegis-incoming&#34;</span><span class="p">)</span>
+    <span class="c1">// s3Router.Handle(&#34;s3:ObjectCreated:Put&#34;, &#34;*.png&#34;, handleS3Upload)
+</span><span class="c1"></span>    <span class="c1">// Put() is a shortcut for the above
+</span><span class="c1"></span>    <span class="nx">s3Router</span><span class="p">.</span><span class="nx">Put</span><span class="p">(</span><span class="s">&#34;*.png&#34;</span><span class="p">,</span> <span class="nx">handleS3Upload</span><span class="p">)</span>
 
-<p>This interface will route S3 object events to handlers.</p>
+    <span class="nx">handlers</span> <span class="o">:=</span> <span class="nx">aegis</span><span class="p">.</span><span class="nx">Handlers</span><span class="p">{</span>
+        <span class="nx">S3ObjectRouter</span><span class="p">:</span> <span class="nx">s3Router</span><span class="p">,</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nx">handleS3Upload</span><span class="p">(</span><span class="nx">ctx</span> <span class="nx">context</span><span class="p">.</span><span class="nx">Context</span><span class="p">,</span> <span class="nx">d</span> <span class="o">*</span><span class="nx">aegis</span><span class="p">.</span><span class="nx">HandlerDependencies</span><span class="p">,</span> <span class="nx">evt</span> <span class="o">*</span><span class="nx">aegis</span><span class="p">.</span><span class="nx">S3Event</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+    <span class="c1">// evt will contain bucket name, path, etc.
+</span><span class="c1"></span>    <span class="k">return</span> <span class="kc">nil</span>
+<span class="p">}</span></code></pre></div>
+<p>Now here we have an interesting Router. Like the API Gateway Proxy, we have a few things to match on.
+It&rsquo;s not just a path, but also a method or operation. In the case of S3 objects, we&rsquo;re talking about
+puts and deletes, other such operations, and now also a bucket (or domain if you like).</p>
+
+<p>So the <code>S3ObjectRouter</code> has some convenient methods on it for you to use; <code>Put()</code>, <code>Delete()</code>, <code>Copy()</code>,
+and so on. Though you can choose to write it the &ldquo;long&rdquo; way and use <code>Handle()</code> where the first argument
+would be the actual S3 object event name.</p>
+
+<p>There are two &ldquo;new&rdquo; methods for this router. <span class="nowrap"><code>NewS3ObjectRouter()</code></span> and
+<span class="nowrap"><code>NewS3ObjectRouterForBucket()</code>.</span> Both will take an optional &ldquo;fall through&rdquo;
+handler. Both use the same router interface. <span class="nowrap"><code>NewS3ObjectRouterForBucket(&quot;bucket-name&quot;)</code></span>
+takes a bucket name and sets it on to the router interface. <span class="nowrap"><code>NewS3ObjectRouter()</code></span>
+does not.</p>
+
+<p>This means that you can not only &ldquo;catch all&rdquo; operations and objects, but also all operations and object
+for any bucket that&rsquo;s emitting events that trigger your Lambda.</p>
+
+<p>Of course, you could always switch the bucket the router is working with after your have the interface.
+For example, assumimg you have <span class="nowrap"><code>r := NewS3ObjectRouter()</code></span>, you could then do
+<span class="nowrap"><code>r.Bucket = &quot;my-bucket&quot;</code>.</span></p>
+
+<h2 id="configuring-s3-object-events">Configuring S3 Object Events</h2>
+<div class="highlight"><pre class="chroma"><code class="language-yaml" data-lang="yaml">bucketTriggers<span class="p">:</span><span class="w">
+</span><span class="w">  </span>-<span class="w"> </span>bucket<span class="p">:</span><span class="w"> </span>aegis-incoming<span class="w">
+</span><span class="w">    </span>filters<span class="p">:</span><span class="w">
+</span><span class="w">      </span>-<span class="w"> </span>name<span class="p">:</span><span class="w"> </span>suffix<span class="w">
+</span><span class="w">        </span>value<span class="p">:</span><span class="w"> </span>png<span class="w">
+</span><span class="w">      </span><span class="c">#- name: prefix</span><span class="w">
+</span><span class="w">      </span><span class="c">#  value: path/</span><span class="w">
+</span><span class="w">    </span>eventNames<span class="p">:</span><span class="w">
+</span><span class="w">      </span>-<span class="w"> </span>s3<span class="p">:</span>ObjectCreated<span class="p">:</span>*<span class="w">
+</span><span class="w">      </span>-<span class="w"> </span>s3<span class="p">:</span>ObjectRemoved<span class="p">:</span>*<span class="w">
+</span><span class="w">      </span><span class="c"># ... there&#39;s a few and there&#39;s wildcards, see:</span><span class="w">
+</span><span class="w">      </span><span class="c"># https://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html#notification-how-to-event-types-and-destinations</span><span class="w">
+</span><span class="w">    </span>disabled<span class="p">:</span><span class="w"> </span><span class="kc">false</span></code></pre></div>
+<p>Unlike tasks or RPCs, we can&rsquo;t simply conventionally catch events that might come our way. We actually need to
+ensure these events are being sent. The way that happens is through S3 object event triggers. You can set these
+up yourself of course (or using your favorite tool like Terraform or CloudFormation). Or, you could leverage
+<code>aegis deploy</code> by configuring your <code>aegis.yaml</code> file.</p>
+
+<p>Aegis will look for this configuration each time you call <code>aegis deploy</code> from the CLI. You can also disable the
+triggers using the <code>disabled</code> key. Set that to true and deploy again. Re-enable when you&rsquo;re ready again. This way
+you don&rsquo;t need to lose anything in your configuration. Aegis is also non-destructive.</p>
+
+<aside class="note-warning">
+<i class="fas fa-exclamation-triangle"></i> Note that Aegis will not know to delete your S3 object event triggers.
+It can disable them, but it will not remove them. So you will need to manually do so yourself if you no longer want them.
+</aside>
+
+<h2 id="event-matching">Event Matching</h2>
+
+<blockquote>
+<p>What goes on within Aegis to match an S3 object event</p>
+</blockquote>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="k">if</span> <span class="nx">r</span><span class="p">.</span><span class="nx">Bucket</span> <span class="o">==</span> <span class="s">&#34;&#34;</span> <span class="o">||</span> <span class="nx">r</span><span class="p">.</span><span class="nx">Bucket</span> <span class="o">==</span> <span class="nx">record</span><span class="p">.</span><span class="nx">S3</span><span class="p">.</span><span class="nx">Bucket</span><span class="p">.</span><span class="nx">Name</span> <span class="p">{</span>
+    <span class="c1">// Handlers are registered in a map.
+</span><span class="c1"></span>    <span class="c1">// The keys in this map contain your match pattern string.
+</span><span class="c1"></span>    <span class="k">for</span> <span class="nx">globStr</span><span class="p">,</span> <span class="nx">handler</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">r</span><span class="p">.</span><span class="nx">handlers</span> <span class="p">{</span>
+    <span class="nx">g</span> <span class="p">=</span> <span class="nx">glob</span><span class="p">.</span><span class="nx">MustCompile</span><span class="p">(</span><span class="nx">globStr</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nx">g</span><span class="p">.</span><span class="nx">Match</span><span class="p">(</span><span class="nx">record</span><span class="p">.</span><span class="nx">S3</span><span class="p">.</span><span class="nx">Object</span><span class="p">.</span><span class="nx">Key</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c1">// ...Goes on to handle the event, calling your handler.
+</span><span class="c1"></span>    <span class="p">}</span>
+<span class="p">}</span></code></pre></div>
+<p>Unlike most other routers, S3 object events are matched by glob match. Again, if no match is found, it will use a
+fall through handler if you provided one. Note that the bucket name is optional. You could handle objects sent to
+any bucket provided its events trigger your Lambda.</p>
+
+<p>So for example, <code>*.png</code> will handle any object that ends with a png extension. Whereas <code>{*.png,*.gif,*.jpg}</code> would handle
+any file with those extensions. The package used for glob matching is <a href="https://github.com/gobwas/glob" target="_blank">gobwas/glob</a>.
+You can read its documentation for all the options you have available to match, it&rsquo;s rather robust.</p>
+
+<p>A good thing to think about here is the order in which you define your routing rules. It won&rsquo;t really be a concern
+for you with other routers, but this one can result in multiple rules matching the same event depending on what
+you have set up. The first route match found will be used, calling its handler.</p>
+
+<p>Remember, there are 3 things at play here:</p>
+
+<ul>
+<li>The bucket name (if not set, any bucket is a match)</li>
+<li>The S3 object event name (if not set, any event is a match)</li>
+<li>The S3 object key name (glob match)</li>
+</ul>
 
     
         
 
 <h1 id="ses-router">SES Router</h1>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="nx">main</span><span class="p">()</span> <span class="p">{</span>
+    <span class="nx">sesReceiver</span> <span class="o">:=</span> <span class="nx">aegis</span><span class="p">.</span><span class="nx">NewSESRouter</span><span class="p">()</span>
+    <span class="nx">sesReceiver</span><span class="p">.</span><span class="nx">Handle</span><span class="p">(</span><span class="s">&#34;*@ses.serifandsemaphore.io&#34;</span><span class="p">,</span> <span class="nx">handleEmail</span><span class="p">)</span>
 
-<p>This interface will route AWS SES (simple e-mail service) events to the appropriate handlers. This can
-be based on an e-mail address match exact or in part.</p>
+    <span class="nx">handlers</span> <span class="o">:=</span> <span class="nx">aegis</span><span class="p">.</span><span class="nx">Handlers</span><span class="p">{</span>
+        <span class="nx">SESRouter</span><span class="p">:</span> <span class="nx">sesReceiver</span><span class="p">,</span>
+    <span class="p">}</span>
+    <span class="nx">AegisApp</span> <span class="p">=</span> <span class="nx">aegis</span><span class="p">.</span><span class="nx">New</span><span class="p">(</span><span class="nx">handlers</span><span class="p">)</span>
+    <span class="nx">AegisApp</span><span class="p">.</span><span class="nx">Start</span><span class="p">()</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nx">handleEmail</span><span class="p">(</span><span class="nx">ctx</span> <span class="nx">context</span><span class="p">.</span><span class="nx">Context</span><span class="p">,</span> <span class="nx">d</span> <span class="o">*</span><span class="nx">aegis</span><span class="p">.</span><span class="nx">HandlerDependencies</span><span class="p">,</span> <span class="nx">evt</span> <span class="o">*</span><span class="nx">aegis</span><span class="p">.</span><span class="nx">SimpleEmailEvent</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+    <span class="nx">log</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="nx">evt</span><span class="p">)</span>
+    <span class="k">return</span> <span class="kc">nil</span>
+<span class="p">}</span></code></pre></div>
+<p>The AWS SES (Simple E-mail Service) router, <code>SESRouter</code>, and the ability for a Lambda to receive e-mail
+is perhaps one of the coolest things ever. Yes, there is such a thing as serverless e-mail.</p>
 
     
         
@@ -329,12 +505,6 @@ be based on an e-mail address match exact or in part.</p>
 
         </div>
         <div class="dark-box">
-            
-            <div class="lang-selector">
-                
-                <a href="#" data-language-name="go">Go</a>
-                
-            </div>
             
         </div>
     </div>

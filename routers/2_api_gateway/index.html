@@ -9,8 +9,7 @@
 <link href='/aegis/slate/stylesheets/screen.css' rel="stylesheet" media="screen" />
 <link href='/aegis/slate/stylesheets/print.css' rel="stylesheet" media="print" />
 
-    <link href='/aegis/css/menu.css' rel="stylesheet"/>
-    <link href='/aegis/css/alerts.css' rel="stylesheet"/>
+    <link href='/aegis/css/styles.css' rel="stylesheet"/>
     <link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.0.13/css/solid.css" integrity="sha384-drdlAcijFWubhOfj9OS/gy2Gs34hVhVT90FgJLzrldrLI+7E7lwBxmanEEhKTRTS" crossorigin="anonymous">
 <link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.0.13/css/fontawesome.css" integrity="sha384-LDuQaX4rOgqi4rbWCyWj3XVBlgDzuxGy/E6vWN6U7c25/eSJIwyKhy9WgZCHQWXz" crossorigin="anonymous">
     
@@ -18,7 +17,7 @@
 
     
 </head>
-<body class="index" data-languages="[ &#34;go&#34; ]">
+<body class="index" data-languages="">
     <div class="main-nav-wrapper">
         <ul class="main-menu">
             <li class="">
@@ -60,13 +59,11 @@
     </a>
     <div class="tocify-wrapper">
         
-         <img src='/aegis/images/logo.png' />
-        
-        <div class="lang-selector">
-            
-            <a href="#" data-language-name="go">Go</a>
-            
-        </div>
+         
+ <div id="logo-type">
+    <h1 class="toc-ignore">Aegis</h1>
+    <h2 class="toc-ignore">An AWS Serverless Framework for Go</h2>
+</div>
          
         <aside class="main-menu-sidebar-wrapper">
     <ul class="main-menu-sidebar">
@@ -112,8 +109,6 @@
          
         
         <ul class="toc-footer">
-            
-            <li>Documentation Powered by <a href="https://github.com/bep/docuapi" target="_blank">DocuAPI</a></li>
             
             <li>Hugo Theme by <a href="https://github.com/bep" target="_blank">bep</a></li>
             
@@ -217,8 +212,8 @@ codes, body content, headers, and more.</p>
 This will handle any request not matched by your router. A common handler in this case is simple one that does nothing,
 but sets a <code>StatusCode</code> of 404.</p>
 
-<aside class="note-warning">
-    Some routers in Aegis have optional fall through handlers. The API Gateway Router's fall through is not optional.
+<aside class="note-info">
+<i class="fas fa-info-circle"></i> Some routers in Aegis have optional fall through handlers. The API Gateway Router's fall through is not optional.
 </aside>
 
 <h2 id="middleware">Middleware</h2>
@@ -228,12 +223,6 @@ but sets a <code>StatusCode</code> of 404.</p>
 
         </div>
         <div class="dark-box">
-            
-            <div class="lang-selector">
-                
-                <a href="#" data-language-name="go">Go</a>
-                
-            </div>
             
         </div>
     </div>

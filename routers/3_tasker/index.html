@@ -9,8 +9,7 @@
 <link href='/aegis/slate/stylesheets/screen.css' rel="stylesheet" media="screen" />
 <link href='/aegis/slate/stylesheets/print.css' rel="stylesheet" media="print" />
 
-    <link href='/aegis/css/menu.css' rel="stylesheet"/>
-    <link href='/aegis/css/alerts.css' rel="stylesheet"/>
+    <link href='/aegis/css/styles.css' rel="stylesheet"/>
     <link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.0.13/css/solid.css" integrity="sha384-drdlAcijFWubhOfj9OS/gy2Gs34hVhVT90FgJLzrldrLI+7E7lwBxmanEEhKTRTS" crossorigin="anonymous">
 <link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.0.13/css/fontawesome.css" integrity="sha384-LDuQaX4rOgqi4rbWCyWj3XVBlgDzuxGy/E6vWN6U7c25/eSJIwyKhy9WgZCHQWXz" crossorigin="anonymous">
     
@@ -18,7 +17,7 @@
 
     
 </head>
-<body class="index" data-languages="[ &#34;go&#34; ]">
+<body class="index" data-languages="">
     <div class="main-nav-wrapper">
         <ul class="main-menu">
             <li class="">
@@ -60,13 +59,11 @@
     </a>
     <div class="tocify-wrapper">
         
-         <img src='/aegis/images/logo.png' />
-        
-        <div class="lang-selector">
-            
-            <a href="#" data-language-name="go">Go</a>
-            
-        </div>
+         
+ <div id="logo-type">
+    <h1 class="toc-ignore">Aegis</h1>
+    <h2 class="toc-ignore">An AWS Serverless Framework for Go</h2>
+</div>
          
         <aside class="main-menu-sidebar-wrapper">
     <ul class="main-menu-sidebar">
@@ -113,8 +110,6 @@
         
         <ul class="toc-footer">
             
-            <li>Documentation Powered by <a href="https://github.com/bep/docuapi" target="_blank">DocuAPI</a></li>
-            
             <li>Hugo Theme by <a href="https://github.com/bep" target="_blank">bep</a></li>
             
         </ul>
@@ -158,8 +153,8 @@ the CloudWatch Rule configuration.</p>
 <p>There is a conventional <code>_taskName</code> key in your payload that you need to be aware of. This is what gets
 matched by the <code>Tasker</code> in order to delegate to your handlers.</p>
 
-<aside class="info">
-Note that tasks are routed by exact match.
+<aside class="note-info">
+<i class="fas fa-info-circle"></i> Note that tasks are routed by exact match.
 </aside>
 <div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="nx">tasker</span> <span class="o">:=</span> <span class="nx">aegis</span><span class="p">.</span><span class="nx">NewTasker</span><span class="p">(</span><span class="nx">taskerFallThrough</span><span class="p">)</span>
 <span class="nx">tasker</span><span class="p">.</span><span class="nx">Handle</span><span class="p">(</span><span class="s">&#34;test&#34;</span><span class="p">,</span> <span class="nx">handleTestTask</span><span class="p">)</span></code></pre></div>
@@ -178,15 +173,15 @@ It&rsquo;s function signature is no different than any other task handler. This 
 optional. You can call <code>aegis.NewTasker()</code> to use just as well. In that case, if your configured <code>Tasker</code>
 does not match any task names, it will not route those events and they won&rsquo;t be handled.</p>
 
+<p>Obviously, there is no one to return a response message to in the case of a scheduled job. An <code>error</code>, or <code>nil</code>,
+must still be returned. Though the error would only be for the benefit of your tracing tool (ie. X-Ray will see it).</p>
+
+<p>The event in this case will be whatever you defined in the definition JSON. Often times you may find that the
+most important thing is the specific handler function itself is called and not so much this static JSON payload.</p>
+
 
         </div>
         <div class="dark-box">
-            
-            <div class="lang-selector">
-                
-                <a href="#" data-language-name="go">Go</a>
-                
-            </div>
             
         </div>
     </div>

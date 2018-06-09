@@ -1,0 +1,120 @@
+/** Logo **/
+div#logo-type {
+    color: #fff;
+    text-align: center;
+}
+div#logo-type h1 {
+    font-size: 36px;
+}
+div#logo-type h2 {
+    font-size: 11px;
+    font-weight: normal;
+}
+
+span.nowrap {
+    white-space: nowrap
+}
+
+/** Main Top Nav Bar **/
+div.main-nav-wrapper {
+    position: fixed;
+    top: 0;
+    width: 100%;
+    height: 30px;
+    z-index: 1000;
+    background: #333;
+    border-bottom: 1px solid #000;
+    color: #fff;
+}
+
+div.page-wrapper, div.tocify-wrapper, div.dark-box {
+    padding-top: 30px;
+}
+
+/** Main Menu **/
+ul.main-menu, ul.main-menu-sidebar > li {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    line-height: 28px;
+}
+
+ul.main-menu > li {
+    display: inline-block;
+    zoom:1;
+    *display:inline;
+}
+
+ul.main-menu li > a, ul.main-menu-sidebar li > a {
+    color: #fff;
+    text-decoration: none;
+    padding: 0 15px 0 15px;
+    display: block;
+    overflow-x: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    font-weight: normal;
+}
+
+ul.main-menu li > a {
+    font-weight: bold;
+}
+ul.main-menu li.active a, ul.main-menu-sidebar li.active a {
+    font-weight: bold;
+}
+ul.main-menu li.active a::before, ul.main-menu-sidebar li.active a::before {
+    content: "♦ ";
+    color: #2467af;
+}
+
+/** Main Menu (in sidebar only) **/
+ul.main-menu-sidebar > li {
+    display: block !important;
+    zoom:1;
+    *display: block !important;
+}
+
+.main-menu-sidebar-wrapper {
+    display: none;
+}
+
+/** Small devices - hide main top nav bar, put main menu into sidebar **/
+@media screen and (max-width: 930px) {
+    div.main-nav-wrapper {
+        display: none;
+    }
+    div.page-wrapper, div.tocify-wrapper, div.dark-box {
+        padding-top: 0px;
+    }
+
+    .main-menu-sidebar-wrapper {
+        display: block;
+    }
+
+    /** Hide language selector (for now **/
+    div.lang-selector {
+        display: none !important;
+    }
+}
+
+/** Notes **/
+aside.note-info {
+    color: #00529B;
+    background-color: #BDE5F8;
+    text-shadow: none;
+}
+aside.note-success {
+    color: #4F8A10;
+    background-color: #DFF2BF;
+    text-shadow: none;
+}
+aside.note-warning {
+    color: #9F6000;
+    background-color: #FEEFB3;
+    text-shadow: none;
+}
+aside.note-error {
+    color: #D8000C;
+    background-color: #FFD2D2;
+    text-shadow: none;
+}

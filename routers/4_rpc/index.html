@@ -9,8 +9,7 @@
 <link href='/aegis/slate/stylesheets/screen.css' rel="stylesheet" media="screen" />
 <link href='/aegis/slate/stylesheets/print.css' rel="stylesheet" media="print" />
 
-    <link href='/aegis/css/menu.css' rel="stylesheet"/>
-    <link href='/aegis/css/alerts.css' rel="stylesheet"/>
+    <link href='/aegis/css/styles.css' rel="stylesheet"/>
     <link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.0.13/css/solid.css" integrity="sha384-drdlAcijFWubhOfj9OS/gy2Gs34hVhVT90FgJLzrldrLI+7E7lwBxmanEEhKTRTS" crossorigin="anonymous">
 <link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.0.13/css/fontawesome.css" integrity="sha384-LDuQaX4rOgqi4rbWCyWj3XVBlgDzuxGy/E6vWN6U7c25/eSJIwyKhy9WgZCHQWXz" crossorigin="anonymous">
     
@@ -18,7 +17,7 @@
 
     
 </head>
-<body class="index" data-languages="[ &#34;go&#34; ]">
+<body class="index" data-languages="">
     <div class="main-nav-wrapper">
         <ul class="main-menu">
             <li class="">
@@ -60,13 +59,11 @@
     </a>
     <div class="tocify-wrapper">
         
-         <img src='/aegis/images/logo.png' />
-        
-        <div class="lang-selector">
-            
-            <a href="#" data-language-name="go">Go</a>
-            
-        </div>
+         
+ <div id="logo-type">
+    <h1 class="toc-ignore">Aegis</h1>
+    <h2 class="toc-ignore">An AWS Serverless Framework for Go</h2>
+</div>
          
         <aside class="main-menu-sidebar-wrapper">
     <ul class="main-menu-sidebar">
@@ -113,8 +110,6 @@
         
         <ul class="toc-footer">
             
-            <li>Documentation Powered by <a href="https://github.com/bep/docuapi" target="_blank">DocuAPI</a></li>
-            
             <li>Hugo Theme by <a href="https://github.com/bep" target="_blank">bep</a></li>
             
         </ul>
@@ -129,18 +124,75 @@
 
 <h1 id="rpc-router">RPC Router</h1>
 
+<blockquote>
+<p>Route and handle by name</p>
+</blockquote>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="nx">main</span><span class="p">()</span> <span class="p">{</span>
+    <span class="nx">rpcRouter</span> <span class="o">:=</span> <span class="nx">aegis</span><span class="p">.</span><span class="nx">NewRPCRouter</span><span class="p">()</span>
+    <span class="nx">rpcRouter</span><span class="p">.</span><span class="nx">Handle</span><span class="p">(</span><span class="s">&#34;lookup&#34;</span><span class="p">,</span> <span class="nx">handleLookup</span><span class="p">)</span>
+
+    <span class="nx">app</span> <span class="o">:=</span> <span class="nx">aegis</span><span class="p">.</span><span class="nx">New</span><span class="p">(</span><span class="nx">aegis</span><span class="p">.</span><span class="nx">Handlers</span><span class="p">{</span>
+        <span class="c1">// Again, your one function can handle different event types
+</span><span class="c1"></span>        <span class="c1">// Router: router,
+</span><span class="c1"></span>        <span class="nx">RPCRouter</span><span class="p">:</span> <span class="nx">rpcRouter</span><span class="p">,</span>
+    <span class="p">})</span>
+    <span class="nx">app</span><span class="p">.</span><span class="nx">Start</span><span class="p">()</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nx">handleLookup</span><span class="p">(</span><span class="nx">ctx</span> <span class="nx">context</span><span class="p">.</span><span class="nx">Context</span><span class="p">,</span> <span class="nx">d</span> <span class="o">*</span><span class="nx">aegis</span><span class="p">.</span><span class="nx">HandlerDependencies</span><span class="p">,</span> <span class="nx">evt</span> <span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kd">interface</span><span class="p">{})</span> <span class="p">(</span><span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kd">interface</span><span class="p">{},</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">// Some GeoIP look would happen here and some data would be returned
+</span><span class="c1"></span>    <span class="k">return</span> <span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kt">string</span><span class="p">{</span><span class="s">&#34;city&#34;</span><span class="p">:</span> <span class="s">&#34;Somewhereville&#34;</span><span class="p">},</span> <span class="kc">nil</span>
+<span class="p">}</span></code></pre></div>
+<blockquote>
+<p>Example GeoIP lookup from another Lambda</p>
+</blockquote>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="nx">rpcPayload</span> <span class="o">:=</span> <span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kd">interface</span><span class="p">{}{</span>
+    <span class="s">&#34;_rpcName&#34;</span><span class="p">:</span>  <span class="s">&#34;lookup&#34;</span><span class="p">,</span>
+    <span class="c1">// or req.IP() if req is an APIGatewayProxyRequest
+</span><span class="c1"></span>    <span class="s">&#34;ipAddress&#34;</span><span class="p">:</span> <span class="nx">req</span><span class="p">.</span><span class="nx">RequestContext</span><span class="p">.</span><span class="nx">Identity</span><span class="p">.</span><span class="nx">SourceIP</span><span class="p">,</span>
+<span class="p">}</span>
+<span class="nx">resp</span><span class="p">,</span> <span class="nx">rpcErr</span> <span class="o">:=</span> <span class="nx">aegis</span><span class="p">.</span><span class="nx">RPC</span><span class="p">(</span><span class="s">&#34;aegis_geoip&#34;</span><span class="p">,</span> <span class="nx">rpcPayload</span><span class="p">)</span></code></pre></div>
 <p>This interface allows &ldquo;RPC&rdquo; (remote procedure calls) to be handled. In Aegis&rsquo; world, that is to say a Lambda invoking
-another Lambda.</p>
+another Lambda. So the immediate question you should have is, &ldquo;how do you know it&rsquo;s an invocation from another Lambda?&rdquo;
+Great question! We don&rsquo;t. Not really anyway. Plus, who&rsquo;s to say it has to be another Lambda invoking it? Technically,
+an RPC could come from any program that has access.</p>
+
+<p>The way that this router matches is, like <code>Tasker</code>, through conventions in the JSON message payload itself. In this case,
+instead of looking for a <code>_taskName</code> key, it&rsquo;ll be <span class="nowrap"><code>_rpcName</code></span> instead.</p>
+
+<aside class="note-warning">
+<i class="fas fa-exclamation-triangle"></i> Could your scheduled task that invokes your Lambda via CloudWatch rule trigger
+event also use an RPC handler? Yes, it could, but the idea is to be organized and leverage these conventions so you don't
+end up with unpredictable behavior.
+</aside>
+
+<p>Like <code>Tasker</code>, <code>RPCRouter</code> also has an optional fall through handler that you can pass to <code>NewRPCRouter()</code> when setting
+up the router. The handler function signature is very close to the <code>Tasker</code> handler functions as well.</p>
+
+<p>Unlike most other handlers, this one requires you to return more than just an error. A <code>map[string]interface{}</code> must be
+returned as well. What good would the RPC be without something coming back?</p>
+
+<p>Technically speaking, Aegis returns data on your <code>Router</code> handlers as well. It&rsquo;s just done for you automatically because
+working with API Gateway responses is predictable. The response struct is what gets returned and Aegis does that for you.
+However, in the case of an RPC, it&rsquo;s impossible to know exactly what you are going to return other than a map, because
+we know that Lambda works with JSON messages.</p>
+
+<p>Aegis has a top level help function, <code>RPC()</code>, that makes it a bit easier to invoke another Lambda. If you are looking
+to invoke one Lambda from another, this should just work for you without any extra effort as the default IAM role on your
+Lambdas through Aegis will permit Lambda invocation.</p>
+
+<p>If your needs are more complex than a simple call with a function name and map payload, you will need to use the AWS SDK
+to invoke the Lambda instead. Or if you didn&rsquo;t use Aegis to deploy your Lambdas (which would have set up an IAM role),
+and you have other special considerations - again, feel free to do your thing. Aegis&rsquo; helpers are not the only way to
+go about things.</p>
+
+<aside class="note-info">
+<i class="fas fa-info-circle"></i> Don't forget to return a map and an error (or nil) when handling RPCs.
+</aside>
 
 
         </div>
         <div class="dark-box">
-            
-            <div class="lang-selector">
-                
-                <a href="#" data-language-name="go">Go</a>
-                
-            </div>
             
         </div>
     </div>

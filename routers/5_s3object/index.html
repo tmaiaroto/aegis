@@ -9,8 +9,7 @@
 <link href='/aegis/slate/stylesheets/screen.css' rel="stylesheet" media="screen" />
 <link href='/aegis/slate/stylesheets/print.css' rel="stylesheet" media="print" />
 
-    <link href='/aegis/css/menu.css' rel="stylesheet"/>
-    <link href='/aegis/css/alerts.css' rel="stylesheet"/>
+    <link href='/aegis/css/styles.css' rel="stylesheet"/>
     <link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.0.13/css/solid.css" integrity="sha384-drdlAcijFWubhOfj9OS/gy2Gs34hVhVT90FgJLzrldrLI+7E7lwBxmanEEhKTRTS" crossorigin="anonymous">
 <link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.0.13/css/fontawesome.css" integrity="sha384-LDuQaX4rOgqi4rbWCyWj3XVBlgDzuxGy/E6vWN6U7c25/eSJIwyKhy9WgZCHQWXz" crossorigin="anonymous">
     
@@ -18,7 +17,7 @@
 
     
 </head>
-<body class="index" data-languages="[ &#34;go&#34; ]">
+<body class="index" data-languages="">
     <div class="main-nav-wrapper">
         <ul class="main-menu">
             <li class="">
@@ -60,13 +59,11 @@
     </a>
     <div class="tocify-wrapper">
         
-         <img src='/aegis/images/logo.png' />
-        
-        <div class="lang-selector">
-            
-            <a href="#" data-language-name="go">Go</a>
-            
-        </div>
+         
+ <div id="logo-type">
+    <h1 class="toc-ignore">Aegis</h1>
+    <h2 class="toc-ignore">An AWS Serverless Framework for Go</h2>
+</div>
          
         <aside class="main-menu-sidebar-wrapper">
     <ul class="main-menu-sidebar">
@@ -113,8 +110,6 @@
         
         <ul class="toc-footer">
             
-            <li>Documentation Powered by <a href="https://github.com/bep/docuapi" target="_blank">DocuAPI</a></li>
-            
             <li>Hugo Theme by <a href="https://github.com/bep" target="_blank">bep</a></li>
             
         </ul>
@@ -128,18 +123,107 @@
     
 
 <h1 id="s3-object-router">S3 Object Router</h1>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="nx">main</span><span class="p">()</span> <span class="p">{</span>
+    <span class="nx">s3Router</span> <span class="o">:=</span> <span class="nx">aegis</span><span class="p">.</span><span class="nx">NewS3ObjectRouterForBucket</span><span class="p">(</span><span class="s">&#34;aegis-incoming&#34;</span><span class="p">)</span>
+    <span class="c1">// s3Router.Handle(&#34;s3:ObjectCreated:Put&#34;, &#34;*.png&#34;, handleS3Upload)
+</span><span class="c1"></span>    <span class="c1">// Put() is a shortcut for the above
+</span><span class="c1"></span>    <span class="nx">s3Router</span><span class="p">.</span><span class="nx">Put</span><span class="p">(</span><span class="s">&#34;*.png&#34;</span><span class="p">,</span> <span class="nx">handleS3Upload</span><span class="p">)</span>
 
-<p>This interface will route S3 object events to handlers.</p>
+    <span class="nx">handlers</span> <span class="o">:=</span> <span class="nx">aegis</span><span class="p">.</span><span class="nx">Handlers</span><span class="p">{</span>
+        <span class="nx">S3ObjectRouter</span><span class="p">:</span> <span class="nx">s3Router</span><span class="p">,</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nx">handleS3Upload</span><span class="p">(</span><span class="nx">ctx</span> <span class="nx">context</span><span class="p">.</span><span class="nx">Context</span><span class="p">,</span> <span class="nx">d</span> <span class="o">*</span><span class="nx">aegis</span><span class="p">.</span><span class="nx">HandlerDependencies</span><span class="p">,</span> <span class="nx">evt</span> <span class="o">*</span><span class="nx">aegis</span><span class="p">.</span><span class="nx">S3Event</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+    <span class="c1">// evt will contain bucket name, path, etc.
+</span><span class="c1"></span>    <span class="k">return</span> <span class="kc">nil</span>
+<span class="p">}</span></code></pre></div>
+<p>Now here we have an interesting Router. Like the API Gateway Proxy, we have a few things to match on.
+It&rsquo;s not just a path, but also a method or operation. In the case of S3 objects, we&rsquo;re talking about
+puts and deletes, other such operations, and now also a bucket (or domain if you like).</p>
+
+<p>So the <code>S3ObjectRouter</code> has some convenient methods on it for you to use; <code>Put()</code>, <code>Delete()</code>, <code>Copy()</code>,
+and so on. Though you can choose to write it the &ldquo;long&rdquo; way and use <code>Handle()</code> where the first argument
+would be the actual S3 object event name.</p>
+
+<p>There are two &ldquo;new&rdquo; methods for this router. <span class="nowrap"><code>NewS3ObjectRouter()</code></span> and
+<span class="nowrap"><code>NewS3ObjectRouterForBucket()</code>.</span> Both will take an optional &ldquo;fall through&rdquo;
+handler. Both use the same router interface. <span class="nowrap"><code>NewS3ObjectRouterForBucket(&quot;bucket-name&quot;)</code></span>
+takes a bucket name and sets it on to the router interface. <span class="nowrap"><code>NewS3ObjectRouter()</code></span>
+does not.</p>
+
+<p>This means that you can not only &ldquo;catch all&rdquo; operations and objects, but also all operations and object
+for any bucket that&rsquo;s emitting events that trigger your Lambda.</p>
+
+<p>Of course, you could always switch the bucket the router is working with after your have the interface.
+For example, assumimg you have <span class="nowrap"><code>r := NewS3ObjectRouter()</code></span>, you could then do
+<span class="nowrap"><code>r.Bucket = &quot;my-bucket&quot;</code>.</span></p>
+
+<h2 id="configuring-s3-object-events">Configuring S3 Object Events</h2>
+<div class="highlight"><pre class="chroma"><code class="language-yaml" data-lang="yaml">bucketTriggers<span class="p">:</span><span class="w">
+</span><span class="w">  </span>-<span class="w"> </span>bucket<span class="p">:</span><span class="w"> </span>aegis-incoming<span class="w">
+</span><span class="w">    </span>filters<span class="p">:</span><span class="w">
+</span><span class="w">      </span>-<span class="w"> </span>name<span class="p">:</span><span class="w"> </span>suffix<span class="w">
+</span><span class="w">        </span>value<span class="p">:</span><span class="w"> </span>png<span class="w">
+</span><span class="w">      </span><span class="c">#- name: prefix</span><span class="w">
+</span><span class="w">      </span><span class="c">#  value: path/</span><span class="w">
+</span><span class="w">    </span>eventNames<span class="p">:</span><span class="w">
+</span><span class="w">      </span>-<span class="w"> </span>s3<span class="p">:</span>ObjectCreated<span class="p">:</span>*<span class="w">
+</span><span class="w">      </span>-<span class="w"> </span>s3<span class="p">:</span>ObjectRemoved<span class="p">:</span>*<span class="w">
+</span><span class="w">      </span><span class="c"># ... there&#39;s a few and there&#39;s wildcards, see:</span><span class="w">
+</span><span class="w">      </span><span class="c"># https://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html#notification-how-to-event-types-and-destinations</span><span class="w">
+</span><span class="w">    </span>disabled<span class="p">:</span><span class="w"> </span><span class="kc">false</span></code></pre></div>
+<p>Unlike tasks or RPCs, we can&rsquo;t simply conventionally catch events that might come our way. We actually need to
+ensure these events are being sent. The way that happens is through S3 object event triggers. You can set these
+up yourself of course (or using your favorite tool like Terraform or CloudFormation). Or, you could leverage
+<code>aegis deploy</code> by configuring your <code>aegis.yaml</code> file.</p>
+
+<p>Aegis will look for this configuration each time you call <code>aegis deploy</code> from the CLI. You can also disable the
+triggers using the <code>disabled</code> key. Set that to true and deploy again. Re-enable when you&rsquo;re ready again. This way
+you don&rsquo;t need to lose anything in your configuration. Aegis is also non-destructive.</p>
+
+<aside class="note-warning">
+<i class="fas fa-exclamation-triangle"></i> Note that Aegis will not know to delete your S3 object event triggers.
+It can disable them, but it will not remove them. So you will need to manually do so yourself if you no longer want them.
+</aside>
+
+<h2 id="event-matching">Event Matching</h2>
+
+<blockquote>
+<p>What goes on within Aegis to match an S3 object event</p>
+</blockquote>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="k">if</span> <span class="nx">r</span><span class="p">.</span><span class="nx">Bucket</span> <span class="o">==</span> <span class="s">&#34;&#34;</span> <span class="o">||</span> <span class="nx">r</span><span class="p">.</span><span class="nx">Bucket</span> <span class="o">==</span> <span class="nx">record</span><span class="p">.</span><span class="nx">S3</span><span class="p">.</span><span class="nx">Bucket</span><span class="p">.</span><span class="nx">Name</span> <span class="p">{</span>
+    <span class="c1">// Handlers are registered in a map.
+</span><span class="c1"></span>    <span class="c1">// The keys in this map contain your match pattern string.
+</span><span class="c1"></span>    <span class="k">for</span> <span class="nx">globStr</span><span class="p">,</span> <span class="nx">handler</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">r</span><span class="p">.</span><span class="nx">handlers</span> <span class="p">{</span>
+    <span class="nx">g</span> <span class="p">=</span> <span class="nx">glob</span><span class="p">.</span><span class="nx">MustCompile</span><span class="p">(</span><span class="nx">globStr</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nx">g</span><span class="p">.</span><span class="nx">Match</span><span class="p">(</span><span class="nx">record</span><span class="p">.</span><span class="nx">S3</span><span class="p">.</span><span class="nx">Object</span><span class="p">.</span><span class="nx">Key</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c1">// ...Goes on to handle the event, calling your handler.
+</span><span class="c1"></span>    <span class="p">}</span>
+<span class="p">}</span></code></pre></div>
+<p>Unlike most other routers, S3 object events are matched by glob match. Again, if no match is found, it will use a
+fall through handler if you provided one. Note that the bucket name is optional. You could handle objects sent to
+any bucket provided its events trigger your Lambda.</p>
+
+<p>So for example, <code>*.png</code> will handle any object that ends with a png extension. Whereas <code>{*.png,*.gif,*.jpg}</code> would handle
+any file with those extensions. The package used for glob matching is <a href="https://github.com/gobwas/glob" target="_blank">gobwas/glob</a>.
+You can read its documentation for all the options you have available to match, it&rsquo;s rather robust.</p>
+
+<p>A good thing to think about here is the order in which you define your routing rules. It won&rsquo;t really be a concern
+for you with other routers, but this one can result in multiple rules matching the same event depending on what
+you have set up. The first route match found will be used, calling its handler.</p>
+
+<p>Remember, there are 3 things at play here:</p>
+
+<ul>
+<li>The bucket name (if not set, any bucket is a match)</li>
+<li>The S3 object event name (if not set, any event is a match)</li>
+<li>The S3 object key name (glob match)</li>
+</ul>
 
 
         </div>
         <div class="dark-box">
-            
-            <div class="lang-selector">
-                
-                <a href="#" data-language-name="go">Go</a>
-                
-            </div>
             
         </div>
     </div>

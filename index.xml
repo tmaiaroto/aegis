@@ -101,7 +101,8 @@ Above all else, there is a default handler that can be used for any incoming Lam
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://tmaiaroto.github.io/aegis/routers/4_rpc/</guid>
-      <description>RPC Router This interface allows &amp;ldquo;RPC&amp;rdquo; (remote procedure calls) to be handled. In Aegis&amp;rsquo; world, that is to say a Lambda invoking another Lambda.</description>
+      <description>RPC Router  Route and handle by name
+ func main() { rpcRouter := aegis.NewRPCRouter() rpcRouter.Handle(&amp;#34;lookup&amp;#34;, handleLookup) app := aegis.New(aegis.Handlers{ // Again, your one function can handle different event types  // Router: router,  RPCRouter: rpcRouter, }) app.Start() } func handleLookup(ctx context.Context, d *aegis.HandlerDependencies, evt map[string]interface{}) (map[string]interface{}, error) { // Some GeoIP look would happen here and some data would be returned  return map[string]string{&amp;#34;city&amp;#34;: &amp;#34;Somewhereville&amp;#34;}, nil }  Example GeoIP lookup from another Lambda</description>
     </item>
     
     <item>
@@ -110,7 +111,7 @@ Above all else, there is a default handler that can be used for any incoming Lam
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://tmaiaroto.github.io/aegis/routers/5_s3object/</guid>
-      <description>S3 Object Router This interface will route S3 object events to handlers.</description>
+      <description>S3 Object Router func main() { s3Router := aegis.NewS3ObjectRouterForBucket(&amp;#34;aegis-incoming&amp;#34;) // s3Router.Handle(&amp;#34;s3:ObjectCreated:Put&amp;#34;, &amp;#34;*.png&amp;#34;, handleS3Upload)  // Put() is a shortcut for the above  s3Router.Put(&amp;#34;*.png&amp;#34;, handleS3Upload) handlers := aegis.Handlers{ S3ObjectRouter: s3Router, } } func handleS3Upload(ctx context.Context, d *aegis.HandlerDependencies, evt *aegis.S3Event) error { // evt will contain bucket name, path, etc.  return nil } Now here we have an interesting Router. Like the API Gateway Proxy, we have a few things to match on.</description>
     </item>
     
     <item>
@@ -119,7 +120,7 @@ Above all else, there is a default handler that can be used for any incoming Lam
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://tmaiaroto.github.io/aegis/routers/6_ses/</guid>
-      <description>SES Router This interface will route AWS SES (simple e-mail service) events to the appropriate handlers. This can be based on an e-mail address match exact or in part.</description>
+      <description>SES Router func main() { sesReceiver := aegis.NewSESRouter() sesReceiver.Handle(&amp;#34;*@ses.serifandsemaphore.io&amp;#34;, handleEmail) handlers := aegis.Handlers{ SESRouter: sesReceiver, } AegisApp = aegis.New(handlers) AegisApp.Start() } func handleEmail(ctx context.Context, d *aegis.HandlerDependencies, evt *aegis.SimpleEmailEvent) error { log.Println(evt) return nil } The AWS SES (Simple E-mail Service) router, SESRouter, and the ability for a Lambda to receive e-mail is perhaps one of the coolest things ever. Yes, there is such a thing as serverless e-mail.</description>
     </item>
     
     <item>
