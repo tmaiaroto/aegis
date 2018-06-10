@@ -1,0 +1,8 @@
+{{ if (ne .Params.toc "false") }}
+<aside>
+    <header>
+    <h2>{{.Title}}</h2>
+    </header>
+    {{.TableOfContents}}
+</aside>
+{{ end }}

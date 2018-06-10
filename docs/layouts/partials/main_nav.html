@@ -1,0 +1,11 @@
+<li class="{{ if .IsHome }}active{{ end }}">
+    <a href="/aegis/">Getting Started</a>
+</li>
+{{ $currentPage := . }}
+{{ range .Site.Menus.main }}
+    {{ if .Name }}
+    <li class="{{ if or ($currentPage.IsMenuCurrent "main" .) ($currentPage.HasMenuCurrent "main" .) }}active{{ end }}">
+        <a href="{{ .URL }}" title="{{ .Title }}">{{ .Name }}</a>
+    </li>
+    {{ end }}
+{{ end }}

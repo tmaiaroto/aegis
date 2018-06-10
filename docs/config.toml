@@ -1,0 +1,71 @@
+baseURL = "https://tmaiaroto.github.io/aegis/"
+languageCode = "en-us"
+title = "Aegis: An AWS Serverless Framework for Golang "
+theme = "docuapi"
+sectionPagesMenu = "main"
+
+# Code higlighting settings
+pygmentsCodefences = true
+pygmentsCodeFencesGuesSsyntax = false
+pygmentsOptions = ""
+pygmentsStyle = "monokai"
+# The monokai stylesheet is included in the base template.
+pygmentsUseClasses = true
+
+
+[params]
+search = true
+
+#Languages 
+[languages]
+
+[languages.en]
+languageName = "English"
+weight = 2
+title = "DocuAPI Example Site"
+
+# Left sidebar footer items. Use HTMl or Markdown.
+toc_footers = [
+"Hugo Theme by [bep](https://github.com/bep)"
+]
+[languages.en.blackfriday]
+angledQuotes = false
+hrefTargetBlank = true
+
+
+# Left sidebar footer items. Use HTMl or Markdown.
+toc_footers = [ 
+"<a href='#'>Sign Up for a Developer Key</a>",
+"Documentation Powered by [DocuAPI](https://github.com/bep/docuapi)",
+"Hugo Theme by [bep](https://github.com/bep)"
+]
+
+[menu]
+
+  [[menu.main]]
+    identifier = "routers"
+    name = "Routers"
+    title = "Aegis Routers"
+    url = "/routers/"
+    weight = -110
+
+  [[menu.main]]
+    identifier = "handler-dependencies"
+    name = "Dependencies"
+    title = "Aegis Dependencies"
+    url = "/handler-dependencies/"
+    weight = -100
+
+  [[menu.main]]
+    identifier = "helpers"
+    name = "Helpers"
+    title = "Aegis Helpers"
+    url = "/helpers/"
+    weight = -90
+
+  [[menu.main]]
+    identifier = "cli"
+    name = "CLI"
+    title = "Aegis Command Line Interface"
+    url = "/cli/"
+    weight = -80
