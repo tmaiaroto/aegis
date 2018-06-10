@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta content="IE=edge,chrome=1" http-equiv="X-UA-Compatible">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-    <title>Handler-dependencies</title>
+    <title></title>
     <link href='/aegis/slate/stylesheets/monokai.css' rel="stylesheet" media="screen" />
 <link href='/aegis/slate/stylesheets/screen.css' rel="stylesheet" media="screen" />
 <link href='/aegis/slate/stylesheets/print.css' rel="stylesheet" media="print" />
@@ -121,63 +121,6 @@
         <div class="content">
             
     
-        <h1 class="toc-ignore">Handler Dependencies</h1>
-
-<p>Handlers need a variety of services and dependencies in order to make life easier. It&rsquo;s a very big
-part of why one reaches for a framework. The idea of &ldquo;dependency injection&rdquo; is the foundation of many
-frameworks and Aegis isn&rsquo;t much different.</p>
-
-<p>Really, routing events to handlers is the foundation of Aegis, but you can&rsquo;t abstract that away without
-being able to pass along functionality required by each handler.</p>
-
-<p>Aegis has a few core dependencies that even its internal handler (a handler before your handler)
-uses and passes along for you to use as well. Also, you can also pass along your own dependencies
-if you need to.</p>
-
-    
-        
-
-<h1 id="log">Log</h1>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="nx">logger</span> <span class="o">:=</span> <span class="nx">logrus</span><span class="p">.</span><span class="nx">New</span><span class="p">()</span>
-<span class="c1">// Various configuration options for logrus...
-</span><span class="c1"></span>
-<span class="nx">AegisApp</span> <span class="p">=</span> <span class="nx">aegis</span><span class="p">.</span><span class="nx">New</span><span class="p">(</span><span class="nx">handlers</span><span class="p">)</span>
-<span class="c1">// Set your configured logger on Log
-</span><span class="c1"></span><span class="nx">AegisApp</span><span class="p">.</span><span class="nx">Log</span> <span class="p">=</span> <span class="nx">logger</span>
-<span class="nx">AegisApp</span><span class="p">.</span><span class="nx">Start</span><span class="p">()</span></code></pre></div>
-<p>Aegis&rsquo; Log dependency provides an adaptable way to log using the popular Go package
-<a href="https://github.com/sirupsen/logrus" target="_blank">logrus</a>.
-You&rsquo;re certainly welcome to use the standard library <code>log</code> package as well. AWS Lambda will send all
-of that stdout to CloudWatch for you automatically.</p>
-
-<p>However, there may be other logging services you wish to use. Rather than re-invent the wheel, Aegis
-used logrus instead because of its adaptability.</p>
-
-<p>Set the <code>Log</code> field on the <code>Aegis</code> interface like any other core dependency to change it. You can
-also use the <span class="nowrap"><code>ConfigureLogger(*logrus.Logger)</code></span> helper function.</p>
-
-<p>Do note that everything internally will use <code>log</code>. So anything that Aegis logs out will be found in
-CloudWatch. It&rsquo;s not that Aegis didn&rsquo;t want to dogfood its own logging dependency, it&rsquo;s that Aegis
-did not want its logging to get in the way of your logging.</p>
-
-<p>For example, if your handler (just one of your Lambdas) wanted to use <code>Log</code> to send information
-to your team Slack channel, you wouldn&rsquo;t also want internal Aegis logging to be sent as well. Especially
-because you couldn&rsquo;t turn them off. There is currently no sort of verbosity setting in Aegis. If you
-were to, say, disable CloudWatch logging for your Lambda altogether then the standard <code>log</code> calls
-would simply go no where.</p>
-
-<p>CloudWatch of course isn&rsquo;t the prettiest way to view your logs. While logrus has fancy coloring,
-CloudWatch is black and white text through your web browser in the AWS Console. So you might end up
-configuring <code>Log</code> in a different way to work with logging in a prettier way.</p>
-
-<p>Another thing worth noting here is that logrus&rsquo; 3rd party formatters can be rather powerful. There are
-formatters for things like fluentd, logstash, and more. So you might just find yourself using it for
-more than simply basic logging. Also keep in mind that AWS has a hosted version of Elasticsearch with
-Kibana&hellip;See where this is going?? You can implement a rather robust searchable logging solution all
-within AWS.</p>
-
-    
-        
 
 <h1 id="tracer">Tracer</h1>
 
@@ -305,92 +248,6 @@ well known ket set and so on.</p>
 <p>As you learn to leverage caching methods and tune your service configurations, you&rsquo;ll be able to visually see
 the performance change over time with X-Ray. It&rsquo;s an incredibly useful service.</p>
 
-    
-        
-
-<h1 id="custom">Custom</h1>
-
-<p>You can inject your own handler dependencies under the <code>Custom</code> field. This is great for 3rd party dependencies you
-wish to use as well as anything you want to make available to each handler.</p>
-
-<p>These dependencies contain no &ldquo;configuration&rdquo; closure (unlike Services) and if your function is simple enough, you
-may not even need to pass them through <code>Custom</code>. Keep in mind the scoping in Go. If you&rsquo;ve defined something in
-your package (&ldquo;main&rdquo; perhaps), it&rsquo;s available to all of the functions within that package&hellip;This often will include
-your handlers.</p>
-
-<p>So before you reach to shove everything through to your handlers, think about it a bit. Lambda functions should
-be easy to follow and your code should read clean. Remember that <code>Custom</code> here is a <span class="nowrap"><code>map[string]interface{}</code></span>
-so you will likely encounter the need to check for nil and use type assertions.</p>
-
-<p>Aegis isn&rsquo;t trying to limit you and sometimes you may have no other option, but no one says you have to pass
-everything through to each handler in this way.</p>
-
-    
-        
-
-<h1 id="services">Services</h1>
-
-<blockquote>
-<p>From the Cognito example Aegis app</p>
-</blockquote>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="nx">AegisApp</span><span class="p">.</span><span class="nx">ConfigureService</span><span class="p">(</span><span class="s">&#34;cognito&#34;</span><span class="p">,</span> <span class="kd">func</span><span class="p">(</span><span class="nx">ctx</span> <span class="nx">context</span><span class="p">.</span><span class="nx">Context</span><span class="p">,</span> <span class="nx">evt</span> <span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kd">interface</span><span class="p">{})</span> <span class="kd">interface</span><span class="p">{}</span> <span class="p">{</span>
-    <span class="c1">// Automatically get host. You don&#39;t need to do this - you typically would have a known domain name to use.
-</span><span class="c1"></span>    <span class="nx">host</span> <span class="o">:=</span> <span class="s">&#34;&#34;</span>
-    <span class="nx">stage</span> <span class="o">:=</span> <span class="s">&#34;prod&#34;</span>
-    <span class="k">if</span> <span class="nx">headers</span><span class="p">,</span> <span class="nx">ok</span> <span class="o">:=</span> <span class="nx">evt</span><span class="p">[</span><span class="s">&#34;headers&#34;</span><span class="p">];</span> <span class="nx">ok</span> <span class="p">{</span>
-        <span class="nx">headersMap</span> <span class="o">:=</span> <span class="nx">headers</span><span class="p">.(</span><span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kd">interface</span><span class="p">{})</span>
-        <span class="k">if</span> <span class="nx">hostValue</span><span class="p">,</span> <span class="nx">ok</span> <span class="o">:=</span> <span class="nx">headersMap</span><span class="p">[</span><span class="s">&#34;Host&#34;</span><span class="p">];</span> <span class="nx">ok</span> <span class="p">{</span>
-            <span class="nx">host</span> <span class="p">=</span> <span class="nx">hostValue</span><span class="p">.(</span><span class="kt">string</span><span class="p">)</span>
-        <span class="p">}</span>
-    <span class="p">}</span>
-    <span class="c1">// Automatically get API stage
-</span><span class="c1"></span>    <span class="k">if</span> <span class="nx">requestContext</span><span class="p">,</span> <span class="nx">ok</span> <span class="o">:=</span> <span class="nx">evt</span><span class="p">[</span><span class="s">&#34;requestContext&#34;</span><span class="p">];</span> <span class="nx">ok</span> <span class="p">{</span>
-        <span class="nx">requestContextMap</span> <span class="o">:=</span> <span class="nx">requestContext</span><span class="p">.(</span><span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kd">interface</span><span class="p">{})</span>
-        <span class="k">if</span> <span class="nx">stageValue</span><span class="p">,</span> <span class="nx">ok</span> <span class="o">:=</span> <span class="nx">requestContextMap</span><span class="p">[</span><span class="s">&#34;stage&#34;</span><span class="p">];</span> <span class="nx">ok</span> <span class="p">{</span>
-            <span class="nx">stage</span> <span class="p">=</span> <span class="nx">stageValue</span><span class="p">.(</span><span class="kt">string</span><span class="p">)</span>
-        <span class="p">}</span>
-    <span class="p">}</span>
-
-    <span class="k">return</span> <span class="o">&amp;</span><span class="nx">aegis</span><span class="p">.</span><span class="nx">CognitoAppClientConfig</span><span class="p">{</span>
-        <span class="c1">// The following three you&#39;ll need to fill in or use secrets.
-</span><span class="c1"></span>        <span class="c1">// See README for more info, but set secrets using aegis CLI and update aegis.yaml as needed.
-</span><span class="c1"></span>        <span class="nx">Region</span><span class="p">:</span>   <span class="s">&#34;us-east-1&#34;</span><span class="p">,</span>
-        <span class="nx">PoolID</span><span class="p">:</span>   <span class="nx">AegisApp</span><span class="p">.</span><span class="nx">GetVariable</span><span class="p">(</span><span class="s">&#34;PoolID&#34;</span><span class="p">),</span>
-        <span class="nx">ClientID</span><span class="p">:</span> <span class="nx">AegisApp</span><span class="p">.</span><span class="nx">GetVariable</span><span class="p">(</span><span class="s">&#34;ClientID&#34;</span><span class="p">),</span>
-        <span class="c1">// This is just automatic for the example, you would likely replace this too
-</span><span class="c1"></span>        <span class="nx">RedirectURI</span><span class="p">:</span>       <span class="s">&#34;https://&#34;</span> <span class="o">+</span> <span class="nx">host</span> <span class="o">+</span> <span class="s">&#34;/&#34;</span> <span class="o">+</span> <span class="nx">stage</span> <span class="o">+</span> <span class="s">&#34;/callback&#34;</span><span class="p">,</span>
-        <span class="nx">LogoutRedirectURI</span><span class="p">:</span> <span class="s">&#34;https://&#34;</span> <span class="o">+</span> <span class="nx">host</span> <span class="o">+</span> <span class="s">&#34;/&#34;</span> <span class="o">+</span> <span class="nx">stage</span> <span class="o">+</span> <span class="s">&#34;/&#34;</span><span class="p">,</span>
-    <span class="p">}</span>
-<span class="p">})</span></code></pre></div>
-<p>Handler dependencies contain <code>Services</code> too. These are primarily AWS services like AWS Cognito for example.
-They are a bit different than a simple field on the <code>Aegis</code> interface because they are &ldquo;services&rdquo; that can
-carry configurations which often need to be dynamic.</p>
-
-<p>However, services are really just dependencies as well. Your normal dependencies, set on the <code>Aegis</code>
-interface can not be configured dynamically. You set the dependency on the interface and that&rsquo;s it.</p>
-
-<p>Using <code>ConfigureService()</code> is the important function here. The first argument for this function is the name
-of the service you wish to configure. The second argument is a function. That function is given the context
-and the event from Lambda. However, this configuration is applied before your event handler is called.</p>
-
-<aside class="not-warning">
-Take care when configuring services since you have access to the Lambda event. You could accidentally
-alter the event in a way your handler is not expecting.
-</aside>
-
-<h2 id="filters">Filters</h2>
-
-<p>There are hooks or &ldquo;filters&rdquo; available to use here for the handler as well. The Aegis interface has
-a field called <code>Filters</code> for various filters, the ones most helpful to services is likely the
-<span class="nowrap"><code>Filters.Handler.BeforeServices</code></span> filter.</p>
-
-<h2 id="custom-services">Custom Services</h2>
-
-<p>3rd party services can also be added and configured. They are available under the <code>Custom</code> field.</p>
-
-<p>TBD - not fully implemented</p>
-
-    
 
         </div>
         <div class="dark-box">

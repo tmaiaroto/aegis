@@ -7,27 +7,31 @@
   </url>
   
   <url>
-    <loc>https://tmaiaroto.github.io/aegis/cli/1_cli/</loc>
+    <loc>https://tmaiaroto.github.io/aegis/cli/1_init/</loc>
   </url>
   
   <url>
-    <loc>https://tmaiaroto.github.io/aegis/handler-dependencies/custom/</loc>
+    <loc>https://tmaiaroto.github.io/aegis/cli/2_deploy/</loc>
   </url>
   
   <url>
-    <loc>https://tmaiaroto.github.io/aegis/handler-dependencies/log/</loc>
+    <loc>https://tmaiaroto.github.io/aegis/handler-dependencies/1_dependencies/</loc>
   </url>
   
   <url>
-    <loc>https://tmaiaroto.github.io/aegis/handler-dependencies/services/</loc>
+    <loc>https://tmaiaroto.github.io/aegis/handler-dependencies/2_log/</loc>
   </url>
   
   <url>
-    <loc>https://tmaiaroto.github.io/aegis/handler-dependencies/tracer/</loc>
+    <loc>https://tmaiaroto.github.io/aegis/handler-dependencies/3_tracer/</loc>
   </url>
   
   <url>
-    <loc>https://tmaiaroto.github.io/aegis/helpers/</loc>
+    <loc>https://tmaiaroto.github.io/aegis/handler-dependencies/4_custom/</loc>
+  </url>
+  
+  <url>
+    <loc>https://tmaiaroto.github.io/aegis/handler-dependencies/5_services/</loc>
   </url>
   
   <url>
@@ -74,6 +78,11 @@
   
   <url>
     <loc>https://tmaiaroto.github.io/aegis/handler-dependencies/</loc>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://tmaiaroto.github.io/aegis/helpers/</loc>
     <priority>0</priority>
   </url>
   

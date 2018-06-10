@@ -12,42 +12,53 @@
     
     <item>
       <title></title>
-      <link>https://tmaiaroto.github.io/aegis/handler-dependencies/custom/</link>
+      <link>https://tmaiaroto.github.io/aegis/handler-dependencies/1_dependencies/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://tmaiaroto.github.io/aegis/handler-dependencies/custom/</guid>
-      <description>Custom Handler Dependencies You can inject your own dependencies under the Custom field. This is great for 3rd party dependencies you wish to use.</description>
+      <guid>https://tmaiaroto.github.io/aegis/handler-dependencies/1_dependencies/</guid>
+      <description>Handler Dependencies Handlers need a variety of services and dependencies in order to make life easier. It&amp;rsquo;s a very big part of why one reaches for a framework. The idea of &amp;ldquo;dependency injection&amp;rdquo; is the foundation of many frameworks and Aegis isn&amp;rsquo;t much different.
+Really, routing events to handlers is the foundation of Aegis, but you can&amp;rsquo;t abstract that away without being able to pass along functionality required by each handler.</description>
     </item>
     
     <item>
       <title></title>
-      <link>https://tmaiaroto.github.io/aegis/handler-dependencies/log/</link>
+      <link>https://tmaiaroto.github.io/aegis/handler-dependencies/2_log/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://tmaiaroto.github.io/aegis/handler-dependencies/log/</guid>
+      <guid>https://tmaiaroto.github.io/aegis/handler-dependencies/2_log/</guid>
       <description>Log logger := logrus.New() // Various configuration options for logrus...  AegisApp = aegis.New(handlers) // Set your configured logger on Log AegisApp.Log = logger AegisApp.Start() Aegis&amp;rsquo; Log dependency provides an adaptable way to log using the popular Go package logrus. You&amp;rsquo;re certainly welcome to use the standard library log package as well. AWS Lambda will send all of that stdout to CloudWatch for you automatically.
 However, there may be other logging services you wish to use.</description>
     </item>
     
     <item>
       <title></title>
-      <link>https://tmaiaroto.github.io/aegis/handler-dependencies/services/</link>
+      <link>https://tmaiaroto.github.io/aegis/handler-dependencies/3_tracer/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://tmaiaroto.github.io/aegis/handler-dependencies/services/</guid>
-      <description>Services  From the Cognito example Aegis app
- AegisApp.ConfigureService(&amp;#34;cognito&amp;#34;, func(ctx context.Context, evt map[string]interface{}) interface{} { // Automatically get host. You don&amp;#39;t need to do this - you typically would have a known domain name to use.  host := &amp;#34;&amp;#34; stage := &amp;#34;prod&amp;#34; if headers, ok := evt[&amp;#34;headers&amp;#34;]; ok { headersMap := headers.(map[string]interface{}) if hostValue, ok := headersMap[&amp;#34;Host&amp;#34;]; ok { host = hostValue.(string) } } // Automatically get API stage  if requestContext, ok := evt[&amp;#34;requestContext&amp;#34;]; ok { requestContextMap := requestContext.</description>
+      <guid>https://tmaiaroto.github.io/aegis/handler-dependencies/3_tracer/</guid>
+      <description>Tracer  How to use a different TraceStrategy
+ AegisApp = aegis.New(handlers) // For example, disabling tracing AegisApp.Tracer = &amp;amp;aegis.NoTraceStrategy{} AegisApp.Start()  How Aegis Router traces internally
+ // Records data in the tracing strategy. In this case, and by default, X-Ray annotations. r.Tracer.Record(&amp;#34;annotation&amp;#34;, map[string]interface{}{ &amp;#34;RequestPath&amp;#34;: req.Path, &amp;#34;Method&amp;#34;: req.HTTPMethod, }, ) err = r.Tracer.Capture(ctx, &amp;#34;RouteHandler&amp;#34;, func(ctx1 context.Context) error { // Makes the Tracer available inside your handler.  // Capture() also applies the annotations from above in the case of XRayTraceStrategy  d.</description>
     </item>
     
     <item>
       <title></title>
-      <link>https://tmaiaroto.github.io/aegis/handler-dependencies/tracer/</link>
+      <link>https://tmaiaroto.github.io/aegis/handler-dependencies/4_custom/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://tmaiaroto.github.io/aegis/handler-dependencies/tracer/</guid>
-      <description>Tracer  How to use a different TraceStrategy
- AegisApp = aegis.New(handlers) // For example, disabling tracing AegisApp.Tracer = &amp;amp;aegis.NoTraceStrategy{} AegisApp.Start()  How Aegis Router traces internally
- // Records data in the tracing strategy. In this case, and by default, X-Ray annotations. r.Tracer.Record(&amp;#34;annotation&amp;#34;, map[string]interface{}{ &amp;#34;RequestPath&amp;#34;: req.Path, &amp;#34;Method&amp;#34;: req.HTTPMethod, }, ) err = r.Tracer.Capture(ctx, &amp;#34;RouteHandler&amp;#34;, func(ctx1 context.Context) error { // Makes the Tracer available inside your handler.  // Capture() also applies the annotations from above in the case of XRayTraceStrategy  d.</description>
+      <guid>https://tmaiaroto.github.io/aegis/handler-dependencies/4_custom/</guid>
+      <description>Custom You can inject your own handler dependencies under the Custom field. This is great for 3rd party dependencies you wish to use as well as anything you want to make available to each handler.
+These dependencies contain no &amp;ldquo;configuration&amp;rdquo; closure (unlike Services) and if your function is simple enough, you may not even need to pass them through Custom. Keep in mind the scoping in Go. If you&amp;rsquo;ve defined something in your package (&amp;ldquo;main&amp;rdquo; perhaps), it&amp;rsquo;s available to all of the functions within that package&amp;hellip;This often will include your handlers.</description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>https://tmaiaroto.github.io/aegis/handler-dependencies/5_services/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://tmaiaroto.github.io/aegis/handler-dependencies/5_services/</guid>
+      <description>Services  From the Cognito example Aegis app
+ AegisApp.ConfigureService(&amp;#34;cognito&amp;#34;, func(ctx context.Context, evt map[string]interface{}) interface{} { // Automatically get host. You don&amp;#39;t need to do this - you typically would have a known domain name to use.  host := &amp;#34;&amp;#34; stage := &amp;#34;prod&amp;#34; if headers, ok := evt[&amp;#34;headers&amp;#34;]; ok { headersMap := headers.(map[string]interface{}) if hostValue, ok := headersMap[&amp;#34;Host&amp;#34;]; ok { host = hostValue.(string) } } // Automatically get API stage  if requestContext, ok := evt[&amp;#34;requestContext&amp;#34;]; ok { requestContextMap := requestContext.</description>
     </item>
     
   </channel>

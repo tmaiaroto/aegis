@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes" ?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>DocuAPI Example Site</title>
+    <title>Helpers on DocuAPI Example Site</title>
     <link>https://tmaiaroto.github.io/aegis/helpers/</link>
-    <description>Recent content on DocuAPI Example Site</description>
+    <description>Recent content in Helpers on DocuAPI Example Site</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
     

@@ -1,0 +1,172 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta content="IE=edge,chrome=1" http-equiv="X-UA-Compatible">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title></title>
+    <link href='/aegis/slate/stylesheets/monokai.css' rel="stylesheet" media="screen" />
+<link href='/aegis/slate/stylesheets/screen.css' rel="stylesheet" media="screen" />
+<link href='/aegis/slate/stylesheets/print.css' rel="stylesheet" media="print" />
+
+    <link href='/aegis/css/styles.css' rel="stylesheet"/>
+    <link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.0.13/css/solid.css" integrity="sha384-drdlAcijFWubhOfj9OS/gy2Gs34hVhVT90FgJLzrldrLI+7E7lwBxmanEEhKTRTS" crossorigin="anonymous">
+<link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.0.13/css/fontawesome.css" integrity="sha384-LDuQaX4rOgqi4rbWCyWj3XVBlgDzuxGy/E6vWN6U7c25/eSJIwyKhy9WgZCHQWXz" crossorigin="anonymous">
+    
+<script src='/aegis/slate/javascripts/all.js'></script>
+
+    
+</head>
+<body class="index" data-languages="">
+    <div class="main-nav-wrapper">
+        <ul class="main-menu">
+            <li class="">
+    <a href="/aegis/">Getting Started</a>
+</li>
+
+
+    
+    <li class="">
+        <a href="/aegis/routers/" title="Aegis Routers">Routers</a>
+    </li>
+    
+
+    
+    <li class="active">
+        <a href="/aegis/handler-dependencies/" title="Aegis Dependencies">Dependencies</a>
+    </li>
+    
+
+    
+    <li class="">
+        <a href="/aegis/helpers/" title="Aegis Helpers">Helpers</a>
+    </li>
+    
+
+    
+    <li class="">
+        <a href="/aegis/cli/" title="Aegis Command Line Interface">CLI</a>
+    </li>
+    
+
+        </ul>
+    </div>
+    <a href="#" id="nav-button">
+        <span>
+        NAV
+        <img src='/aegis/slate/images/navbar.png'/>
+      </span>
+    </a>
+    <div class="tocify-wrapper">
+        
+         
+ <div id="logo-type">
+    <h1 class="toc-ignore">Aegis</h1>
+    <h2 class="toc-ignore">An AWS Serverless Framework for Go</h2>
+</div>
+         
+        <aside class="main-menu-sidebar-wrapper">
+    <ul class="main-menu-sidebar">
+        <li class="">
+    <a href="/aegis/">Getting Started</a>
+</li>
+
+
+    
+    <li class="">
+        <a href="/aegis/routers/" title="Aegis Routers">Routers</a>
+    </li>
+    
+
+    
+    <li class="active">
+        <a href="/aegis/handler-dependencies/" title="Aegis Dependencies">Dependencies</a>
+    </li>
+    
+
+    
+    <li class="">
+        <a href="/aegis/helpers/" title="Aegis Helpers">Helpers</a>
+    </li>
+    
+
+    
+    <li class="">
+        <a href="/aegis/cli/" title="Aegis Command Line Interface">CLI</a>
+    </li>
+    
+
+    </ul>
+</aside>
+        
+        <div class="search">
+            <input type="text" class="search" id="input-search" placeholder='Search This Section'>
+        </div>
+        <ul class="search-results"></ul>
+        
+        <div id="toc">
+        </div>
+         
+        
+        <ul class="toc-footer">
+            
+            <li>Hugo Theme by <a href="https://github.com/bep" target="_blank">bep</a></li>
+            
+        </ul>
+        
+        
+    </div>
+    <div class="page-wrapper">
+        <div class="dark-box"></div>
+        <div class="content">
+            
+    
+
+<h1 id="log">Log</h1>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="nx">logger</span> <span class="o">:=</span> <span class="nx">logrus</span><span class="p">.</span><span class="nx">New</span><span class="p">()</span>
+<span class="c1">// Various configuration options for logrus...
+</span><span class="c1"></span>
+<span class="nx">AegisApp</span> <span class="p">=</span> <span class="nx">aegis</span><span class="p">.</span><span class="nx">New</span><span class="p">(</span><span class="nx">handlers</span><span class="p">)</span>
+<span class="c1">// Set your configured logger on Log
+</span><span class="c1"></span><span class="nx">AegisApp</span><span class="p">.</span><span class="nx">Log</span> <span class="p">=</span> <span class="nx">logger</span>
+<span class="nx">AegisApp</span><span class="p">.</span><span class="nx">Start</span><span class="p">()</span></code></pre></div>
+<p>Aegis&rsquo; Log dependency provides an adaptable way to log using the popular Go package
+<a href="https://github.com/sirupsen/logrus" target="_blank">logrus</a>.
+You&rsquo;re certainly welcome to use the standard library <code>log</code> package as well. AWS Lambda will send all
+of that stdout to CloudWatch for you automatically.</p>
+
+<p>However, there may be other logging services you wish to use. Rather than re-invent the wheel, Aegis
+used logrus instead because of its adaptability.</p>
+
+<p>Set the <code>Log</code> field on the <code>Aegis</code> interface like any other core dependency to change it. You can
+also use the <span class="nowrap"><code>ConfigureLogger(*logrus.Logger)</code></span> helper function.</p>
+
+<p>Do note that everything internally will use <code>log</code>. So anything that Aegis logs out will be found in
+CloudWatch. It&rsquo;s not that Aegis didn&rsquo;t want to dogfood its own logging dependency, it&rsquo;s that Aegis
+did not want its logging to get in the way of your logging.</p>
+
+<p>For example, if your handler (just one of your Lambdas) wanted to use <code>Log</code> to send information
+to your team Slack channel, you wouldn&rsquo;t also want internal Aegis logging to be sent as well. Especially
+because you couldn&rsquo;t turn them off. There is currently no sort of verbosity setting in Aegis. If you
+were to, say, disable CloudWatch logging for your Lambda altogether then the standard <code>log</code> calls
+would simply go no where.</p>
+
+<p>CloudWatch of course isn&rsquo;t the prettiest way to view your logs. While logrus has fancy coloring,
+CloudWatch is black and white text through your web browser in the AWS Console. So you might end up
+configuring <code>Log</code> in a different way to work with logging in a prettier way.</p>
+
+<p>Another thing worth noting here is that logrus&rsquo; 3rd party formatters can be rather powerful. There are
+formatters for things like fluentd, logstash, and more. So you might just find yourself using it for
+more than simply basic logging. Also keep in mind that AWS has a hosted version of Elasticsearch with
+Kibana&hellip;See where this is going?? You can implement a rather robust searchable logging solution all
+within AWS.</p>
+
+
+        </div>
+        <div class="dark-box">
+            
+        </div>
+    </div>
+    
+</body>
+</html>

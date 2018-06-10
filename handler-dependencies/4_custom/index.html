@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta content="IE=edge,chrome=1" http-equiv="X-UA-Compatible">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-    <title>Clis</title>
+    <title></title>
     <link href='/aegis/slate/stylesheets/monokai.css' rel="stylesheet" media="screen" />
 <link href='/aegis/slate/stylesheets/screen.css' rel="stylesheet" media="screen" />
 <link href='/aegis/slate/stylesheets/print.css' rel="stylesheet" media="print" />
@@ -32,7 +32,7 @@
     
 
     
-    <li class="">
+    <li class="active">
         <a href="/aegis/handler-dependencies/" title="Aegis Dependencies">Dependencies</a>
     </li>
     
@@ -44,7 +44,7 @@
     
 
     
-    <li class="active">
+    <li class="">
         <a href="/aegis/cli/" title="Aegis Command Line Interface">CLI</a>
     </li>
     
@@ -79,7 +79,7 @@
     
 
     
-    <li class="">
+    <li class="active">
         <a href="/aegis/handler-dependencies/" title="Aegis Dependencies">Dependencies</a>
     </li>
     
@@ -91,7 +91,7 @@
     
 
     
-    <li class="active">
+    <li class="">
         <a href="/aegis/cli/" title="Aegis Command Line Interface">CLI</a>
     </li>
     
@@ -121,34 +121,24 @@
         <div class="content">
             
     
-        
 
-<h1 id="init">Init</h1>
+<h1 id="custom">Custom</h1>
 
-<p>The first CLI command you may use, especially when getting started, is <code>aegis init</code>. This will
-create a <code>main.go</code> and <code>aegis.yaml</code> file in the current directory.</p>
+<p>You can inject your own handler dependencies under the <code>Custom</code> field. This is great for 3rd party dependencies you
+wish to use as well as anything you want to make available to each handler.</p>
 
-<p><em>Note that if you already have either of these files present, the command will not replace or
-touch your existing files.</em></p>
+<p>These dependencies contain no &ldquo;configuration&rdquo; closure (unlike Services) and if your function is simple enough, you
+may not even need to pass them through <code>Custom</code>. Keep in mind the scoping in Go. If you&rsquo;ve defined something in
+your package (&ldquo;main&rdquo; perhaps), it&rsquo;s available to all of the functions within that package&hellip;This often will include
+your handlers.</p>
 
-<p>The contents of <code>main.go</code> include a short boilerplate example Aegis application with API Gateway
-event handling via the <code>Router</code>.</p>
+<p>So before you reach to shove everything through to your handlers, think about it a bit. Lambda functions should
+be easy to follow and your code should read clean. Remember that <code>Custom</code> here is a <span class="nowrap"><code>map[string]interface{}</code></span>
+so you will likely encounter the need to check for nil and use type assertions.</p>
 
-<p>The <code>aegis.yaml</code> then includes configuration for creating an API Gateway upon deploy.</p>
+<p>Aegis isn&rsquo;t trying to limit you and sometimes you may have no other option, but no one says you have to pass
+everything through to each handler in this way.</p>
 
-<p>This is your basic &ldquo;hello world&rdquo; type example and it&rsquo;s designed to get you started quickly.
-You need not use this if you don&rsquo;t want, but often times it&rsquo;s saves a few steps. You&rsquo;ll likely
-run the command then go into the <code>aegis.yaml</code> file to change some names around.</p>
-
-    
-        
-
-<h1 id="deploy">Deploy</h1>
-
-<p>The <code>aegis deploy</code> command will likely be the next command you&rsquo;re after. Running it anywhere there is buildable
-Go code as well as an <code>aegis.yaml</code> will result in a deployment to AWS.</p>
-
-    
 
         </div>
         <div class="dark-box">
