@@ -25,7 +25,8 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://tmaiaroto.github.io/aegis/handler-dependencies/log/</guid>
-      <description>Log Aegis&amp;rsquo; Log dependency provides an adaptable way to log using the popular Go package lorgus.</description>
+      <description>Log logger := logrus.New() // Various configuration options for logrus...  AegisApp = aegis.New(handlers) // Set your configured logger on Log AegisApp.Log = logger AegisApp.Start() Aegis&amp;rsquo; Log dependency provides an adaptable way to log using the popular Go package logrus. You&amp;rsquo;re certainly welcome to use the standard library log package as well. AWS Lambda will send all of that stdout to CloudWatch for you automatically.
+However, there may be other logging services you wish to use.</description>
     </item>
     
     <item>
@@ -34,7 +35,8 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://tmaiaroto.github.io/aegis/handler-dependencies/services/</guid>
-      <description>Services Handler dependencies contain Services too. These are AWS services like AWS Cognito for example. Any 3rd party service is on you to configure and add to the Custom dependencies to use.</description>
+      <description>Services  From the Cognito example Aegis app
+ AegisApp.ConfigureService(&amp;#34;cognito&amp;#34;, func(ctx context.Context, evt map[string]interface{}) interface{} { // Automatically get host. You don&amp;#39;t need to do this - you typically would have a known domain name to use.  host := &amp;#34;&amp;#34; stage := &amp;#34;prod&amp;#34; if headers, ok := evt[&amp;#34;headers&amp;#34;]; ok { headersMap := headers.(map[string]interface{}) if hostValue, ok := headersMap[&amp;#34;Host&amp;#34;]; ok { host = hostValue.(string) } } // Automatically get API stage  if requestContext, ok := evt[&amp;#34;requestContext&amp;#34;]; ok { requestContextMap := requestContext.</description>
     </item>
     
     <item>

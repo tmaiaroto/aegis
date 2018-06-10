@@ -124,8 +124,56 @@
 
 <h1 id="services">Services</h1>
 
-<p>Handler dependencies contain <code>Services</code> too. These are AWS services like AWS Cognito for example. Any 3rd party service
-is on you to configure and add to the <code>Custom</code> dependencies to use.</p>
+<blockquote>
+<p>From the Cognito example Aegis app</p>
+</blockquote>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="nx">AegisApp</span><span class="p">.</span><span class="nx">ConfigureService</span><span class="p">(</span><span class="s">&#34;cognito&#34;</span><span class="p">,</span> <span class="kd">func</span><span class="p">(</span><span class="nx">ctx</span> <span class="nx">context</span><span class="p">.</span><span class="nx">Context</span><span class="p">,</span> <span class="nx">evt</span> <span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kd">interface</span><span class="p">{})</span> <span class="kd">interface</span><span class="p">{}</span> <span class="p">{</span>
+    <span class="c1">// Automatically get host. You don&#39;t need to do this - you typically would have a known domain name to use.
+</span><span class="c1"></span>    <span class="nx">host</span> <span class="o">:=</span> <span class="s">&#34;&#34;</span>
+    <span class="nx">stage</span> <span class="o">:=</span> <span class="s">&#34;prod&#34;</span>
+    <span class="k">if</span> <span class="nx">headers</span><span class="p">,</span> <span class="nx">ok</span> <span class="o">:=</span> <span class="nx">evt</span><span class="p">[</span><span class="s">&#34;headers&#34;</span><span class="p">];</span> <span class="nx">ok</span> <span class="p">{</span>
+        <span class="nx">headersMap</span> <span class="o">:=</span> <span class="nx">headers</span><span class="p">.(</span><span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kd">interface</span><span class="p">{})</span>
+        <span class="k">if</span> <span class="nx">hostValue</span><span class="p">,</span> <span class="nx">ok</span> <span class="o">:=</span> <span class="nx">headersMap</span><span class="p">[</span><span class="s">&#34;Host&#34;</span><span class="p">];</span> <span class="nx">ok</span> <span class="p">{</span>
+            <span class="nx">host</span> <span class="p">=</span> <span class="nx">hostValue</span><span class="p">.(</span><span class="kt">string</span><span class="p">)</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="c1">// Automatically get API stage
+</span><span class="c1"></span>    <span class="k">if</span> <span class="nx">requestContext</span><span class="p">,</span> <span class="nx">ok</span> <span class="o">:=</span> <span class="nx">evt</span><span class="p">[</span><span class="s">&#34;requestContext&#34;</span><span class="p">];</span> <span class="nx">ok</span> <span class="p">{</span>
+        <span class="nx">requestContextMap</span> <span class="o">:=</span> <span class="nx">requestContext</span><span class="p">.(</span><span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kd">interface</span><span class="p">{})</span>
+        <span class="k">if</span> <span class="nx">stageValue</span><span class="p">,</span> <span class="nx">ok</span> <span class="o">:=</span> <span class="nx">requestContextMap</span><span class="p">[</span><span class="s">&#34;stage&#34;</span><span class="p">];</span> <span class="nx">ok</span> <span class="p">{</span>
+            <span class="nx">stage</span> <span class="p">=</span> <span class="nx">stageValue</span><span class="p">.(</span><span class="kt">string</span><span class="p">)</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="k">return</span> <span class="o">&amp;</span><span class="nx">aegis</span><span class="p">.</span><span class="nx">CognitoAppClientConfig</span><span class="p">{</span>
+        <span class="c1">// The following three you&#39;ll need to fill in or use secrets.
+</span><span class="c1"></span>        <span class="c1">// See README for more info, but set secrets using aegis CLI and update aegis.yaml as needed.
+</span><span class="c1"></span>        <span class="nx">Region</span><span class="p">:</span>   <span class="s">&#34;us-east-1&#34;</span><span class="p">,</span>
+        <span class="nx">PoolID</span><span class="p">:</span>   <span class="nx">AegisApp</span><span class="p">.</span><span class="nx">GetVariable</span><span class="p">(</span><span class="s">&#34;PoolID&#34;</span><span class="p">),</span>
+        <span class="nx">ClientID</span><span class="p">:</span> <span class="nx">AegisApp</span><span class="p">.</span><span class="nx">GetVariable</span><span class="p">(</span><span class="s">&#34;ClientID&#34;</span><span class="p">),</span>
+        <span class="c1">// This is just automatic for the example, you would likely replace this too
+</span><span class="c1"></span>        <span class="nx">RedirectURI</span><span class="p">:</span>       <span class="s">&#34;https://&#34;</span> <span class="o">+</span> <span class="nx">host</span> <span class="o">+</span> <span class="s">&#34;/&#34;</span> <span class="o">+</span> <span class="nx">stage</span> <span class="o">+</span> <span class="s">&#34;/callback&#34;</span><span class="p">,</span>
+        <span class="nx">LogoutRedirectURI</span><span class="p">:</span> <span class="s">&#34;https://&#34;</span> <span class="o">+</span> <span class="nx">host</span> <span class="o">+</span> <span class="s">&#34;/&#34;</span> <span class="o">+</span> <span class="nx">stage</span> <span class="o">+</span> <span class="s">&#34;/&#34;</span><span class="p">,</span>
+    <span class="p">}</span>
+<span class="p">})</span></code></pre></div>
+<p>Handler dependencies contain <code>Services</code> too. These are AWS services like AWS Cognito for example.
+They are a bit different than simply setting a field on the <code>Aegis</code> interface because they are
+services that can carry configurations.</p>
+
+<p>Using <code>ConfigureService()</code> is the difference here. The first argument for this function is the name of
+the service you wish to configure. This configuration is applied before your event handler is called.</p>
+
+<h2 id="filters">Filters</h2>
+
+<p>There are hooks or &ldquo;filters&rdquo; available to use here for the handler as well. The Aegis interface has
+a field called <code>Filters</code> for various filters, the ones most helpful to services is likely the
+<span class="nowrap"><code>Filters.Handler.BeforeServices</code></span> filter.</p>
+
+<h2 id="custom-services">Custom Services</h2>
+
+<p>3rd party services can also be added and configured. They are available under the <code>Custom</code> field.</p>
+
+<p>TBD - not fully implemented</p>
 
 
         </div>
