@@ -28,6 +28,18 @@ a lightweight set of helpers or framework to help build things faster. It's to b
 and flexible. 1.x will focus on adding more event router/handlers and helper functions.
 Not every possible service will likely ever covered, the focus will be on the common.
 
+## 1.14.0
+
+- Adjustments to `TraceStrategy` interface, making it an actual interface and making new
+  `XRayTraceStrategy` struct to use by default and a new `NoTraceStrategy` to optionally
+  use (and it's used for internal unit tests)
+- Overhauled `TraceStrategy` interface methods as well, making it more generic
+- Fix S3 Object router to also consider S3 object event name
+- Fixed the configuration of S3 Object router's fall through handler
+- Fixed S3 Object router's fall through handler match, using * with glob was uhhh, oops =)
+  Changed the fall through key to _ across the board for consistency. It was a problem for
+  anything using glob matching, but not an issue elsewhere.
+
 ## 1.12.1
 
 - Fixed (changed) `Tasker` handlers to use `map[string]interface{}` instead of pointer

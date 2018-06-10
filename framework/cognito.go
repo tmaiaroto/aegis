@@ -1,4 +1,4 @@
-// Copyright © 2016 Tom Maiaroto <tom@shift8creative.com>
+// Copyright © 2016 Tom Maiaroto <tom@SerifAndSemaphore.io>
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -54,14 +54,15 @@ func (r *CognitoRouter) LambdaHandler(ctx context.Context, d *HandlerDependencie
 	if r.PoolID == "" || r.PoolID == userPoolID {
 		if handler, ok := r.handlers[triggerSource]; ok {
 			handled = true
-			r.Tracer.Annotations = map[string]interface{}{
-				"CognitoUserPoolID":    userPoolID,
-				"CognitoTriggerSource": triggerSource,
-				"UserName":             userName,
-			}
+			r.Tracer.Record("annotation",
+				map[string]interface{}{
+					"CognitoUserPoolID":    userPoolID,
+					"CognitoTriggerSource": triggerSource,
+					"UserName":             userName,
+				},
+			)
+
 			err = r.Tracer.Capture(ctx, "CognitoHandler", func(ctx1 context.Context) error {
-				r.Tracer.AddAnnotations(ctx1)
-				r.Tracer.AddMetadata(ctx1)
 				d.Tracer = &r.Tracer
 				response, err = handler(ctx1, d, evt)
 				return err
@@ -75,17 +76,18 @@ func (r *CognitoRouter) LambdaHandler(ctx context.Context, d *HandlerDependencie
 	if !handled {
 		log.Println("using default fall through handler")
 		// It's possible that the CognitoRouter wasn't created with NewCognitoRouter, so check for this still.
-		if handler, ok := r.handlers["*"]; ok {
+		if handler, ok := r.handlers["_"]; ok {
 			// Capture the handler (in XRay by default) automatically
-			r.Tracer.Annotations = map[string]interface{}{
-				"CognitoUserPoolID":    userPoolID,
-				"CognitoTriggerSource": triggerSource,
-				"UserName":             userName,
-				"FallthroughHandler":   true,
-			}
+			r.Tracer.Record("annotation",
+				map[string]interface{}{
+					"CognitoUserPoolID":    userPoolID,
+					"CognitoTriggerSource": triggerSource,
+					"UserName":             userName,
+					"FallthroughHandler":   true,
+				},
+			)
+
 			err = r.Tracer.Capture(ctx, "CognitoHandler", func(ctx1 context.Context) error {
-				r.Tracer.AddAnnotations(ctx1)
-				r.Tracer.AddMetadata(ctx1)
 				d.Tracer = &r.Tracer
 				response, err = handler(ctx, d, evt)
 				return err
@@ -112,7 +114,7 @@ func NewCognitoRouter(rootHandler ...CognitoHandler) *CognitoRouter {
 	}
 	return &CognitoRouter{
 		handlers: map[string]CognitoHandler{
-			"*": handler,
+			"_": handler,
 		},
 	}
 }

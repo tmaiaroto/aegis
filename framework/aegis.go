@@ -1,4 +1,4 @@
-// Copyright © 2016 Tom Maiaroto <tom@shift8creative.com>
+// Copyright © 2016 Tom Maiaroto <tom@SerifAndSemaphore.io>
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -191,16 +191,16 @@ func (a *Aegis) aegisHandler(ctx context.Context, evt map[string]interface{}) (i
 		cognitoCfg.TraceContext = a.TraceContext
 		cognitoCfg.AWSClientTracer = a.AWSClientTracer
 
-		a.Tracer.Annotations = map[string]interface{}{
-			"CognitoRegion":         cognitoCfg.Region,
-			"CognitoUserPoolID":     cognitoCfg.PoolID,
-			"CognitoAppClientID":    cognitoCfg.ClientID,
-			"CognitoAppRedirectURI": cognitoCfg.RedirectURI,
-		}
-		err := a.Tracer.Capture(ctx, "NewCognitoAppClient", func(ctx1 context.Context) error {
-			a.Tracer.AddAnnotations(ctx1)
-			a.Tracer.AddMetadata(ctx1)
+		a.Tracer.Record("annotation",
+			map[string]interface{}{
+				"CognitoRegion":         cognitoCfg.Region,
+				"CognitoUserPoolID":     cognitoCfg.PoolID,
+				"CognitoAppClientID":    cognitoCfg.ClientID,
+				"CognitoAppRedirectURI": cognitoCfg.RedirectURI,
+			},
+		)
 
+		err := a.Tracer.Capture(ctx, "NewCognitoAppClient", func(ctx1 context.Context) error {
 			// Configure Cognito App Client and set on Aegis struct
 			svc, err := NewCognitoAppClient(cognitoCfg)
 			a.Services.Cognito = svc

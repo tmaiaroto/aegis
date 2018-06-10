@@ -1,4 +1,4 @@
-// Copyright © 2016 Tom Maiaroto <tom@shift8creative.com>
+// Copyright © 2016 Tom Maiaroto <tom@SerifAndSemaphore.io>
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -51,15 +51,18 @@ func (t *Tasker) LambdaHandler(ctx context.Context, d *HandlerDependencies, evt 
 		if handler, ok := t.handlers[taskName]; ok {
 			handled = true
 			// Trace (defeault is to use XRay)
-			t.Tracer.Annotations = map[string]interface{}{
-				"TaskName": taskName,
-			}
-			t.Tracer.Metadata = map[string]interface{}{
-				"TaskEvent": evt,
-			}
+			t.Tracer.Record("annotation",
+				map[string]interface{}{
+					"TaskName": taskName,
+				},
+			)
+			t.Tracer.Record("metadata",
+				map[string]interface{}{
+					"TaskEvent": evt,
+				},
+			)
+
 			err = t.Tracer.Capture(ctx, "TaskHandler", func(ctx1 context.Context) error {
-				t.Tracer.AddAnnotations(ctx1)
-				t.Tracer.AddMetadata(ctx1)
 				d.Tracer = &t.Tracer
 				return handler(ctx1, d, evt)
 			})
@@ -69,18 +72,21 @@ func (t *Tasker) LambdaHandler(ctx context.Context, d *HandlerDependencies, evt 
 		// This is optional.
 		if !handled {
 			// It's possible that the Tasker wasn't created with NewTasker, so check for this still.
-			if handler, ok := t.handlers["*"]; ok {
+			if handler, ok := t.handlers["_"]; ok {
 				// Trace (defeault is to use XRay)
-				t.Tracer.Annotations = map[string]interface{}{
-					"TaskName":           taskName,
-					"FallthroughHandler": true,
-				}
-				t.Tracer.Metadata = map[string]interface{}{
-					"TaskEvent": evt,
-				}
+				t.Tracer.Record("annotation",
+					map[string]interface{}{
+						"TaskName":           taskName,
+						"FallthroughHandler": true,
+					},
+				)
+				t.Tracer.Record("metadata",
+					map[string]interface{}{
+						"TaskEvent": evt,
+					},
+				)
+
 				err = t.Tracer.Capture(ctx, "TaskHandler", func(ctx1 context.Context) error {
-					t.Tracer.AddAnnotations(ctx1)
-					t.Tracer.AddMetadata(ctx1)
 					d.Tracer = &t.Tracer
 					return handler(ctx, d, evt)
 				})
@@ -106,7 +112,7 @@ func NewTasker(rootHandler ...TaskHandler) *Tasker {
 	}
 	return &Tasker{
 		handlers: map[string]TaskHandler{
-			"*": handler,
+			"_": handler,
 		},
 	}
 }

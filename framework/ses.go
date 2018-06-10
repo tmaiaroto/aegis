@@ -1,4 +1,4 @@
-// Copyright © 2016 Tom Maiaroto <tom@shift8creative.com>
+// Copyright © 2016 Tom Maiaroto <tom@SerifAndSemaphore.io>
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -83,14 +83,14 @@ func (r *SESRouter) LambdaHandler(ctx context.Context, d *HandlerDependencies, e
 					if recipientMatch {
 						handled = true
 						// Trace (default is to use XRay)
-						// Annotations can be searched in XRay.
-						r.Tracer.Annotations = map[string]interface{}{
-							"Recipients":     record.SES.Receipt.Recipients,
-							"InvocationType": record.SES.Receipt.Action.InvocationType,
-						}
+						r.Tracer.Record("annotation",
+							map[string]interface{}{
+								"Recipients":     record.SES.Receipt.Recipients,
+								"InvocationType": record.SES.Receipt.Action.InvocationType,
+							},
+						)
+
 						err = r.Tracer.Capture(ctx, "SESHandler", func(ctx1 context.Context) error {
-							r.Tracer.AddAnnotations(ctx1)
-							r.Tracer.AddMetadata(ctx1)
 							d.Tracer = &r.Tracer
 							return handler(ctx1, d, &evt)
 						})
@@ -107,16 +107,17 @@ func (r *SESRouter) LambdaHandler(ctx context.Context, d *HandlerDependencies, e
 				if !handled {
 					log.Println("using default fall through handler")
 					// It's possible that the SESRouter wasn't created with NewSESRouter, so check for this still.
-					if handler, ok := r.handlers["*"]; ok {
+					if handler, ok := r.handlers["_"]; ok {
 						// Capture the handler (in XRay by default) automatically
-						r.Tracer.Annotations = map[string]interface{}{
-							"Recipients":         record.SES.Receipt.Recipients,
-							"InvocationType":     record.SES.Receipt.Action.InvocationType,
-							"FallthroughHandler": true,
-						}
+						r.Tracer.Record("annotation",
+							map[string]interface{}{
+								"Recipients":         record.SES.Receipt.Recipients,
+								"InvocationType":     record.SES.Receipt.Action.InvocationType,
+								"FallthroughHandler": true,
+							},
+						)
+
 						err = r.Tracer.Capture(ctx, "SESHandler", func(ctx1 context.Context) error {
-							r.Tracer.AddAnnotations(ctx1)
-							r.Tracer.AddMetadata(ctx1)
 							d.Tracer = &r.Tracer
 							return handler(ctx1, d, &evt)
 						})
@@ -146,7 +147,7 @@ func NewSESRouter(rootHandler ...SESHandler) *SESRouter {
 	}
 	return &SESRouter{
 		handlers: map[string]SESHandler{
-			"*": handler,
+			"_": handler,
 		},
 	}
 }

@@ -1,4 +1,4 @@
-// Copyright © 2016 Tom Maiaroto <tom@shift8creative.com>
+// Copyright © 2016 Tom Maiaroto <tom@SerifAndSemaphore.io>
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@ package cmd
 
 import (
 	"fmt"
+
 	"github.com/spf13/cobra"
 	"github.com/tmaiaroto/aegis/version"
 )

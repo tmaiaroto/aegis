@@ -1,4 +1,4 @@
-// Copyright © 2016 Tom Maiaroto <tom@shift8creative.com>
+// Copyright © 2016 Tom Maiaroto <tom@SerifAndSemaphore.io>
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -58,12 +58,18 @@ func (r *RPCRouter) LambdaHandler(ctx context.Context, d *HandlerDependencies, e
 			// Trace (default is to use XRay)
 			// Annotations can be searched in XRay.
 			// For example: annotation.RPCName = "myProcedure"
-			r.Tracer.Annotations = map[string]interface{}{
-				"RPCName": procedureName,
-			}
+			// r.Tracer.Annotations = map[string]interface{}{
+			// 	"RPCName": procedureName,
+			// }
+			r.Tracer.Record("annotation",
+				map[string]interface{}{
+					"RPCName": procedureName,
+				},
+			)
+
 			err = r.Tracer.Capture(ctx, "RPCHandler", func(ctx1 context.Context) error {
-				r.Tracer.AddAnnotations(ctx1)
-				r.Tracer.AddMetadata(ctx1)
+				// r.Tracer.AddAnnotations(ctx1)
+				// r.Tracer.AddMetadata(ctx1)
 				d.Tracer = &r.Tracer
 				response, err = handler(ctx1, d, evt)
 				return err
@@ -74,15 +80,22 @@ func (r *RPCRouter) LambdaHandler(ctx context.Context, d *HandlerDependencies, e
 		// This is optional.
 		if !handled {
 			// It's possible that the RPCRouter wasn't created with NewRPCRouter, so check for this still.
-			if handler, ok := r.handlers["*"]; ok {
+			if handler, ok := r.handlers["_"]; ok {
 				// Capture the handler (in XRay by default) automatically
-				r.Tracer.Annotations = map[string]interface{}{
-					"RPCName":            procedureName,
-					"FallthroughHandler": true,
-				}
+				// r.Tracer.Annotations = map[string]interface{}{
+				// 	"RPCName":            procedureName,
+				// 	"FallthroughHandler": true,
+				// }
+				r.Tracer.Record("annotation",
+					map[string]interface{}{
+						"RPCName":            procedureName,
+						"FallthroughHandler": true,
+					},
+				)
+
 				err = r.Tracer.Capture(ctx, "RPCHandler", func(ctx1 context.Context) error {
-					r.Tracer.AddAnnotations(ctx1)
-					r.Tracer.AddMetadata(ctx1)
+					// r.Tracer.AddAnnotations(ctx1)
+					// r.Tracer.AddMetadata(ctx1)
 					d.Tracer = &r.Tracer
 					response, err = handler(ctx1, d, evt)
 					return err
@@ -110,7 +123,7 @@ func NewRPCRouter(rootHandler ...RPCHandler) *RPCRouter {
 	}
 	return &RPCRouter{
 		handlers: map[string]RPCHandler{
-			"*": handler,
+			"_": handler,
 		},
 	}
 }

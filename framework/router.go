@@ -1,4 +1,4 @@
-// Copyright © 2016 Tom Maiaroto <tom@shift8creative.com>
+// Copyright © 2016 Tom Maiaroto <tom@SerifAndSemaphore.io>
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -217,15 +217,15 @@ func (r *Router) LambdaHandler(ctx context.Context, d *HandlerDependencies, req 
 			// But since it failed, it will not proceed any farther with the next middleware or route handler.
 			return res, nil
 		}
-		// Trac/capture the handler (in XRay by default) automatically
-		r.Tracer.Annotations = map[string]interface{}{
-			"RequestPath": req.Path,
-			"Method":      req.HTTPMethod,
-		}
-		err = r.Tracer.Capture(ctx, "RouteHandler", func(ctx1 context.Context) error {
-			r.Tracer.AddAnnotations(ctx1)
-			r.Tracer.AddMetadata(ctx1)
+		// Trace/capture the handler (in XRay by default) automatically
+		r.Tracer.Record("annotation",
+			map[string]interface{}{
+				"RequestPath": req.Path,
+				"Method":      req.HTTPMethod,
+			},
+		)
 
+		err = r.Tracer.Capture(ctx, "RouteHandler", func(ctx1 context.Context) error {
 			// Set the injected tracer to this router Tracer (was Aegis interface's tracer).
 			// This is important. It allows annotations to be added by handlers to be traced automatically.
 			// This means the end user does not need to set up their own tracer. They can hook into the current trace.
