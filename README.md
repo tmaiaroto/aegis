@@ -2,6 +2,8 @@
 
 [![License Apache 2](https://img.shields.io/badge/license-Apache%202-blue.svg)](https://github.com/tmaiaroto/aegis/blob/master/LICENSE) [![godoc aegis](https://img.shields.io/badge/godoc-reference-blue.svg)](http://godoc.org/github.com/tmaiaroto/aegis) [![Build Status](https://travis-ci.org/tmaiaroto/aegis.svg?branch=master)](https://travis-ci.org/tmaiaroto/aegis) [![Go Report Card](https://goreportcard.com/badge/github.com/tmaiaroto/aegis)](https://goreportcard.com/report/github.com/tmaiaroto/aegis)
 
+**[Aegis Documentation](https://tmaiaroto.github.io/aegis/)**
+
 Aegis is both a simple deploy tool and framework. It's primary goal is to help you write
 microservices in the AWS cloud quickly and easily. They are mutually exclusive tools.
 
@@ -49,45 +51,6 @@ So feel free to architect your microservices how you like.
 There are several types of routers. You can handle incoming HTTP requests via API Gateway using
 various HTTP methods and paths. You can handle incoming S3 events. You can handle scheduled Lambda
 invocations using CloudWatch rules. You can even handle invocations from other Lambdas ("RPCs").
-
-#### Logging
-
-Go's normal logging will work and end up in CloudWatch. Additionally, logrus is available under the `Aegis.Log`.
-You'll need to set up a new Aegis interface with `framework.New()`. For example:
-
-```
-import (
-    aegis "github.com/tmaiaroto/aegis"
-)
-
-func main() {
-    app := aegis.New(&aegis.Handlers{})
-    app.Log.Println("log stuff")
-    app.Log.Error(errors.New("bad stuff"))
-}
-```
-
-Also note that `Log` is injected into each handler's dependencies. So you can pick it up from the second
-argument, right after context.
-
-Logrus was chosen here. So you can configure the interface with any instance of Logrus and you can use any
-plugin for Logrus. Send logs to your Slack for fun. Go nuts.
-
-```
-func handler(ctx context.Context, d *aegis.HandlerDependencies, evt map[string]interface{}) {
-    d.Log.Println("go nuts")
-}
-```
-
-All internal framework logs use standard Go `log` and will end up in CloudWatch.
-
-#### Tracing
-
-Aegis uses AWS XRay by default, though you can change the tracing strategy. You just need to implement
-the interface. All event handlers are automatically traced with annotations and metadata if applicable.
-
-You are able to add to these annoations and metadata. You are also free to use XRay in your handlers
-yourself. A `Tracer` will be injected into each handler.
 
 #### Contributing
 
