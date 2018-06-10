@@ -43,8 +43,9 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://tmaiaroto.github.io/aegis/handler-dependencies/tracer/</guid>
-      <description>Tracer The Tracer dependency implements a TracingStrategy interface. By default, this is AWS X-Ray. However, you can add your own tracing strategy interfaces and use those instead if you wanted to use something other than X-Ray.
-Another reason you might provide a different tracing strategy is for running locally or unit testing. You may not wish to have X-Ray running all the time.</description>
+      <description>Tracer  How to use a different TraceStrategy
+ AegisApp = aegis.New(handlers) // For example, disabling tracing AegisApp.Tracer = &amp;amp;aegis.NoTraceStrategy{} AegisApp.Start()  How Aegis Router traces internally
+ // Records data in the tracing strategy. In this case, and by default, X-Ray annotations. r.Tracer.Record(&amp;#34;annotation&amp;#34;, map[string]interface{}{ &amp;#34;RequestPath&amp;#34;: req.Path, &amp;#34;Method&amp;#34;: req.HTTPMethod, }, ) err = r.Tracer.Capture(ctx, &amp;#34;RouteHandler&amp;#34;, func(ctx1 context.Context) error { // Makes the Tracer available inside your handler.  // Capture() also applies the annotations from above in the case of XRayTraceStrategy  d.</description>
     </item>
     
   </channel>
