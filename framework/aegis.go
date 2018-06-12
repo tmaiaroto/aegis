@@ -79,6 +79,7 @@ type Aegis struct {
 	AWSClientTracer func(c *client.Client)
 	Tracer          TraceStrategy
 	TraceContext    context.Context
+	Custom          map[string]interface{}
 	Services
 	Filters struct {
 		Handler struct {
@@ -221,10 +222,12 @@ func (a *Aegis) aegisHandler(ctx context.Context, evt map[string]interface{}) (i
 	}
 
 	// Dependencies to be injected into each event handler
+	// Note that custom "user" dependencies can be passed from Aegis interface down to each handler
 	d := HandlerDependencies{
 		Services: &a.Services,
 		Log:      a.Log,
 		Tracer:   &a.Tracer,
+		Custom:   a.Custom,
 	}
 
 	// This could be called directly of course, it would skip all of the service set up (if there were any configured)
