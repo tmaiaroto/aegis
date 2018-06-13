@@ -156,7 +156,122 @@ run the command then go into the <code>aegis.yaml</code> file to change some nam
 <h1 id="deploy">Deploy</h1>
 
 <p>The <code>aegis deploy</code> command will likely be the next command you&rsquo;re after. Running it anywhere there is buildable
-Go code as well as an <code>aegis.yaml</code> will result in a deployment to AWS.</p>
+Go code (that handle Lambda events of course) as well as an <code>aegis.yaml</code> will result in a deployment to AWS.</p>
+
+<p>This includes building your Go binary, uploading it to AWS, and creating resources in AWS.</p>
+
+<p>Again, Aegis&rsquo; CLI tools and the <code>framework</code> package are mutually exclusive. Deploying a Lambda that handles
+events using the vanilla <code>aws-lambda-go</code> package from Amazon should work just fine. The CLI tools and framework
+are designed to work together of course, so you&rsquo;ll get the most benefit from using both.</p>
+
+<p>Upon deploying, Aegis will create an Aegis IAM role (if it doesn&rsquo;t already exist and if you didn&rsquo;t specify to
+use a different IAM role in your <code>aegis.yaml</code> config). It&rsquo;s someone permissive by default because there&rsquo;s no
+introspection into your code to see what you&rsquo;re doing.</p>
+
+<p>In the future, there is some intent for auditing and reporting back a summary of permissions. However,
+this command is mainly intended to be a development tool &ndash; not part of a production work flow. You might
+reach for other tools that let your IAM roles and other cloud resources remain under revision control.
+For example Terraform is a great tool in this case.</p>
+
+<p>However, Aegis does consider DevSecOps, so there are some considerations around security. For example,
+when the deploy command runs, it will look into AWS Secret Manager in order to get sensitive values to
+configure in Lambda environemt variables or API Gateway stage variables.</p>
+
+<p>The deploy command will also report back some helpful information to your console as it goes along
+creating resources.</p>
+
+    
+        
+
+<h1 id="update">Update</h1>
+
+<p>The <code>update</code> command is similar deploy, but it just updates the Lambda function itself.</p>
+
+<p>A full <code>deploy</code> will set create resources and configure things in AWS. While an <code>update</code>
+will only build your Go binary, zip, and then upload to AWS Lambda.</p>
+
+<p>It saves a little bit of time when you have some code changes because it doesn&rsquo;t
+need to check for existing resources using the AWS SDK which can make a few HTTP
+requests.</p>
+
+<p>More than likely the slowest part about deployment will be the time it takes to upload
+the binary. However, this command is still available if you prefer.</p>
+
+    
+        
+
+<h1 id="secret">Secret</h1>
+
+<p>The <code>aegis secret</code> command is a <em>very important command.</em> It&rsquo;s a lightweight wrapper around AWS Secret Manager.
+It will let you store and read values in AWS Secret Manager from your CLI. A nice feature about it is that
+by default, <code>read</code>, will show parts of values hidden by asterisks.</p>
+
+<p>The entire point is that you don&rsquo;t log or expose in the open (other people maybe looking at your screen),
+sensitive credentials.</p>
+
+<p><img src="/aegis/img/aegis-cli-secret-read.png" alt="Aegis secret read example" title="Aegis secret read" /></p>
+
+<p>If you don&rsquo;t provide a key, it will display all values in a table.</p>
+
+<p>Of course you can read the actual values as well if you use the <code>full</code> command instead of <code>read</code>.
+It just makes you think first.</p>
+
+<p>You can use <code>store</code> to store key values. You&rsquo;ll want to provide the secret name, key and then value.
+There are some additional flags as well with this command. You can use custom KMS keys and more.</p>
+
+<p>Like every other CLI command, there is help available from the CLI.</p>
+
+<h2 id="how-aegis-uses-secrets">How Aegis Uses Secrets</h2>
+
+<blockquote>
+<p>aegis.yaml example (partial)</p>
+</blockquote>
+
+<pre><code>api:
+  name: Example Cognito Aegis API
+  description: An example API with auth using Cognito
+  stages:
+    prod:
+      name: prod
+      variables:
+        poolid:
+          key: PoolID
+          value: &lt;cognitoExample.PoolID&gt;
+        clientid:
+          key: ClientID
+          value: &lt;cognitoExample.ClientID&gt;
+          # set the above using Aegis CLI, ex. 
+</code></pre>
+
+<p>Back to <code>deploy</code> here. Remember that when deploying, there&rsquo;s the <code>aegis.yaml</code> file. It is in here
+that sensitive credentials (keys) in AWS Secret Manager are referenced.</p>
+
+<p>You&rsquo;ll see in the Cognito example that <span class="nowrap"><code>&lt;cognitoExample.PoolID&gt;</code></span> is used
+for a <span class="nowrap"><code>poolid</code></span> key that is used as an API Gateway stage variable. The value
+for that key (and ultimately, stage variable) is pulled from AWS Secret Manager during deploy and used.</p>
+
+<aside class="note-info">
+<i class="fas fa-info-circle"></i> At no point do sensitive credentials get logged.
+</aside>
+
+<p>An interesting thing about API Gateway stage variables&hellip;They do not support certain special characters.
+AWS Lambda environment variables don&rsquo;t have as many character restrictions, but stage variables can be
+problematic.</p>
+
+<p>So what does Aegis do here? It base64 encodes the stage variables. You can decode them yourself in your
+code or you can use Aegis&rsquo; helpers to get the values.</p>
+
+<p>Aegis has helpers and this concept of <strong><em>Aegis Variables</em></strong> which is really just a fancy way of saying,
+go check:</p>
+
+<ul>
+<li>actual environment variables</li>
+<li>AWS Lambda environment variables</li>
+<li>API Gateway stage variable</li>
+</ul>
+
+<p>The helper tries a few places to find the variable you&rsquo;re after and it will then ensure the string
+is base64 decoded if it was encoded at all. It works regardless.</p>
 
     
 

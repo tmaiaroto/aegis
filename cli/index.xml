@@ -28,7 +28,30 @@ The aegis.yaml then includes configuration for creating an API Gateway upon depl
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://tmaiaroto.github.io/aegis/cli/2_deploy/</guid>
-      <description>Deploy The aegis deploy command will likely be the next command you&amp;rsquo;re after. Running it anywhere there is buildable Go code as well as an aegis.yaml will result in a deployment to AWS.</description>
+      <description>Deploy The aegis deploy command will likely be the next command you&amp;rsquo;re after. Running it anywhere there is buildable Go code (that handle Lambda events of course) as well as an aegis.yaml will result in a deployment to AWS.
+This includes building your Go binary, uploading it to AWS, and creating resources in AWS.
+Again, Aegis&amp;rsquo; CLI tools and the framework package are mutually exclusive. Deploying a Lambda that handles events using the vanilla aws-lambda-go package from Amazon should work just fine.</description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>https://tmaiaroto.github.io/aegis/cli/3_update/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://tmaiaroto.github.io/aegis/cli/3_update/</guid>
+      <description>Update The update command is similar deploy, but it just updates the Lambda function itself.
+A full deploy will set create resources and configure things in AWS. While an update will only build your Go binary, zip, and then upload to AWS Lambda.
+It saves a little bit of time when you have some code changes because it doesn&amp;rsquo;t need to check for existing resources using the AWS SDK which can make a few HTTP requests.</description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>https://tmaiaroto.github.io/aegis/cli/4_secret/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://tmaiaroto.github.io/aegis/cli/4_secret/</guid>
+      <description>Secret The aegis secret command is a very important command. It&amp;rsquo;s a lightweight wrapper around AWS Secret Manager. It will let you store and read values in AWS Secret Manager from your CLI. A nice feature about it is that by default, read, will show parts of values hidden by asterisks.
+The entire point is that you don&amp;rsquo;t log or expose in the open (other people maybe looking at your screen), sensitive credentials.</description>
     </item>
     
   </channel>
