@@ -17,7 +17,6 @@ package framework
 import (
 	"context"
 	"errors"
-	"log"
 	"strings"
 
 	"github.com/aws/aws-lambda-go/lambda"
@@ -105,7 +104,6 @@ func (r *SESRouter) LambdaHandler(ctx context.Context, d *HandlerDependencies, e
 				// The application can inspect the map and make a decision on what to do, if anything.
 				// This is optional.
 				if !handled {
-					log.Println("using default fall through handler")
 					// It's possible that the SESRouter wasn't created with NewSESRouter, so check for this still.
 					if handler, ok := r.handlers["_"]; ok {
 						// Capture the handler (in XRay by default) automatically

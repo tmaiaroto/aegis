@@ -15,19 +15,103 @@
 package framework
 
 import (
+	"context"
 	"testing"
+
+	events "github.com/aws/aws-lambda-go/events"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestSESRouter(t *testing.T) {
 
-	domainSESRouter := NewSESRouterForDomain("example.com")
+	fallThroughHandled := false
+	domainSESRouter := NewSESRouterForDomain("example.com", func(ctx context.Context, d *HandlerDependencies, evt *SimpleEmailEvent) error {
+		fallThroughHandled = true
+		return nil
+	})
+	domainSESRouter.Tracer = &NoTraceStrategy{}
+
+	fallThroughDomainlessHandled := false
+	domainlessSESRouter := NewSESRouter(func(ctx context.Context, d *HandlerDependencies, evt *SimpleEmailEvent) error {
+		fallThroughDomainlessHandled = true
+		return nil
+	})
+	domainlessSESRouter.Tracer = &NoTraceStrategy{}
+
 	Convey("NewSESRouterForDomain", t, func() {
 		Convey("Should create a new SESRouter for a specific domain", func() {
 			So(domainSESRouter, ShouldNotBeNil)
 			So(domainSESRouter.Domain, ShouldEqual, "example.com")
 		})
+	})
+
+	Convey("Should handle `SimpleEmailEvent` events", t, func() {
+		handled := false
+		domainSESRouter.Handle("user@example.com", func(ctx context.Context, d *HandlerDependencies, evt *SimpleEmailEvent) error {
+			handled = true
+			return nil
+		})
+
+		So(handled, ShouldBeFalse)
+		domainSESRouter.LambdaHandler(context.Background(), &HandlerDependencies{}, SimpleEmailEvent{
+			Records: []events.SimpleEmailRecord{
+				events.SimpleEmailRecord{
+					SES: events.SimpleEmailService{
+						Mail: events.SimpleEmailMessage{},
+						Receipt: events.SimpleEmailReceipt{
+							Recipients: []string{"user@example.com"},
+						},
+					},
+				},
+			},
+		})
+		So(handled, ShouldBeTrue)
+	})
+
+	Convey("Should optionally handle `SimpleEmailEvent` events using a fall through handler", t, func() {
+		So(fallThroughHandled, ShouldBeFalse)
+		domainSESRouter.LambdaHandler(context.Background(), &HandlerDependencies{}, SimpleEmailEvent{
+			Records: []events.SimpleEmailRecord{
+				events.SimpleEmailRecord{
+					SES: events.SimpleEmailService{
+						Mail: events.SimpleEmailMessage{},
+						Receipt: events.SimpleEmailReceipt{
+							Recipients: []string{"another@example.com"},
+						},
+					},
+				},
+			},
+		})
+		So(fallThroughHandled, ShouldBeTrue)
+
+		So(fallThroughDomainlessHandled, ShouldBeFalse)
+		domainlessSESRouter.LambdaHandler(context.Background(), &HandlerDependencies{}, SimpleEmailEvent{
+			Records: []events.SimpleEmailRecord{
+				events.SimpleEmailRecord{
+					SES: events.SimpleEmailService{
+						Mail: events.SimpleEmailMessage{},
+						Receipt: events.SimpleEmailReceipt{
+							Recipients: []string{"another@unhandled.com"},
+						},
+					},
+				},
+			},
+		})
+		So(fallThroughDomainlessHandled, ShouldBeTrue)
+	})
+
+	Convey("Handle() should register a Tasker (scheduled task) handler", t, func() {
+		domainSESRouter.Handle("foo@bar.com", func(ctx context.Context, d *HandlerDependencies, evt *SimpleEmailEvent) error {
+			return nil
+		})
+		So(domainSESRouter.handlers, ShouldNotBeNil)
+		So(domainSESRouter.handlers["foo@bar.com"], ShouldNotBeNil)
+
+		testNilSESRouter := &SESRouter{}
+		testNilSESRouter.Handle("someone@somewhere.com", func(ctx context.Context, d *HandlerDependencies, evt *SimpleEmailEvent) error { return nil })
+		So(testNilSESRouter.handlers, ShouldNotBeNil)
+		So(testNilSESRouter.handlers["someone@somewhere.com"], ShouldNotBeNil)
 	})
 
 }

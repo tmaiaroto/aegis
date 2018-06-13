@@ -28,6 +28,11 @@ a lightweight set of helpers or framework to help build things faster. It's to b
 and flexible. 1.x will focus on adding more event router/handlers and helper functions.
 Not every possible service will likely ever covered, the focus will be on the common.
 
+## 1.14.1
+
+- Added a bunch of tests (and more to come)
+- Minor fixes exposed by tests
+
 ## 1.14.0
 
 - Adjustments to `TraceStrategy` interface, making it an actual interface and making new

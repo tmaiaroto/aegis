@@ -69,6 +69,9 @@ func (t *XRayTraceStrategy) Record(dataType string, data interface{}) {
 	if t.Metadata == nil {
 		t.Metadata = make(map[string]interface{})
 	}
+	if t.NamespaceMetadata == nil {
+		t.NamespaceMetadata = make(map[string]map[string]interface{})
+	}
 
 	if dataType != "" && data != nil {
 		switch dataType {
@@ -83,6 +86,9 @@ func (t *XRayTraceStrategy) Record(dataType string, data interface{}) {
 		case "namespaceMetadata", "namedMetadata", "namespace", "ns":
 			for ns, metadata := range data.(map[string]map[string]interface{}) {
 				for k, v := range metadata {
+					if _, ok := t.NamespaceMetadata[ns]; !ok {
+						t.NamespaceMetadata[ns] = make(map[string]interface{})
+					}
 					t.NamespaceMetadata[ns][k] = v
 				}
 			}

@@ -15,6 +15,7 @@
 package framework
 
 import (
+	"context"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -22,12 +23,36 @@ import (
 
 func TestRPCRouter(t *testing.T) {
 
-	rpcRouter := NewRPCRouter()
+	fallThroughHandled := false
+	rpcRouter := NewRPCRouter(func(ctx context.Context, d *HandlerDependencies, evt map[string]interface{}) (map[string]interface{}, error) {
+		fallThroughHandled = true
+		return map[string]interface{}{"fall": "through"}, nil
+	})
+	rpcRouter.Tracer = &NoTraceStrategy{}
+
 	Convey("NewRPCRouter", t, func() {
 		Convey("Should create a new NewRPCRouter", func() {
 			So(rpcRouter, ShouldNotBeNil)
 			So(rpcRouter, ShouldHaveSameTypeAs, &RPCRouter{})
 		})
+	})
+
+	Convey("Should handle specific events with `_rpcName`", t, func() {
+		handled := false
+		rpcRouter.Handle("foo", func(ctx context.Context, d *HandlerDependencies, evt map[string]interface{}) (map[string]interface{}, error) {
+			handled = true
+			return map[string]interface{}{}, nil
+		})
+
+		So(handled, ShouldBeFalse)
+		rpcRouter.LambdaHandler(context.Background(), &HandlerDependencies{}, map[string]interface{}{"_rpcName": "foo"})
+		So(handled, ShouldBeTrue)
+	})
+
+	Convey("Should optionally handle events with `_rpcName` using a fall through handler", t, func() {
+		So(fallThroughHandled, ShouldBeFalse)
+		rpcRouter.LambdaHandler(context.Background(), &HandlerDependencies{}, map[string]interface{}{"_rpcName": "unhandled"})
+		So(fallThroughHandled, ShouldBeTrue)
 	})
 
 }

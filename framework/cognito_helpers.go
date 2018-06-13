@@ -23,7 +23,7 @@ import (
 // ValidAccessTokenMiddleware is helper middleware to verify a JWT from an `acess_token` cookie.
 // It makes no determinations based on claims, it just looks for a valid token. A configured CognitoAppClient must be provided.
 func ValidAccessTokenMiddleware(ctx context.Context, d *HandlerDependencies, req *APIGatewayProxyRequest, res *APIGatewayProxyResponse, params url.Values) bool {
-	if d.Services.Cognito == nil || d.Services.Cognito.ClientID == "" {
+	if d == nil || d.Services == nil || d.Services.Cognito == nil || d.Services.Cognito.ClientID == "" {
 		res.JSONError(500, errors.New("auth has not been configured"))
 		return false
 	}
