@@ -107,13 +107,35 @@ These dependencies contain no &amp;ldquo;configuration&amp;rdquo; closure (unlik
     
     <item>
       <title></title>
-      <link>https://tmaiaroto.github.io/aegis/helpers/http/</link>
+      <link>https://tmaiaroto.github.io/aegis/helpers/1_aegis_variables/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://tmaiaroto.github.io/aegis/helpers/http/</guid>
+      <guid>https://tmaiaroto.github.io/aegis/helpers/1_aegis_variables/</guid>
+      <description>Aegis Variables  Access via Aegis interface
+ barStr := AegisApp.GetVariable(&amp;#34;foo&amp;#34;)  Access via HandlerDependencies
+ func handler(ctx context.Context, d *aegis.HandlerDependencies, req *aegis.APIGatewayProxyRequest, res *aegis.APIGatewayProxyResponse, params url.Values) error { barStr := d.GetVariable(&amp;#34;foo&amp;#34;) return nil }  Access the map directly
+ func handler(ctx context.Context, d *aegis.HandlerDependencies, req *aegis.APIGatewayProxyRequest, res *aegis.APIGatewayProxyResponse, params url.Values) error { if barStr, ok := d.Services.Variables[&amp;#34;foo&amp;#34;]; ok { // ...  } return nil } One of the most important helpers is the one to work with Aegis Variables which is just a conventional environment variable.</description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>https://tmaiaroto.github.io/aegis/helpers/2_http/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://tmaiaroto.github.io/aegis/helpers/2_http/</guid>
       <description>API Gateway Proxy (HTTP) There are quite a few helpers for working with API Gateway Proxy responses and requests. You can read about all of them through Go documentation.
  APIGatewayProxyResponse APIGatewayProxyRequest  Though let&amp;rsquo;s take a look at some of the more common ones here.
 APIGatewayProxyRequest API Gateway requests are not HTTP requests. They come into Lambda as JSON messages. The AWS Lambda Go package, and therefore Aegis, marshals these messages to structs.</description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>https://tmaiaroto.github.io/aegis/helpers/3_cognito/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://tmaiaroto.github.io/aegis/helpers/3_cognito/</guid>
+      <description>Cognito router.Handle(&amp;#34;GET&amp;#34;, &amp;#34;/protected&amp;#34;, cognitoProtected, aegis.ValidAccessTokenMiddleware) There&amp;rsquo;s a Cognito client helper interface which is obviously a lot more involved than a simple function. Then there&amp;rsquo;s also a smaller middleware helper function called ValidAccessTokenMiddleware.
+You can use this middleware like any other middleware with your route handlers. It uses the Cognito client interface&amp;rsquo;s ParseAndVerifyJWT() function to check a JWT that you&amp;rsquo;ll need to send in under an access_token cookie in your HTTP request.</description>
     </item>
     
     <item>

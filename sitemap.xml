@@ -43,7 +43,15 @@
   </url>
   
   <url>
-    <loc>https://tmaiaroto.github.io/aegis/helpers/http/</loc>
+    <loc>https://tmaiaroto.github.io/aegis/helpers/1_aegis_variables/</loc>
+  </url>
+  
+  <url>
+    <loc>https://tmaiaroto.github.io/aegis/helpers/2_http/</loc>
+  </url>
+  
+  <url>
+    <loc>https://tmaiaroto.github.io/aegis/helpers/3_cognito/</loc>
   </url>
   
   <url>

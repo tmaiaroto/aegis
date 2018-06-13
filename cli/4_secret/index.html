@@ -183,7 +183,9 @@ for a <span class="nowrap"><code>poolid</code></span> key that is used as an API
 for that key (and ultimately, stage variable) is pulled from AWS Secret Manager during deploy and used.</p>
 
 <aside class="note-info">
-<i class="fas fa-info-circle"></i> At no point do sensitive credentials get logged.
+<i class="fas fa-info-circle"></i> At no point do sensitive credentials get logged. They should never exist
+as plain text in configuration either. There is simply no way to accidentally publish them if using Aegis
+as designed.
 </aside>
 
 <p>An interesting thing about API Gateway stage variables&hellip;They do not support certain special characters.
@@ -197,13 +199,16 @@ code or you can use Aegis&rsquo; helpers to get the values.</p>
 go check:</p>
 
 <ul>
-<li>actual environment variables</li>
 <li>AWS Lambda environment variables</li>
 <li>API Gateway stage variable</li>
+<li>actual environment variables</li>
 </ul>
 
 <p>The helper tries a few places to find the variable you&rsquo;re after and it will then ensure the string
 is base64 decoded if it was encoded at all. It works regardless.</p>
+
+<p><a href="/aegis/helpers/#aegis-variables">See the Aegis Variables section</a> for more information about the helper function and where these
+variables are available within your application.</p>
 
 
         </div>

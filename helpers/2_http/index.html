@@ -14,7 +14,7 @@
     <meta charset="utf-8">
     <meta content="IE=edge,chrome=1" http-equiv="X-UA-Compatible">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-    <title>Helpers</title>
+    <title></title>
     <link href='/aegis/slate/stylesheets/monokai.css' rel="stylesheet" media="screen" />
 <link href='/aegis/slate/stylesheets/screen.css' rel="stylesheet" media="screen" />
 <link href='/aegis/slate/stylesheets/print.css' rel="stylesheet" media="print" />
@@ -131,56 +131,6 @@
         <div class="content">
             
     
-        
-
-<h1 id="aegis-variables">Aegis Variables</h1>
-
-<blockquote>
-<p>Access via Aegis interface</p>
-</blockquote>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="nx">barStr</span> <span class="o">:=</span> <span class="nx">AegisApp</span><span class="p">.</span><span class="nx">GetVariable</span><span class="p">(</span><span class="s">&#34;foo&#34;</span><span class="p">)</span></code></pre></div>
-<blockquote>
-<p>Access via HandlerDependencies</p>
-</blockquote>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="nx">handler</span><span class="p">(</span><span class="nx">ctx</span> <span class="nx">context</span><span class="p">.</span><span class="nx">Context</span><span class="p">,</span> <span class="nx">d</span> <span class="o">*</span><span class="nx">aegis</span><span class="p">.</span><span class="nx">HandlerDependencies</span><span class="p">,</span> <span class="nx">req</span> <span class="o">*</span><span class="nx">aegis</span><span class="p">.</span><span class="nx">APIGatewayProxyRequest</span><span class="p">,</span> <span class="nx">res</span> <span class="o">*</span><span class="nx">aegis</span><span class="p">.</span><span class="nx">APIGatewayProxyResponse</span><span class="p">,</span> <span class="nx">params</span> <span class="nx">url</span><span class="p">.</span><span class="nx">Values</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
-    <span class="nx">barStr</span> <span class="o">:=</span> <span class="nx">d</span><span class="p">.</span><span class="nx">GetVariable</span><span class="p">(</span><span class="s">&#34;foo&#34;</span><span class="p">)</span>
-    <span class="k">return</span> <span class="kc">nil</span>
-<span class="p">}</span></code></pre></div>
-<blockquote>
-<p>Access the map directly</p>
-</blockquote>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="nx">handler</span><span class="p">(</span><span class="nx">ctx</span> <span class="nx">context</span><span class="p">.</span><span class="nx">Context</span><span class="p">,</span> <span class="nx">d</span> <span class="o">*</span><span class="nx">aegis</span><span class="p">.</span><span class="nx">HandlerDependencies</span><span class="p">,</span> <span class="nx">req</span> <span class="o">*</span><span class="nx">aegis</span><span class="p">.</span><span class="nx">APIGatewayProxyRequest</span><span class="p">,</span> <span class="nx">res</span> <span class="o">*</span><span class="nx">aegis</span><span class="p">.</span><span class="nx">APIGatewayProxyResponse</span><span class="p">,</span> <span class="nx">params</span> <span class="nx">url</span><span class="p">.</span><span class="nx">Values</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
-    <span class="k">if</span> <span class="nx">barStr</span><span class="p">,</span> <span class="nx">ok</span> <span class="o">:=</span> <span class="nx">d</span><span class="p">.</span><span class="nx">Services</span><span class="p">.</span><span class="nx">Variables</span><span class="p">[</span><span class="s">&#34;foo&#34;</span><span class="p">];</span> <span class="nx">ok</span> <span class="p">{</span>
-        <span class="c1">// ...
-</span><span class="c1"></span>    <span class="p">}</span>
-    <span class="k">return</span> <span class="kc">nil</span>
-<span class="p">}</span></code></pre></div>
-<p>One of the most important helpers is the one to work with <strong><em>Aegis Variables</em></strong> which is just a conventional environment
-variable. It could be an actual environment variable on the operating system, an AWS Lambda environment variable that
-was configured, or an API Gateway stage variable.</p>
-
-<p>So that means the helper function checks those locations in the following order:</p>
-
-<ul>
-<li>Lambda environment variable</li>
-<li>API Gateway stage variable</li>
-<li>Actual operating system environment variable</li>
-</ul>
-
-<p>The helper function is available on the <code>Aegis</code> interface or <code>HandlerDependencies</code>. A string value is always returned
-because that&rsquo;s the only data type these variables can be.</p>
-
-<p>You could also forgo the helper and access these variables on handler dependencies. It&rsquo;s considered a service.
-So you&rsquo;ll find everything under <code>Services.Variables</code>.</p>
-
-<p>Just note that the helper will check for an actual environment variable as a last resort. Accessing the <code>Services</code>
-in handler dependencies will not include environment variables since this map is set by AWS Lambda and API Gateway
-configurations.</p>
-
-<p>Note that this works really well in conjunction with the <code>secret</code> CLI command. <a href="/aegis/cli/#secret">See here for more info.</a></p>
-
-    
-        
 
 <h1 id="api-gateway-proxy-http">API Gateway Proxy (HTTP)</h1>
 
@@ -254,22 +204,6 @@ yourself. The second argument will then vary a little.</p>
 <p>Some methods will take an <code>interface{}</code> while others, like <code>HTML()</code> and <code>String()</code> will simply take a <code>string</code>.
 Those taking an interface are going to be doing a little bit of work of course.</p>
 
-    
-        
-
-<h1 id="cognito">Cognito</h1>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="nx">router</span><span class="p">.</span><span class="nx">Handle</span><span class="p">(</span><span class="s">&#34;GET&#34;</span><span class="p">,</span> <span class="s">&#34;/protected&#34;</span><span class="p">,</span> <span class="nx">cognitoProtected</span><span class="p">,</span> <span class="nx">aegis</span><span class="p">.</span><span class="nx">ValidAccessTokenMiddleware</span><span class="p">)</span></code></pre></div>
-<p>There&rsquo;s a Cognito client helper interface which is obviously a lot more involved than a simple function.
-Then there&rsquo;s also a smaller middleware helper function called <span class="nowrap"><code>ValidAccessTokenMiddleware</code>.</span></p>
-
-<p>You can use this middleware like any other middleware with your route handlers. It uses the Cognito
-client interface&rsquo;s <span class="nowrap"><code>ParseAndVerifyJWT()</code></span> function to check a JWT that you&rsquo;ll need to send
-in under an <code>access_token</code> cookie in your HTTP request.</p>
-
-<p>You can certainly check out <span class="nowrap"><code>cognito_helpers.go</code></span> for how that works if you&rsquo;d like to do
-something similar on your own.</p>
-
-    
 
         </div>
         <div class="dark-box">
