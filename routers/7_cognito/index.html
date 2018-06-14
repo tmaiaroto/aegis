@@ -21,7 +21,8 @@
 
     <link href='/aegis/css/styles.css' rel="stylesheet"/>
     <link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.0.13/css/solid.css" integrity="sha384-drdlAcijFWubhOfj9OS/gy2Gs34hVhVT90FgJLzrldrLI+7E7lwBxmanEEhKTRTS" crossorigin="anonymous">
-<link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.0.13/css/fontawesome.css" integrity="sha384-LDuQaX4rOgqi4rbWCyWj3XVBlgDzuxGy/E6vWN6U7c25/eSJIwyKhy9WgZCHQWXz" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.0.13/css/brands.css" integrity="sha384-t3MQUMU0g3tY/0O/50ja6YVaEFYwPpOiPbrHk9p5DmYtkHJU2U1/ujNhYruOJwcj" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.0.13/css/fontawesome.css" integrity="sha384-LDuQaX4rOgqi4rbWCyWj3XVBlgDzuxGy/E6vWN6U7c25/eSJIwyKhy9WgZCHQWXz" crossorigin="anonymous">
     
 <script src='/aegis/slate/javascripts/all.js'></script>
 
@@ -120,7 +121,10 @@
         
         <ul class="toc-footer">
             
-            <li>Hugo Theme by <a href="https://github.com/bep" target="_blank">bep</a></li>
+            <li><a class='github-link' href='https://github.com/tmaiaroto/aegis' target='_blank' title='Aegis on GitHub'><i class='fab fa-github'></i> Aegis on GitHub</a></li>
+            
+            <li><div class='hugo-theme-credit'>Hugo Theme by <a href='https://github.com/bep' target='_blank'>bep</a></div>
+</li>
             
         </ul>
         
@@ -134,7 +138,15 @@
 
 <h1 id="cognito-router">Cognito Router</h1>
 
-<p>There are some AWS Cognito specific events that can be routed as well.</p>
+<p>There are some AWS Cognito specific events that can be routed as well. These events are for User Pool workflows.
+You can find more information about the <a href="https://docs.aws.amazon.com/cognito/latest/developerguide/cognito-user-identity-pools-working-with-aws-lambda-triggers.html" target="_blank">Cognito triggers here</a>.</p>
+
+<p>The Cognito router is matching on the <code>triggerSource</code> value here. You also can have separate handlers for different
+User Pools. You&rsquo;ll just need to set a <code>PoolID</code> on the router or use <span class="nowrap"><code>NewCognitoRouterForPool()</code></span>
+instead of <span class="nowrap"><code>NewCognitoRouter()</code>.</span></p>
+
+<p>Perhaps the most interesting or useful thing about this router is the ability to have your Lambda easily add
+functionality to AWS Cognito. It&rsquo;s a great place to stick handlers to send out e-mails and more.</p>
 
 
         </div>

@@ -21,7 +21,8 @@
 
     <link href='/aegis/css/styles.css' rel="stylesheet"/>
     <link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.0.13/css/solid.css" integrity="sha384-drdlAcijFWubhOfj9OS/gy2Gs34hVhVT90FgJLzrldrLI+7E7lwBxmanEEhKTRTS" crossorigin="anonymous">
-<link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.0.13/css/fontawesome.css" integrity="sha384-LDuQaX4rOgqi4rbWCyWj3XVBlgDzuxGy/E6vWN6U7c25/eSJIwyKhy9WgZCHQWXz" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.0.13/css/brands.css" integrity="sha384-t3MQUMU0g3tY/0O/50ja6YVaEFYwPpOiPbrHk9p5DmYtkHJU2U1/ujNhYruOJwcj" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.0.13/css/fontawesome.css" integrity="sha384-LDuQaX4rOgqi4rbWCyWj3XVBlgDzuxGy/E6vWN6U7c25/eSJIwyKhy9WgZCHQWXz" crossorigin="anonymous">
     
 <script src='/aegis/slate/javascripts/all.js'></script>
 
@@ -120,7 +121,10 @@
         
         <ul class="toc-footer">
             
-            <li>Hugo Theme by <a href="https://github.com/bep" target="_blank">bep</a></li>
+            <li><a class='github-link' href='https://github.com/tmaiaroto/aegis' target='_blank' title='Aegis on GitHub'><i class='fab fa-github'></i> Aegis on GitHub</a></li>
+            
+            <li><div class='hugo-theme-credit'>Hugo Theme by <a href='https://github.com/bep' target='_blank'>bep</a></div>
+</li>
             
         </ul>
         
@@ -227,8 +231,16 @@ but sets a <code>StatusCode</code> of 404.</p>
 </aside>
 
 <h2 id="middleware">Middleware</h2>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="nx">router</span> <span class="o">:=</span> <span class="nx">aegis</span><span class="p">.</span><span class="nx">NewRouter</span><span class="p">(</span><span class="nx">fallThrough</span><span class="p">)</span>
+<span class="nx">router</span><span class="p">.</span><span class="nx">Handle</span><span class="p">(</span><span class="s">&#34;GET&#34;</span><span class="p">,</span> <span class="s">&#34;/&#34;</span><span class="p">,</span> <span class="nx">root</span><span class="p">,</span> <span class="nx">helloMiddleware</span><span class="p">,</span> <span class="nx">moreMiddleware</span><span class="p">)</span>
 
-<p>Aegis&rsquo; router also supports middleware. Standard Go http library middleware at that.</p>
+<span class="nx">router</span><span class="p">.</span><span class="nx">Use</span><span class="p">(</span><span class="nx">middlewareForAll</span><span class="p">,</span> <span class="nx">evenMoreMiddleware</span><span class="p">)</span></code></pre></div>
+<p>Aegis&rsquo; router also supports middleware. Standard Go http library middleware at that. You can tack on as many as you&rsquo;d like
+to each of your router rules. You can also add middleware to every routing rule with the <code>Use()</code> function.</p>
+
+<p>There&rsquo;s some cool middleware out there for Go,
+<a href="https://github.com/avelino/awesome-go#actual-middlewares" target="_blank">Awesome Go has a middleware section</a> and
+there&rsquo;s also this <a href="https://github.com/unrolled/secure" target="_blank">&ldquo;Secure&rdquo; middleware</a> which is pretty nice.</p>
 
 
         </div>

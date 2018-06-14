@@ -21,7 +21,8 @@
 
     <link href='/aegis/css/styles.css' rel="stylesheet"/>
     <link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.0.13/css/solid.css" integrity="sha384-drdlAcijFWubhOfj9OS/gy2Gs34hVhVT90FgJLzrldrLI+7E7lwBxmanEEhKTRTS" crossorigin="anonymous">
-<link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.0.13/css/fontawesome.css" integrity="sha384-LDuQaX4rOgqi4rbWCyWj3XVBlgDzuxGy/E6vWN6U7c25/eSJIwyKhy9WgZCHQWXz" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.0.13/css/brands.css" integrity="sha384-t3MQUMU0g3tY/0O/50ja6YVaEFYwPpOiPbrHk9p5DmYtkHJU2U1/ujNhYruOJwcj" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.0.13/css/fontawesome.css" integrity="sha384-LDuQaX4rOgqi4rbWCyWj3XVBlgDzuxGy/E6vWN6U7c25/eSJIwyKhy9WgZCHQWXz" crossorigin="anonymous">
     
 <script src='/aegis/slate/javascripts/all.js'></script>
 
@@ -120,7 +121,10 @@
         
         <ul class="toc-footer">
             
-            <li>Hugo Theme by <a href="https://github.com/bep" target="_blank">bep</a></li>
+            <li><a class='github-link' href='https://github.com/tmaiaroto/aegis' target='_blank' title='Aegis on GitHub'><i class='fab fa-github'></i> Aegis on GitHub</a></li>
+            
+            <li><div class='hugo-theme-credit'>Hugo Theme by <a href='https://github.com/bep' target='_blank'>bep</a></div>
+</li>
             
         </ul>
         
@@ -150,6 +154,51 @@
 <span class="p">}</span></code></pre></div>
 <p>The AWS SES (Simple E-mail Service) router, <code>SESRouter</code>, and the ability for a Lambda to receive e-mail
 is perhaps one of the coolest things ever. Yes, there is such a thing as serverless e-mail.</p>
+
+<p>You can route based on any address match, or address matches within a specific domain, using
+<span class="nowrap"><code>NewSESRouter()</code></span> and <span class="nowrap"><code>NewSESRouterForDomain()</code></span> respectively.</p>
+
+<p>Like the <code>S3ObjectRouter</code>, the SES router will use glob based matching. So, first the domain is check if set,
+and then your pattern is checked against the e-mail address.</p>
+
+<h2 id="how-to-read-e-mails">How to Read E-mails</h2>
+
+<blockquote>
+<p>Example SES config</p>
+</blockquote>
+<div class="highlight"><pre class="chroma"><code class="language-yaml" data-lang="yaml">sesRules<span class="p">:</span><span class="w">
+</span><span class="w">  </span>-<span class="w"> </span>ruleName<span class="p">:</span><span class="w"> </span>aegis-test<span class="w">
+</span><span class="w">    </span>enabled<span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span><span class="w">    </span>requireTLS<span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="w">
+</span><span class="w">    </span>scanEnabled<span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span><span class="w">    </span><span class="c"># ruleSet: ... optional string, defaults to aegis-default-rule-set</span><span class="w">
+</span><span class="w">    </span><span class="c"># invocationType: Event # default to Event, RequestResponse is other option less common and has to return in 30 seconds</span><span class="w">
+</span><span class="w">    </span><span class="c"># snsTopicArn: ... optional SNS topic to also notify - SNS setup is outside aegis deploy for now</span><span class="w">
+</span><span class="w">    </span>recipients<span class="p">:</span><span class="w">
+</span><span class="w">      </span>-<span class="w"> </span>example@ses.serifandsemaphore.io<span class="w">
+</span><span class="w">    </span><span class="c"># Also, an S3 bucketTrigger could be used to pick up the e-mail in its entirety OR the an SES event can be</span><span class="w">
+</span><span class="w">    </span><span class="c"># used because it will provide a message ID that can be looked for in S3.</span><span class="w">
+</span><span class="w">    </span>s3Bucket<span class="p">:</span><span class="w"> </span><span class="s2">&#34;aegis-incoming&#34;</span><span class="w">
+</span><span class="w">    </span><span class="c"># subdirectory</span><span class="w">
+</span><span class="w">    </span>s3ObjectKeyPrefix<span class="p">:</span><span class="w"> </span><span class="s2">&#34;ses_&#34;</span><span class="w">
+</span><span class="w">    </span>s3encryptMessage<span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="w">
+</span><span class="w">    </span><span class="c"># s3KMSKeyArn: ... s3encryptMessage will use the default KMS key for encrypting email if true unless this is provided</span><span class="w">
+</span><span class="w">    </span><span class="c"># s3SNSTopicArn: &#34;sometopic&#34; ... an optional SNS topic to publish when messages are saved to S3, different from the SNS topic about the event</span></code></pre></div>
+<p>There&rsquo;s something important to note about what you get in the event message from an SES event. You are not
+getting the full body of the e-mail. Just the e-mail &ldquo;headers&rdquo; come through. Things like the from address,
+to address, CC, BCC, and subject line.</p>
+
+<p>If you want to actually read the body of the e-mail, you&rsquo;ll need to set up a few things in AWS first. What
+happens is the e-mail gets stored, in full, into S3 (if it&rsquo;s set up to do so). You then read it from S3.
+E-mails can be stored in S3 encrypted too if you configure that as well.</p>
+
+<p>To help with all this configuration in AWS, Aegis <code>deploy</code> command will read settings from <code>aegis.yaml</code> to
+set things up.</p>
+
+<p>Also keep in mind that you can use an <code>S3ObjectRouter</code> to handle incoming objects into whatever bucket is
+receiving your e-mails too. The difference is that you wouldn&rsquo;t then get the e-mail headers and you&rsquo;d <em>have</em>
+to read the file to know what the e-mail was about. The SES handler would let your code make a determination
+as to whether or not it wanted to retrieve the file from S3.</p>
 
 
         </div>

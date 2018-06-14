@@ -193,7 +193,8 @@ Above all else, there is a default handler that can be used for any incoming Lam
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://tmaiaroto.github.io/aegis/routers/6_ses/</guid>
-      <description>SES Router func main() { sesReceiver := aegis.NewSESRouter() sesReceiver.Handle(&amp;#34;*@ses.serifandsemaphore.io&amp;#34;, handleEmail) handlers := aegis.Handlers{ SESRouter: sesReceiver, } AegisApp = aegis.New(handlers) AegisApp.Start() } func handleEmail(ctx context.Context, d *aegis.HandlerDependencies, evt *aegis.SimpleEmailEvent) error { log.Println(evt) return nil } The AWS SES (Simple E-mail Service) router, SESRouter, and the ability for a Lambda to receive e-mail is perhaps one of the coolest things ever. Yes, there is such a thing as serverless e-mail.</description>
+      <description>SES Router func main() { sesReceiver := aegis.NewSESRouter() sesReceiver.Handle(&amp;#34;*@ses.serifandsemaphore.io&amp;#34;, handleEmail) handlers := aegis.Handlers{ SESRouter: sesReceiver, } AegisApp = aegis.New(handlers) AegisApp.Start() } func handleEmail(ctx context.Context, d *aegis.HandlerDependencies, evt *aegis.SimpleEmailEvent) error { log.Println(evt) return nil } The AWS SES (Simple E-mail Service) router, SESRouter, and the ability for a Lambda to receive e-mail is perhaps one of the coolest things ever. Yes, there is such a thing as serverless e-mail.
+You can route based on any address match, or address matches within a specific domain, using NewSESRouter() and NewSESRouterForDomain() respectively.</description>
     </item>
     
     <item>
@@ -202,7 +203,9 @@ Above all else, there is a default handler that can be used for any incoming Lam
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://tmaiaroto.github.io/aegis/routers/7_cognito/</guid>
-      <description>Cognito Router There are some AWS Cognito specific events that can be routed as well.</description>
+      <description>Cognito Router There are some AWS Cognito specific events that can be routed as well. These events are for User Pool workflows. You can find more information about the Cognito triggers here.
+The Cognito router is matching on the triggerSource value here. You also can have separate handlers for different User Pools. You&amp;rsquo;ll just need to set a PoolID on the router or use NewCognitoRouterForPool() instead of NewCognitoRouter().
+Perhaps the most interesting or useful thing about this router is the ability to have your Lambda easily add functionality to AWS Cognito.</description>
     </item>
     
   </channel>
