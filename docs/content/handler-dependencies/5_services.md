@@ -45,8 +45,8 @@ Using `ConfigureService()` is the important function here. The first argument fo
 of the service you wish to configure. The second argument is a function. That function is given the context
 and the event from Lambda. However, this configuration is applied before your event handler is called.
 
-<aside class="not-warning">
-Take care when configuring services since you have access to the Lambda event. You could accidentally
+<aside class="note-warning">
+<i class="fas fa-exclamation-triangle"></i> Take care when configuring services since you have access to the Lambda event. You could accidentally
 alter the event in a way your handler is not expecting.
 </aside>
 

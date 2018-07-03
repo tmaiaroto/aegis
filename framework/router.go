@@ -175,6 +175,11 @@ func runStandardMiddleware(ctx context.Context, req *APIGatewayProxyRequest, mid
 
 // LambdaHandler is a native AWS Lambda Go handler function (no more shim).
 func (r *Router) LambdaHandler(ctx context.Context, d *HandlerDependencies, req APIGatewayProxyRequest) (APIGatewayProxyResponse, error) {
+	// If this Router had a Tracer set for it, replace the default which came from the Aegis interface.
+	if r.Tracer != nil {
+		d.Tracer = r.Tracer
+	}
+
 	// If an incoming event can be matched to this router, but the router has no registered handlers
 	// or if one hasn't been added to aegis.Handlers{}.
 	if r == nil {
@@ -218,18 +223,14 @@ func (r *Router) LambdaHandler(ctx context.Context, d *HandlerDependencies, req 
 			return res, nil
 		}
 		// Trace/capture the handler (in XRay by default) automatically
-		r.Tracer.Record("annotation",
+		d.Tracer.Record("annotation",
 			map[string]interface{}{
 				"RequestPath": req.Path,
 				"Method":      req.HTTPMethod,
 			},
 		)
 
-		err = r.Tracer.Capture(ctx, "RouteHandler", func(ctx1 context.Context) error {
-			// Set the injected tracer to this router Tracer (was Aegis interface's tracer).
-			// This is important. It allows annotations to be added by handlers to be traced automatically.
-			// This means the end user does not need to set up their own tracer. They can hook into the current trace.
-			d.Tracer = &r.Tracer
+		err = d.Tracer.Capture(ctx, "RouteHandler", func(ctx1 context.Context) error {
 			// I believe ctx1 is actually the same as ctx in this case. Capture() makes no copy of context.
 			// Context is immutable. So... To not be confusing, we'll use ctx1.
 			return handler.handler(ctx1, d, &req, &res, params)

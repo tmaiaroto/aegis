@@ -96,4 +96,16 @@ but sets a `StatusCode` of 404.
 
 ## Middleware
 
-Aegis' router also supports middleware. Standard Go http library middleware at that.
+```go
+router := aegis.NewRouter(fallThrough)
+router.Handle("GET", "/", root, helloMiddleware, moreMiddleware)
+
+router.Use(middlewareForAll, evenMoreMiddleware)
+```
+
+Aegis' router also supports middleware. Standard Go http library middleware at that. You can tack on as many as you'd like
+to each of your router rules. You can also add middleware to every routing rule with the `Use()` function.
+
+There's some cool middleware out there for Go,
+<a href="https://github.com/avelino/awesome-go#actual-middlewares" target="_blank">Awesome Go has a middleware section</a> and
+there's also this <a href="https://github.com/unrolled/secure" target="_blank">"Secure" middleware</a> which is pretty nice.

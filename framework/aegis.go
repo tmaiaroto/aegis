@@ -65,6 +65,9 @@ type (
 
 	// SimpleEmailEvent alias for SES Email events (recipient rules)
 	SimpleEmailEvent events.SimpleEmailEvent
+
+	// SQSEvent alias for SQS events
+	SQSEvent events.SQSEvent
 )
 
 // Log uses Logrus for logging and will hook to CloudWatch...But could also be used to hook to other centralized logging services.
@@ -104,6 +107,10 @@ func New(handlers Handlers) *Aegis {
 		Log:      logrus.New(),
 		Services: Services{
 			configurations: make(map[string]func(context.Context, map[string]interface{}) interface{}),
+		},
+		// By default XRayTraceStrategy is used
+		Tracer: &XRayTraceStrategy{
+			AWSClientTracer: xray.AWS,
 		},
 		AWSClientTracer: xray.AWS,
 	}
@@ -226,7 +233,7 @@ func (a *Aegis) aegisHandler(ctx context.Context, evt map[string]interface{}) (i
 	d := HandlerDependencies{
 		Services: &a.Services,
 		Log:      a.Log,
-		Tracer:   &a.Tracer,
+		Tracer:   a.Tracer,
 		Custom:   a.Custom,
 	}
 

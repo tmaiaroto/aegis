@@ -47,6 +47,12 @@ func TestHandler(t *testing.T) {
 		}})
 		So(evtType, ShouldEqual, "SimpleEmailEvent")
 
+		// SQS is similar to S3 and SES, it has an eventSource that helps a lot
+		evtType = getType(map[string]interface{}{"Records": []interface{}{
+			map[string]interface{}{"eventSource": "aws:sqs"},
+		}})
+		So(evtType, ShouldEqual, "SQSEvent")
+
 		evtType = getType(map[string]interface{}{"unknown": "event"})
 		So(evtType, ShouldEqual, "")
 	})

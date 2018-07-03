@@ -43,6 +43,11 @@ type S3ObjectHandler struct {
 
 // LambdaHandler handles S3 events.
 func (r *S3ObjectRouter) LambdaHandler(ctx context.Context, d *HandlerDependencies, evt S3Event) error {
+	// If this Router had a Tracer set for it, replace the default which came from the Aegis interface.
+	if r.Tracer != nil {
+		d.Tracer = r.Tracer
+	}
+
 	// If an incoming event can be matched to this router, but the router has no registered handlers
 	// or if one hasn't been added to aegis.Handlers{}.
 	if r == nil {
@@ -71,15 +76,14 @@ func (r *S3ObjectRouter) LambdaHandler(ctx context.Context, d *HandlerDependenci
 						if err == nil && g.Match(record.S3.Object.Key) {
 							handled = true
 							// NOTE: If Tracer is nil, we have a problem.
-							r.Tracer.Record("annotation",
+							d.Tracer.Record("annotation",
 								map[string]interface{}{
 									"S3Bucket":    record.S3.Bucket.Name,
 									"S3ObjectKey": record.S3.Object.Key,
 									"S3Event":     record.EventName,
 								},
 							)
-							err = r.Tracer.Capture(ctx, "S3ObjectHandler", func(ctx1 context.Context) error {
-								d.Tracer = &r.Tracer
+							err = d.Tracer.Capture(ctx, "S3ObjectHandler", func(ctx1 context.Context) error {
 								return handler.Handler(ctx1, d, &evt)
 							})
 						}
@@ -97,7 +101,7 @@ func (r *S3ObjectRouter) LambdaHandler(ctx context.Context, d *HandlerDependenci
 				if !handled {
 					// It's possible that the S3ObjectRouter wasn't created with NewS3ObjectRouter, so check for this still.
 					if handler, ok := r.handlers["_"]; ok {
-						r.Tracer.Record("annotation",
+						d.Tracer.Record("annotation",
 							map[string]interface{}{
 								"S3Bucket":           record.S3.Bucket.Name,
 								"S3ObjectKey":        record.S3.Object.Key,
@@ -106,10 +110,7 @@ func (r *S3ObjectRouter) LambdaHandler(ctx context.Context, d *HandlerDependenci
 							},
 						)
 
-						err = r.Tracer.Capture(ctx, "S3ObjectHandler", func(ctx1 context.Context) error {
-							// Tracer is passed in as a dependency so that the handler (user function) can also
-							// add annotations, metadata, etc. Whatever the TraceStrategy allows for.
-							d.Tracer = &r.Tracer
+						err = d.Tracer.Capture(ctx, "S3ObjectHandler", func(ctx1 context.Context) error {
 							return handler.Handler(ctx1, d, &evt)
 						})
 					}

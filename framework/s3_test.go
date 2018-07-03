@@ -28,7 +28,7 @@ func TestS3ObjectRouter(t *testing.T) {
 	// Allows tests to run without needing AWS credentials
 	// ...well, as best they can, remember that a lot of functionality here depends on AWS
 	// Note: If a Tracer is not set, there will be a panic
-	bucketRouter.Tracer = &NoTraceStrategy{}
+	bucketRouter.Tracer = NoTraceStrategy{}
 
 	// Fake event and record
 	evtSrc := "s3:ObjectCreated:Put"

@@ -28,7 +28,7 @@ func TestRPCRouter(t *testing.T) {
 		fallThroughHandled = true
 		return map[string]interface{}{"fall": "through"}, nil
 	})
-	rpcRouter.Tracer = &NoTraceStrategy{}
+	rpcRouter.Tracer = NoTraceStrategy{}
 
 	Convey("NewRPCRouter", t, func() {
 		Convey("Should create a new NewRPCRouter", func() {

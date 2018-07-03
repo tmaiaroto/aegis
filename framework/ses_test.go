@@ -30,14 +30,14 @@ func TestSESRouter(t *testing.T) {
 		fallThroughHandled = true
 		return nil
 	})
-	domainSESRouter.Tracer = &NoTraceStrategy{}
+	domainSESRouter.Tracer = NoTraceStrategy{}
 
 	fallThroughDomainlessHandled := false
 	domainlessSESRouter := NewSESRouter(func(ctx context.Context, d *HandlerDependencies, evt *SimpleEmailEvent) error {
 		fallThroughDomainlessHandled = true
 		return nil
 	})
-	domainlessSESRouter.Tracer = &NoTraceStrategy{}
+	domainlessSESRouter.Tracer = NoTraceStrategy{}
 
 	Convey("NewSESRouterForDomain", t, func() {
 		Convey("Should create a new SESRouter for a specific domain", func() {

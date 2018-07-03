@@ -35,6 +35,11 @@ type SESHandler func(context.Context, *HandlerDependencies, *SimpleEmailEvent) e
 
 // LambdaHandler handles SES received e-mail events.
 func (r *SESRouter) LambdaHandler(ctx context.Context, d *HandlerDependencies, evt SimpleEmailEvent) error {
+	// If this Router had a Tracer set for it, replace the default which came from the Aegis interface.
+	if r.Tracer != nil {
+		d.Tracer = r.Tracer
+	}
+
 	// If an incoming event can be matched to this router, but the router has no registered handlers
 	// or if one hasn't been added to aegis.Handlers{}.
 	if r == nil {
@@ -44,7 +49,7 @@ func (r *SESRouter) LambdaHandler(ctx context.Context, d *HandlerDependencies, e
 	var g glob.Glob
 	handled := false
 
-	// There can apparently be multiple, a router handler is to handle one object/file operation
+	// There can be multiple
 	for _, record := range evt.Records {
 		// If there are any handlers registered
 		if r.handlers != nil {
@@ -82,15 +87,14 @@ func (r *SESRouter) LambdaHandler(ctx context.Context, d *HandlerDependencies, e
 					if recipientMatch {
 						handled = true
 						// Trace (default is to use XRay)
-						r.Tracer.Record("annotation",
+						d.Tracer.Record("annotation",
 							map[string]interface{}{
 								"Recipients":     record.SES.Receipt.Recipients,
 								"InvocationType": record.SES.Receipt.Action.InvocationType,
 							},
 						)
 
-						err = r.Tracer.Capture(ctx, "SESHandler", func(ctx1 context.Context) error {
-							d.Tracer = &r.Tracer
+						err = d.Tracer.Capture(ctx, "SESHandler", func(ctx1 context.Context) error {
 							return handler(ctx1, d, &evt)
 						})
 					}
@@ -107,7 +111,7 @@ func (r *SESRouter) LambdaHandler(ctx context.Context, d *HandlerDependencies, e
 					// It's possible that the SESRouter wasn't created with NewSESRouter, so check for this still.
 					if handler, ok := r.handlers["_"]; ok {
 						// Capture the handler (in XRay by default) automatically
-						r.Tracer.Record("annotation",
+						d.Tracer.Record("annotation",
 							map[string]interface{}{
 								"Recipients":         record.SES.Receipt.Recipients,
 								"InvocationType":     record.SES.Receipt.Action.InvocationType,
@@ -115,8 +119,7 @@ func (r *SESRouter) LambdaHandler(ctx context.Context, d *HandlerDependencies, e
 							},
 						)
 
-						err = r.Tracer.Capture(ctx, "SESHandler", func(ctx1 context.Context) error {
-							d.Tracer = &r.Tracer
+						err = d.Tracer.Capture(ctx, "SESHandler", func(ctx1 context.Context) error {
 							return handler(ctx1, d, &evt)
 						})
 					}

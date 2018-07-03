@@ -100,7 +100,7 @@ func Update(cmd *cobra.Command, args []string) {
 	// Update the function
 	err = deployer.UpdateFunctionCode(zipBytes)
 	if err != nil {
-		fmt.Println("Could not update Lmabda function.")
+		fmt.Println("Could not update Lambda function.")
 		fmt.Println(err)
 	}
 

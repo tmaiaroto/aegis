@@ -59,3 +59,11 @@ api:
   #     name: prod
   #     variables:
   #       foo: Bar
+queues:
+  # an sqs queue name ending with .fifo denotes a first in first out queue
+  - name: testqueue
+    # https://docs.aws.amazon.com/sdk-for-go/api/service/sqs/#CreateQueueInput
+    # easy map of attributes, note: if the name ends with .fifo above, it automatically sets FifoQueue attribute to true
+    attributes:
+      # the default, in seconds, 14 days
+      MessageRetentionPeriod: 1209600

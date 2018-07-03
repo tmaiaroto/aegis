@@ -15,6 +15,23 @@ span.nowrap {
     white-space: nowrap
 }
 
+/** Sidebar footer stuff **/
+.github-link i {
+    font-size: 20px !important;
+}
+a.github-link:hover i {
+    color: #2467af;
+}
+
+div.hugo-theme-credit, div.hugo-theme-credit a {
+    margin-top: 15px;
+    color: #bbb !important;
+}
+div.hugo-theme-credit a:hover {
+    color: #eee !important;
+}
+
+
 /** Main Top Nav Bar **/
 div.main-nav-wrapper {
     position: fixed;

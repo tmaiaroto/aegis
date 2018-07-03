@@ -79,6 +79,10 @@ func main() {
 	// Put() is a shortcut for the above
 	s3Router.Put("*.png", handleS3Upload)
 
+	// Handle SQS messages
+	sqsRouter := aegis.NewSQSRouter(sqsRootHandler)
+	sqsRouter.Handle("attr1", "someval", handleSqs)
+
 	// Blocks. So this function would only be good for handling APIGatewayProxyRequest events
 	// router.Listen()
 	// Also blocks, but uses reflection to get the event type and then calls the appropriate handler
@@ -90,6 +94,7 @@ func main() {
 		RPCRouter:      rpcRouter,
 		S3ObjectRouter: s3Router,
 		SESRouter:      sesReceiver,
+		SQSRouter:      sqsRouter,
 	}
 	// This still works, but it skips service set up.
 	// Not using Cognito or any other service in your handlers? Great! Feel free to call this.
@@ -202,6 +207,18 @@ func handleS3Upload(ctx context.Context, d *aegis.HandlerDependencies, evt *aegi
 
 func handleEmail(ctx context.Context, d *aegis.HandlerDependencies, evt *aegis.SimpleEmailEvent) error {
 	log.Println("Handling an incoming e-mail!")
+	log.Println(evt)
+	return nil
+}
+
+func sqsRootHandler(ctx context.Context, d *aegis.HandlerDependencies, evt *aegis.SQSEvent) error {
+	log.Println("HANDLED BY SQS ROOT HANDLER")
+	log.Println(evt)
+	return nil
+}
+
+func handleSqs(ctx context.Context, d *aegis.HandlerDependencies, evt *aegis.SQSEvent) error {
+	log.Println("Handling SQS event by attribute match")
 	log.Println(evt)
 	return nil
 }

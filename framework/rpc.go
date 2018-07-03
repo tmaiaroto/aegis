@@ -37,6 +37,11 @@ type RPCHandler func(context.Context, *HandlerDependencies, map[string]interface
 
 // LambdaHandler is a native AWS Lambda Go handler function. Handles a remote procedure call (invocation via SDK with a special event format).
 func (r *RPCRouter) LambdaHandler(ctx context.Context, d *HandlerDependencies, evt map[string]interface{}) (map[string]interface{}, error) {
+	// If this Router had a Tracer set for it, replace the default which came from the Aegis interface.
+	if r.Tracer != nil {
+		d.Tracer = r.Tracer
+	}
+
 	var err error
 	var response map[string]interface{}
 	// If an incoming event can be matched to this router, but the router has no registered handlers
@@ -58,19 +63,18 @@ func (r *RPCRouter) LambdaHandler(ctx context.Context, d *HandlerDependencies, e
 			// Trace (default is to use XRay)
 			// Annotations can be searched in XRay.
 			// For example: annotation.RPCName = "myProcedure"
-			// r.Tracer.Annotations = map[string]interface{}{
+			// d.Tracer.Annotations = map[string]interface{}{
 			// 	"RPCName": procedureName,
 			// }
-			r.Tracer.Record("annotation",
+			d.Tracer.Record("annotation",
 				map[string]interface{}{
 					"RPCName": procedureName,
 				},
 			)
 
-			err = r.Tracer.Capture(ctx, "RPCHandler", func(ctx1 context.Context) error {
-				// r.Tracer.AddAnnotations(ctx1)
-				// r.Tracer.AddMetadata(ctx1)
-				d.Tracer = &r.Tracer
+			err = d.Tracer.Capture(ctx, "RPCHandler", func(ctx1 context.Context) error {
+				// d.Tracer.AddAnnotations(ctx1)
+				// d.Tracer.AddMetadata(ctx1)
 				response, err = handler(ctx1, d, evt)
 				return err
 			})
@@ -82,21 +86,20 @@ func (r *RPCRouter) LambdaHandler(ctx context.Context, d *HandlerDependencies, e
 			// It's possible that the RPCRouter wasn't created with NewRPCRouter, so check for this still.
 			if handler, ok := r.handlers["_"]; ok {
 				// Capture the handler (in XRay by default) automatically
-				// r.Tracer.Annotations = map[string]interface{}{
+				// d.Tracer.Annotations = map[string]interface{}{
 				// 	"RPCName":            procedureName,
 				// 	"FallthroughHandler": true,
 				// }
-				r.Tracer.Record("annotation",
+				d.Tracer.Record("annotation",
 					map[string]interface{}{
 						"RPCName":            procedureName,
 						"FallthroughHandler": true,
 					},
 				)
 
-				err = r.Tracer.Capture(ctx, "RPCHandler", func(ctx1 context.Context) error {
-					// r.Tracer.AddAnnotations(ctx1)
-					// r.Tracer.AddMetadata(ctx1)
-					d.Tracer = &r.Tracer
+				err = d.Tracer.Capture(ctx, "RPCHandler", func(ctx1 context.Context) error {
+					// d.Tracer.AddAnnotations(ctx1)
+					// d.Tracer.AddMetadata(ctx1)
 					response, err = handler(ctx1, d, evt)
 					return err
 				})

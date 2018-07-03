@@ -28,6 +28,11 @@ a lightweight set of helpers or framework to help build things faster. It's to b
 and flexible. 1.x will focus on adding more event router/handlers and helper functions.
 Not every possible service will likely ever covered, the focus will be on the common.
 
+## 1.15.0
+
+- SQS Routing support - can route by queue name and/or attribute key and string value match
+- Various fixes to `Tracer` and default `TraceStrategy` interfaces
+
 ## 1.14.1
 
 - Added a bunch of tests (and more to come)

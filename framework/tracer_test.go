@@ -24,7 +24,7 @@ import (
 
 func TestTracer(t *testing.T) {
 
-	testTracer := &XRayTraceStrategy{}
+	testTracer := XRayTraceStrategy{}
 	Convey("XRayTraceStrategy", t, func() {
 
 		Convey("Record() should set annotations, namespaced annotations, or an error", func() {
@@ -60,7 +60,7 @@ func TestTracer(t *testing.T) {
 
 	Convey("NoTraceStrategy", t, func() {
 
-		testNoTracer := &NoTraceStrategy{}
+		testNoTracer := NoTraceStrategy{}
 
 		Convey("BeginSegment() should return context", func() {
 			ctx := context.Background()

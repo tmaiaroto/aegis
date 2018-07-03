@@ -65,6 +65,7 @@ type DeploymentConfig struct {
 	}
 	BucketTriggers []BucketTrigger
 	SESRules       []SESRule
+	Queues         []SQS
 }
 
 // DeploymentStage defines an API Gateway stage and holds configuration options for it
@@ -108,6 +109,12 @@ type SESRule struct {
 	S3EncryptMessage  bool     `json:"s3encryptMessage"`
 	S3KMSKeyArn       string   `json:"s3KMSKeyArn"`
 	S3SNSTopicArn     string   `json:"s3SNSTopicArn"`
+}
+
+// SQS defines optiosn for an SQS queue
+type SQS struct {
+	Name       string                 `json:"name"`
+	Attributes map[string]interface{} `json:"attributes"`
 }
 
 // bucketTriggers:

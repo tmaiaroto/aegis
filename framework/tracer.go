@@ -99,19 +99,19 @@ func (t *XRayTraceStrategy) Record(dataType string, data interface{}) {
 }
 
 // Capture traces the provided synchronous function by using XRay Cpature() which puts a beginning and closing subsegment around its execution
-func (t *XRayTraceStrategy) Capture(ctx context.Context, name string, fn func(context.Context) error) (err error) {
+func (t XRayTraceStrategy) Capture(ctx context.Context, name string, fn func(context.Context) error) (err error) {
 	t.setData(ctx)
 	return xray.Capture(ctx, name, fn)
 }
 
 // CaptureAsync traces an arbitrary code segment within a goroutine by using XRay CaptureAsync()
-func (t *XRayTraceStrategy) CaptureAsync(ctx context.Context, name string, fn func(context.Context) error) {
+func (t XRayTraceStrategy) CaptureAsync(ctx context.Context, name string, fn func(context.Context) error) {
 	t.setData(ctx)
 	xray.CaptureAsync(ctx, name, fn)
 }
 
 // setData will set annotations, metadata, etc. on to the segment using context
-func (t *XRayTraceStrategy) setData(ctx context.Context) {
+func (t XRayTraceStrategy) setData(ctx context.Context) {
 	if t.Annotation == nil {
 		for k, v := range t.Annotation {
 			xray.AddAnnotation(ctx, k, v)
@@ -144,7 +144,7 @@ func (t *XRayTraceStrategy) setData(ctx context.Context) {
 }
 
 // BeginSegment will begin a new trace segment, useful when running locally as AWS Lambda already does this
-func (t *XRayTraceStrategy) BeginSegment(ctx context.Context, name string) (context.Context, interface{}) {
+func (t XRayTraceStrategy) BeginSegment(ctx context.Context, name string) (context.Context, interface{}) {
 	// By default we're just using xray's BeginSegment(), but if xray is not used, then
 	// something else needs to return a context and interface{} (which is ignored when running locally).
 	// Note: It is possible to use xray locally still. You just need AWS credentials configured.
@@ -153,18 +153,18 @@ func (t *XRayTraceStrategy) BeginSegment(ctx context.Context, name string) (cont
 }
 
 // BeginSubsegment will begin a new trace sub-segment, useful within handlers
-func (t *XRayTraceStrategy) BeginSubsegment(ctx context.Context, name string) (context.Context, interface{}) {
+func (t XRayTraceStrategy) BeginSubsegment(ctx context.Context, name string) (context.Context, interface{}) {
 	return xray.BeginSubsegment(ctx, name)
 }
 
 // CloseSegment will just call AWS X-Ray's Segment.Close()
-func (t *XRayTraceStrategy) CloseSegment(segment interface{}, err error) {
+func (t XRayTraceStrategy) CloseSegment(segment interface{}, err error) {
 	seg := segment.(*xray.Segment)
 	seg.Close(err)
 }
 
 // CloseSubsegment will just call AWS X-Ray's Segment.Close()
-func (t *XRayTraceStrategy) CloseSubsegment(segment interface{}, err error) {
+func (t XRayTraceStrategy) CloseSubsegment(segment interface{}, err error) {
 	subseg := segment.(*xray.Segment)
 	subseg.CloseAndStream(err)
 }
@@ -174,33 +174,33 @@ type NoTraceStrategy struct {
 }
 
 // Record in this case does nothing
-func (t *NoTraceStrategy) Record(dataType string, data interface{}) {}
+func (t NoTraceStrategy) Record(dataType string, data interface{}) {}
 
 // Capture in this case just executes the function it's wrapping
-func (t *NoTraceStrategy) Capture(ctx context.Context, name string, fn func(context.Context) error) error {
+func (t NoTraceStrategy) Capture(ctx context.Context, name string, fn func(context.Context) error) error {
 	fn(ctx)
 	return nil
 }
 
 // CaptureAsync in this case just executes the function it's wrapping
-func (t *NoTraceStrategy) CaptureAsync(ctx context.Context, name string, fn func(context.Context) error) {
+func (t NoTraceStrategy) CaptureAsync(ctx context.Context, name string, fn func(context.Context) error) {
 	fn(ctx)
 }
 
 // BeginSegment in this case does nothing
-func (t *NoTraceStrategy) BeginSegment(ctx context.Context, name string) (context.Context, interface{}) {
+func (t NoTraceStrategy) BeginSegment(ctx context.Context, name string) (context.Context, interface{}) {
 	return context.Background(), nil
 }
 
 // BeginSubsegment in this case does nothing
-func (t *NoTraceStrategy) BeginSubsegment(ctx context.Context, name string) (context.Context, interface{}) {
+func (t NoTraceStrategy) BeginSubsegment(ctx context.Context, name string) (context.Context, interface{}) {
 	return context.Background(), nil
 }
 
 // CloseSegment in this case does nothing
-func (t *NoTraceStrategy) CloseSegment(segment interface{}, err error) {
+func (t NoTraceStrategy) CloseSegment(segment interface{}, err error) {
 }
 
 // CloseSubsegment in this case does nothing
-func (t *NoTraceStrategy) CloseSubsegment(segment interface{}, err error) {
+func (t NoTraceStrategy) CloseSubsegment(segment interface{}, err error) {
 }

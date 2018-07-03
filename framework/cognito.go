@@ -34,6 +34,11 @@ type CognitoHandler func(context.Context, *HandlerDependencies, map[string]inter
 
 // LambdaHandler handles Cognito trigger events.
 func (r *CognitoRouter) LambdaHandler(ctx context.Context, d *HandlerDependencies, evt map[string]interface{}) (map[string]interface{}, error) {
+	// If this Router had a Tracer set for it, replace the default which came from the Aegis interface.
+	if r.Tracer != nil {
+		d.Tracer = r.Tracer
+	}
+
 	var err error
 	handled := false
 	userPoolID := evt["userPoolId"].(string)
@@ -63,7 +68,6 @@ func (r *CognitoRouter) LambdaHandler(ctx context.Context, d *HandlerDependencie
 			)
 
 			err = r.Tracer.Capture(ctx, "CognitoHandler", func(ctx1 context.Context) error {
-				d.Tracer = &r.Tracer
 				response, err = handler(ctx1, d, evt)
 				return err
 			})
@@ -88,7 +92,6 @@ func (r *CognitoRouter) LambdaHandler(ctx context.Context, d *HandlerDependencie
 			)
 
 			err = r.Tracer.Capture(ctx, "CognitoHandler", func(ctx1 context.Context) error {
-				d.Tracer = &r.Tracer
 				response, err = handler(ctx, d, evt)
 				return err
 			})

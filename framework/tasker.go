@@ -33,6 +33,11 @@ type TaskHandler func(context.Context, *HandlerDependencies, map[string]interfac
 
 // LambdaHandler is a native AWS Lambda Go handler function. Handles a CloudWatch event.
 func (t *Tasker) LambdaHandler(ctx context.Context, d *HandlerDependencies, evt map[string]interface{}) error {
+	// If this Router had a Tracer set for it, replace the default which came from the Aegis interface.
+	if t.Tracer != nil {
+		d.Tracer = t.Tracer
+	}
+
 	// If an incoming event can be matched to this router, but the router has no registered handlers
 	// or if one hasn't been added to aegis.Handlers{}.
 	if t == nil {
@@ -51,19 +56,18 @@ func (t *Tasker) LambdaHandler(ctx context.Context, d *HandlerDependencies, evt 
 		if handler, ok := t.handlers[taskName]; ok {
 			handled = true
 			// Trace (defeault is to use XRay)
-			t.Tracer.Record("annotation",
+			d.Tracer.Record("annotation",
 				map[string]interface{}{
 					"TaskName": taskName,
 				},
 			)
-			t.Tracer.Record("metadata",
+			d.Tracer.Record("metadata",
 				map[string]interface{}{
 					"TaskEvent": evt,
 				},
 			)
 
-			err = t.Tracer.Capture(ctx, "TaskHandler", func(ctx1 context.Context) error {
-				d.Tracer = &t.Tracer
+			err = d.Tracer.Capture(ctx, "TaskHandler", func(ctx1 context.Context) error {
 				return handler(ctx1, d, evt)
 			})
 		}
@@ -74,20 +78,19 @@ func (t *Tasker) LambdaHandler(ctx context.Context, d *HandlerDependencies, evt 
 			// It's possible that the Tasker wasn't created with NewTasker, so check for this still.
 			if handler, ok := t.handlers["_"]; ok {
 				// Trace (defeault is to use XRay)
-				t.Tracer.Record("annotation",
+				d.Tracer.Record("annotation",
 					map[string]interface{}{
 						"TaskName":           taskName,
 						"FallthroughHandler": true,
 					},
 				)
-				t.Tracer.Record("metadata",
+				d.Tracer.Record("metadata",
 					map[string]interface{}{
 						"TaskEvent": evt,
 					},
 				)
 
-				err = t.Tracer.Capture(ctx, "TaskHandler", func(ctx1 context.Context) error {
-					d.Tracer = &t.Tracer
+				err = d.Tracer.Capture(ctx, "TaskHandler", func(ctx1 context.Context) error {
 					return handler(ctx, d, evt)
 				})
 

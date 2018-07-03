@@ -2,7 +2,7 @@
 package version
 
 // Semantic defines a semver string for aegis
-const Semantic = "1.14.1"
+const Semantic = "1.15.0"
 
 // Current will return the current version
 func Current() string {

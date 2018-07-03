@@ -32,6 +32,7 @@ type Handlers struct {
 	RPCRouter      *RPCRouter
 	S3ObjectRouter *S3ObjectRouter
 	SESRouter      *SESRouter
+	SQSRouter      *SQSRouter
 	CognitoRouter  *CognitoRouter
 	DefaultHandler DefaultHandler
 }
@@ -40,7 +41,7 @@ type Handlers struct {
 type HandlerDependencies struct {
 	Services *Services
 	Log      *logrus.Logger
-	Tracer   *TraceStrategy
+	Tracer   TraceStrategy
 	Custom   map[string]interface{}
 }
 
@@ -65,6 +66,13 @@ func getType(evt map[string]interface{}) string {
 			// SES
 			if keyInMap("ses", records[0].(map[string]interface{})) {
 				return "SimpleEmailEvent"
+			}
+			// SQS
+			if keyInMap("eventSource", records[0].(map[string]interface{})) {
+				record := records[0].(map[string]interface{})
+				if record != nil && record["eventSource"].(string) == "aws:sqs" {
+					return "SQSEvent"
+				}
 			}
 		}
 	}
@@ -155,6 +163,13 @@ func (h *Handlers) eventHandler(ctx context.Context, d *HandlerDependencies, evt
 		} else {
 			log.Println("Could not decode SimpleEmailEvent", decodeErr)
 		}
+	case "SQSEvent":
+		var e SQSEvent
+		err = mapstructure.Decode(evt, &e)
+		if err == nil {
+			return nil, h.SQSRouter.LambdaHandler(ctx, d, e)
+		}
+		log.Println("Could not decode SQSEvent", err)
 	case "CognitoTrigger":
 		// There's so many different formats here, routing for each is a bit silly.
 		// So send map[string]interface{}
