@@ -66,3 +66,5 @@ only so much time. Though it's still good to share ideas.
 Goconvey is used for testing, just be sure to exclude the `docs` directory. For example: `goconvey -excludedDirs docs`
 
 Otherwise, tests will run and also include the `docs` folder which will likely have problems.
+
+Alternatively, run tests from the `framework` directory.

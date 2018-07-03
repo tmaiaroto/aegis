@@ -389,6 +389,16 @@ func createOrUpdateAegisRole() string {
 		fmt.Println(err)
 	}
 
+	// Then AWSLambdaSQSQueueExecutionRole
+	_, err = svc.AttachRolePolicy(&iam.AttachRolePolicyInput{
+		PolicyArn: aws.String("arn:aws:iam::aws:policy/AWSLambdaSQSQueueExecutionRole"),
+		RoleName:  aegisLambdaRoleName,
+	})
+	if err != nil {
+		fmt.Println("There was a problem attaching AWSLambdaSQSQueueExecutionRole managed policy to the IAM role for Lambda.")
+		fmt.Println(err)
+	}
+
 	return roleArn
 }
 

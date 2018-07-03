@@ -153,6 +153,13 @@ func NewSQSRouter(rootHandler ...func(context.Context, *HandlerDependencies, *SQ
 	}
 }
 
+// NewSQSRouterForQueue returns a new SQSRouter for a specific SQS queue, it will only route events coming from the given queue
+func NewSQSRouterForQueue(queue string, rootHandler ...func(context.Context, *HandlerDependencies, *SQSEvent) error) *SQSRouter {
+	router := NewSQSRouter(rootHandler...)
+	router.Queue = queue
+	return router
+}
+
 // Handle will register a handler for a given attribute name and its string value match (1 would be "1" and binary values would be base64 strings).
 // Note that routers can be per queue so this match could match two different queues and therefore be used in two different routers.
 func (r *SQSRouter) Handle(attrName string, attrStrValue string, handler func(context.Context, *HandlerDependencies, *SQSEvent) error) {
