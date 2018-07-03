@@ -564,6 +564,40 @@ as to whether or not it wanted to retrieve the file from S3.</p>
     
         
 
+<h1 id="sqs-router">SQS Router</h1>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="nx">main</span><span class="p">()</span> <span class="p">{</span>
+    <span class="nx">sqsRouter</span> <span class="o">:=</span> <span class="nx">aegis</span><span class="p">.</span><span class="nx">NewSQSRouterForBucket</span><span class="p">(</span><span class="s">&#34;aegis-queue&#34;</span><span class="p">)</span>
+    <span class="nx">sqsRouter</span><span class="p">.</span><span class="nx">Handle</span><span class="p">(</span><span class="s">&#34;attr&#34;</span><span class="p">,</span> <span class="s">&#34;value&#34;</span><span class="p">,</span> <span class="nx">handleSQSMessage</span><span class="p">)</span>
+
+    <span class="nx">handlers</span> <span class="o">:=</span> <span class="nx">aegis</span><span class="p">.</span><span class="nx">Handlers</span><span class="p">{</span>
+        <span class="nx">SQSRouter</span><span class="p">:</span> <span class="nx">sqsRouter</span><span class="p">,</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nx">handleSQSMessage</span><span class="p">(</span><span class="nx">ctx</span> <span class="nx">context</span><span class="p">.</span><span class="nx">Context</span><span class="p">,</span> <span class="nx">d</span> <span class="o">*</span><span class="nx">aegis</span><span class="p">.</span><span class="nx">HandlerDependencies</span><span class="p">,</span> <span class="nx">evt</span> <span class="o">*</span><span class="nx">aegis</span><span class="p">.</span><span class="nx">SQSEvent</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+    <span class="c1">// evt will contain the message body, attributes, etc.
+</span><span class="c1"></span>    <span class="k">return</span> <span class="kc">nil</span>
+<span class="p">}</span></code></pre></div>
+<p>Each SQS queue allows one Lambda to be invoked when new messages enter the queue. However, multiple queues may go
+to trigger the same Lambda function. This router plays an important role here.</p>
+
+<p>Further, SQS messages can vary wildly. You will end up defining your message conventions. This is especially true
+when it comes to each message&rsquo;s attributes. This is where the router&rsquo;s rules are applied too.</p>
+
+<p>When you handle an SQS event you can match on a message attribute name and it&rsquo;s string value. SQS will always
+provide a string representation of the message attribute value. If it is binary, this means a base64 string.
+Therefore <code>Handle()</code> always takes two strings for the first two arguments; key and value.</p>
+
+<p>If you wish to handle all messages for a given queue, where you have the most flexibility, you can simply use
+an SQS router&rsquo;s root/falltrhough handler. Like the S3Object Router, there is a more terse <span class="nowrap"><code>NewSQSRouterForQueue()</code></span>
+function to create a router for a specific queue in one line.</p>
+
+<p><strong>Note: At this time Aegis CLI will not create or manage SQS queues for you.</strong> It will associate the necessary
+execution role for your Lambda, but you will need to manage your own queues and which Lambda functions they trigger.</p>
+
+    
+        
+
 <h1 id="cognito-router">Cognito Router</h1>
 
 <p>There are some AWS Cognito specific events that can be routed as well. These events are for User Pool workflows.

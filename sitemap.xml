@@ -79,7 +79,11 @@
   </url>
   
   <url>
-    <loc>https://tmaiaroto.github.io/aegis/routers/7_cognito/</loc>
+    <loc>https://tmaiaroto.github.io/aegis/routers/7_sqs/</loc>
+  </url>
+  
+  <url>
+    <loc>https://tmaiaroto.github.io/aegis/routers/8_cognito/</loc>
   </url>
   
   <url>

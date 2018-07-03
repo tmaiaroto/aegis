@@ -1,0 +1,178 @@
+<!doctype html>
+<html>
+<head>
+    
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-295433-8"></script>
+    <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'UA-295433-8');
+    </script>
+
+    <meta charset="utf-8">
+    <meta content="IE=edge,chrome=1" http-equiv="X-UA-Compatible">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title></title>
+    <link href='/aegis/slate/stylesheets/monokai.css' rel="stylesheet" media="screen" />
+<link href='/aegis/slate/stylesheets/screen.css' rel="stylesheet" media="screen" />
+<link href='/aegis/slate/stylesheets/print.css' rel="stylesheet" media="print" />
+
+    <link href='/aegis/css/styles.css' rel="stylesheet"/>
+    <link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.0.13/css/solid.css" integrity="sha384-drdlAcijFWubhOfj9OS/gy2Gs34hVhVT90FgJLzrldrLI+7E7lwBxmanEEhKTRTS" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.0.13/css/brands.css" integrity="sha384-t3MQUMU0g3tY/0O/50ja6YVaEFYwPpOiPbrHk9p5DmYtkHJU2U1/ujNhYruOJwcj" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.0.13/css/fontawesome.css" integrity="sha384-LDuQaX4rOgqi4rbWCyWj3XVBlgDzuxGy/E6vWN6U7c25/eSJIwyKhy9WgZCHQWXz" crossorigin="anonymous">
+    
+<script src='/aegis/slate/javascripts/all.js'></script>
+
+    
+</head>
+<body class="index" data-languages="">
+    <div class="main-nav-wrapper">
+        <ul class="main-menu">
+            <li class="">
+    <a href="/aegis/">Getting Started</a>
+</li>
+
+
+    
+    <li class="active">
+        <a href="/aegis/routers/" title="Aegis Routers">Routers</a>
+    </li>
+    
+
+    
+    <li class="">
+        <a href="/aegis/handler-dependencies/" title="Aegis Dependencies">Dependencies</a>
+    </li>
+    
+
+    
+    <li class="">
+        <a href="/aegis/helpers/" title="Aegis Helpers">Helpers</a>
+    </li>
+    
+
+    
+    <li class="">
+        <a href="/aegis/cli/" title="Aegis Command Line Interface">CLI</a>
+    </li>
+    
+
+        </ul>
+    </div>
+    <a href="#" id="nav-button">
+        <span>
+        NAV
+        <img src='/aegis/slate/images/navbar.png'/>
+      </span>
+    </a>
+    <div class="tocify-wrapper">
+        
+         
+ <div id="logo-type">
+    <h1 class="toc-ignore">Aegis</h1>
+    <h2 class="toc-ignore">An AWS Serverless Framework for Go</h2>
+</div>
+         
+        <aside class="main-menu-sidebar-wrapper">
+    <ul class="main-menu-sidebar">
+        <li class="">
+    <a href="/aegis/">Getting Started</a>
+</li>
+
+
+    
+    <li class="active">
+        <a href="/aegis/routers/" title="Aegis Routers">Routers</a>
+    </li>
+    
+
+    
+    <li class="">
+        <a href="/aegis/handler-dependencies/" title="Aegis Dependencies">Dependencies</a>
+    </li>
+    
+
+    
+    <li class="">
+        <a href="/aegis/helpers/" title="Aegis Helpers">Helpers</a>
+    </li>
+    
+
+    
+    <li class="">
+        <a href="/aegis/cli/" title="Aegis Command Line Interface">CLI</a>
+    </li>
+    
+
+    </ul>
+</aside>
+        
+        <div class="search">
+            <input type="text" class="search" id="input-search" placeholder='Search This Section'>
+        </div>
+        <ul class="search-results"></ul>
+        
+        <div id="toc">
+        </div>
+         
+        
+        <ul class="toc-footer">
+            
+            <li><a class='github-link' href='https://github.com/tmaiaroto/aegis' target='_blank' title='Aegis on GitHub'><i class='fab fa-github'></i> Aegis on GitHub</a></li>
+            
+            <li><div class='hugo-theme-credit'>Hugo Theme by <a href='https://github.com/bep' target='_blank'>bep</a></div>
+</li>
+            
+        </ul>
+        
+        
+    </div>
+    <div class="page-wrapper">
+        <div class="dark-box"></div>
+        <div class="content">
+            
+    
+
+<h1 id="sqs-router">SQS Router</h1>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="nx">main</span><span class="p">()</span> <span class="p">{</span>
+    <span class="nx">sqsRouter</span> <span class="o">:=</span> <span class="nx">aegis</span><span class="p">.</span><span class="nx">NewSQSRouterForBucket</span><span class="p">(</span><span class="s">&#34;aegis-queue&#34;</span><span class="p">)</span>
+    <span class="nx">sqsRouter</span><span class="p">.</span><span class="nx">Handle</span><span class="p">(</span><span class="s">&#34;attr&#34;</span><span class="p">,</span> <span class="s">&#34;value&#34;</span><span class="p">,</span> <span class="nx">handleSQSMessage</span><span class="p">)</span>
+
+    <span class="nx">handlers</span> <span class="o">:=</span> <span class="nx">aegis</span><span class="p">.</span><span class="nx">Handlers</span><span class="p">{</span>
+        <span class="nx">SQSRouter</span><span class="p">:</span> <span class="nx">sqsRouter</span><span class="p">,</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nx">handleSQSMessage</span><span class="p">(</span><span class="nx">ctx</span> <span class="nx">context</span><span class="p">.</span><span class="nx">Context</span><span class="p">,</span> <span class="nx">d</span> <span class="o">*</span><span class="nx">aegis</span><span class="p">.</span><span class="nx">HandlerDependencies</span><span class="p">,</span> <span class="nx">evt</span> <span class="o">*</span><span class="nx">aegis</span><span class="p">.</span><span class="nx">SQSEvent</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+    <span class="c1">// evt will contain the message body, attributes, etc.
+</span><span class="c1"></span>    <span class="k">return</span> <span class="kc">nil</span>
+<span class="p">}</span></code></pre></div>
+<p>Each SQS queue allows one Lambda to be invoked when new messages enter the queue. However, multiple queues may go
+to trigger the same Lambda function. This router plays an important role here.</p>
+
+<p>Further, SQS messages can vary wildly. You will end up defining your message conventions. This is especially true
+when it comes to each message&rsquo;s attributes. This is where the router&rsquo;s rules are applied too.</p>
+
+<p>When you handle an SQS event you can match on a message attribute name and it&rsquo;s string value. SQS will always
+provide a string representation of the message attribute value. If it is binary, this means a base64 string.
+Therefore <code>Handle()</code> always takes two strings for the first two arguments; key and value.</p>
+
+<p>If you wish to handle all messages for a given queue, where you have the most flexibility, you can simply use
+an SQS router&rsquo;s root/falltrhough handler. Like the S3Object Router, there is a more terse <span class="nowrap"><code>NewSQSRouterForQueue()</code></span>
+function to create a router for a specific queue in one line.</p>
+
+<p><strong>Note: At this time Aegis CLI will not create or manage SQS queues for you.</strong> It will associate the necessary
+execution role for your Lambda, but you will need to manage your own queues and which Lambda functions they trigger.</p>
+
+
+        </div>
+        <div class="dark-box">
+            
+        </div>
+    </div>
+    
+</body>
+</html>

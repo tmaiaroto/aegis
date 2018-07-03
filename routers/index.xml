@@ -71,10 +71,19 @@ You can route based on any address match, or address matches within a specific d
     
     <item>
       <title></title>
-      <link>https://tmaiaroto.github.io/aegis/routers/7_cognito/</link>
+      <link>https://tmaiaroto.github.io/aegis/routers/7_sqs/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://tmaiaroto.github.io/aegis/routers/7_cognito/</guid>
+      <guid>https://tmaiaroto.github.io/aegis/routers/7_sqs/</guid>
+      <description>SQS Router func main() { sqsRouter := aegis.NewSQSRouterForBucket(&amp;#34;aegis-queue&amp;#34;) sqsRouter.Handle(&amp;#34;attr&amp;#34;, &amp;#34;value&amp;#34;, handleSQSMessage) handlers := aegis.Handlers{ SQSRouter: sqsRouter, } } func handleSQSMessage(ctx context.Context, d *aegis.HandlerDependencies, evt *aegis.SQSEvent) error { // evt will contain the message body, attributes, etc.  return nil } Each SQS queue allows one Lambda to be invoked when new messages enter the queue. However, multiple queues may go to trigger the same Lambda function. This router plays an important role here.</description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>https://tmaiaroto.github.io/aegis/routers/8_cognito/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://tmaiaroto.github.io/aegis/routers/8_cognito/</guid>
       <description>Cognito Router There are some AWS Cognito specific events that can be routed as well. These events are for User Pool workflows. You can find more information about the Cognito triggers here.
 The Cognito router is matching on the triggerSource value here. You also can have separate handlers for different User Pools. You&amp;rsquo;ll just need to set a PoolID on the router or use NewCognitoRouterForPool() instead of NewCognitoRouter().
 Perhaps the most interesting or useful thing about this router is the ability to have your Lambda easily add functionality to AWS Cognito.</description>
