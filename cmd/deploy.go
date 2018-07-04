@@ -332,13 +332,6 @@ func createOrUpdateAegisRole() string {
 			  {
 				"Effect": "Allow",
 				"Principal": {
-				  "Service": "cognito-identity.amazonaws.com"
-				},
-				  "Action": "sts:AssumeRole"
-			  },
-			  {
-				"Effect": "Allow",
-				"Principal": {
 				  "Service": "xray.amazonaws.com"
 				},
 				"Action": "sts:AssumeRole"
@@ -391,7 +384,7 @@ func createOrUpdateAegisRole() string {
 
 	// Then AWSLambdaSQSQueueExecutionRole
 	_, err = svc.AttachRolePolicy(&iam.AttachRolePolicyInput{
-		PolicyArn: aws.String("arn:aws:iam::aws:policy/AWSLambdaSQSQueueExecutionRole"),
+		PolicyArn: aws.String("arn:aws:iam::aws:policy/service-role/AWSLambdaSQSQueueExecutionRole"),
 		RoleName:  aegisLambdaRoleName,
 	})
 	if err != nil {
