@@ -86,7 +86,7 @@ func cognitoCallback(ctx context.Context, d *aegis.HandlerDependencies, req *aeg
 	// Exchange code for token
 	tokens, err := d.Services.Cognito.GetTokens(req.QueryStringParameters["code"], []string{})
 	// Depending on Cognito configuration, there could be an error here.
-	// This service is for an OAuth2 with openid flow. Ensure the proper grants are set.
+	// This service is for an OAuth2 with an authorization code flow. Ensure grants are set.
 	if tokens.Error != "" {
 		err = errors.New(tokens.Error)
 	}
