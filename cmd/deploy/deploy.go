@@ -20,12 +20,15 @@ import (
 	"log"
 	"os"
 	"regexp"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/lambda"
 	"github.com/fatih/color"
+	"github.com/kamilsk/retry"
+	"github.com/kamilsk/retry/strategy"
 	"github.com/tmaiaroto/aegis/cmd/config"
 	"github.com/tmaiaroto/aegis/cmd/util"
 )
@@ -89,13 +92,30 @@ func (d *Deployer) CreateFunction(zipBytes []byte) *string {
 				Mode: aws.String(d.Cfg.Lambda.TraceMode),
 			},
 		}
-		f, err := svc.CreateFunction(input)
-		if err != nil {
+
+		var functionArn *string
+
+		var createAction retry.Action = func(_ uint) error {
+			time.Sleep(5 * time.Second)
+
+			f, err := svc.CreateFunction(input)
+			if err != nil {
+				return err
+			}
+			functionArn = f.FunctionArn
+			return nil
+		}
+
+		// NOTE: Often when creating a new IAM role, it's not immediately available to use with the Lambda function.
+		// This retry should hopefully provide enough time.
+		err := retry.Retry(retry.WithTimeout(time.Minute), createAction, strategy.Limit(5))
+		if err != nil || functionArn == nil {
 			fmt.Println("There was a problem creating the Lambda function.")
 			fmt.Println(err.Error())
 			os.Exit(-1)
 		}
-		fmt.Printf("%v %v\n\n", "Created Lambda function:", color.GreenString(*f.FunctionArn))
+
+		fmt.Printf("%v %v\n\n", "Created Lambda function:", color.GreenString(*functionArn))
 
 		// Create or update alias
 		// TODO: This works, but doesn't really help much without roll back support, etc.
@@ -105,7 +125,7 @@ func (d *Deployer) CreateFunction(zipBytes []byte) *string {
 
 		// return f.FunctionArn
 		// Ensure the version number is stripped from the end
-		arn := util.StripLamdaVersionFromArn(*f.FunctionArn)
+		arn := util.StripLamdaVersionFromArn(*functionArn)
 
 		// Set concurrency limit, if configured
 		d.updateFunctionMaxConcurrency(svc)
@@ -127,33 +147,43 @@ func (d *Deployer) CreateFunction(zipBytes []byte) *string {
 func (d *Deployer) updateFunction(zipBytes []byte) *string {
 	svc := lambda.New(d.AWSSession)
 
-	_, err := svc.UpdateFunctionConfiguration(&lambda.UpdateFunctionConfigurationInput{
-		Description:  aws.String(d.Cfg.Lambda.Description),
-		FunctionName: aws.String(d.Cfg.Lambda.FunctionName),
-		Handler:      aws.String(d.Cfg.Lambda.Handler),
-		MemorySize:   aws.Int64(d.Cfg.Lambda.MemorySize),
-		Role:         aws.String(d.Cfg.Lambda.Role),
-		Runtime:      aws.String(d.Cfg.Lambda.Runtime),
-		Timeout:      aws.Int64(int64(d.Cfg.Lambda.Timeout)),
-		Environment: &lambda.Environment{
-			// Variables: d.Cfg.Lambda.EnvironmentVariables,
-			Variables: d.LookupSecretsForLambdaEnvVars(d.Cfg.Lambda.EnvironmentVariables),
-		},
-		KMSKeyArn: aws.String(d.Cfg.Lambda.KMSKeyArn),
-		VpcConfig: &lambda.VpcConfig{
-			SecurityGroupIds: aws.StringSlice(d.Cfg.Lambda.VPC.SecurityGroups),
-			SubnetIds:        aws.StringSlice(d.Cfg.Lambda.VPC.Subnets),
-		},
-		TracingConfig: &lambda.TracingConfig{
-			Mode: aws.String(d.Cfg.Lambda.TraceMode),
-		},
-	})
+	var updateAction retry.Action = func(_ uint) error {
+		time.Sleep(5 * time.Second)
+
+		_, err := svc.UpdateFunctionConfiguration(&lambda.UpdateFunctionConfigurationInput{
+			Description:  aws.String(d.Cfg.Lambda.Description),
+			FunctionName: aws.String(d.Cfg.Lambda.FunctionName),
+			Handler:      aws.String(d.Cfg.Lambda.Handler),
+			MemorySize:   aws.Int64(d.Cfg.Lambda.MemorySize),
+			Role:         aws.String(d.Cfg.Lambda.Role),
+			Runtime:      aws.String(d.Cfg.Lambda.Runtime),
+			Timeout:      aws.Int64(int64(d.Cfg.Lambda.Timeout)),
+			Environment: &lambda.Environment{
+				// Variables: d.Cfg.Lambda.EnvironmentVariables,
+				Variables: d.LookupSecretsForLambdaEnvVars(d.Cfg.Lambda.EnvironmentVariables),
+			},
+			KMSKeyArn: aws.String(d.Cfg.Lambda.KMSKeyArn),
+			VpcConfig: &lambda.VpcConfig{
+				SecurityGroupIds: aws.StringSlice(d.Cfg.Lambda.VPC.SecurityGroups),
+				SubnetIds:        aws.StringSlice(d.Cfg.Lambda.VPC.Subnets),
+			},
+			TracingConfig: &lambda.TracingConfig{
+				Mode: aws.String(d.Cfg.Lambda.TraceMode),
+			},
+		})
+		return err
+	}
+
+	// NOTE: Often when creating a new IAM role, it's not immediately available to use with the Lambda function.
+	// This retry should hopefully provide enough time.
+	err := retry.Retry(retry.WithTimeout(time.Minute), updateAction, strategy.Limit(5))
 	if err != nil {
 		fmt.Println("There was a problem updating the Lambda function.")
 		fmt.Println(err.Error())
 		os.Exit(-1)
 	}
 
+	// Now update the function code (zip file upload).
 	input := &lambda.UpdateFunctionCodeInput{
 		FunctionName: aws.String(d.Cfg.Lambda.FunctionName),
 		Publish:      aws.Bool(true),

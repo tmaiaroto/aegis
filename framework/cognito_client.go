@@ -72,6 +72,7 @@ type CognitoToken struct {
 	RefreshToken string `json:"refresh_token"`
 	ExpiresIn    int    `json:"expires_in"`
 	TokenType    string `json:"token_type"`
+	Error        string `json:"error"`
 }
 
 // NewCognitoAppClient returns a new CognitoAppClient interface configured for the given Cognito user pool ID and client ID

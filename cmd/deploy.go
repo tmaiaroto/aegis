@@ -121,13 +121,12 @@ func Deploy(cmd *cobra.Command, args []string) {
 	// When roles are passed to use, they are not modified.
 	if cfg.Lambda.Role == "" {
 		cfg.Lambda.Role = createOrUpdateAegisRole()
-		// fmt.Printf("Created a default aegis role for Lambda: %s\n", cfg.Lambda.Role)
 
 		// Have to delay a few seconds to give AWS some time to set up the role.
 		// Assigning it to the Lambda too soon could result in an error:
 		// InvalidParameterValueException: The role defined for the function cannot be assumed by Lambda.
 		// Apparently it needs a few seconds ¯\_(ツ)_/¯
-		time.Sleep(4 * time.Second)
+		time.Sleep(5 * time.Second)
 	}
 
 	// Create (or update) the function
@@ -310,35 +309,36 @@ func createOrUpdateAegisRole() string {
 		}
 	}
 
-	// Create the Lambda execution role, if necessary
-	if roleArn == "" {
-		var iamAssumeRolePolicy = `{
-			"Version": "2012-10-17",
-			"Statement": [
-			  {
-				"Effect": "Allow",
-				"Principal": {
-				  "Service": "lambda.amazonaws.com"
-				},
-				"Action": "sts:AssumeRole"
-			  },
-			  {
-				"Effect": "Allow",
-				"Principal": {
-				  "Service": "events.amazonaws.com"
-				},
-				  "Action": "sts:AssumeRole"
-			  },
-			  {
-				"Effect": "Allow",
-				"Principal": {
-				  "Service": "xray.amazonaws.com"
-				},
-				"Action": "sts:AssumeRole"
-			  }
-			]
-		  }`
+	// Assume role policy document
+	var iamAssumeRolePolicy = `{
+		"Version": "2012-10-17",
+		"Statement": [
+		  {
+			"Effect": "Allow",
+			"Principal": {
+			  "Service": "lambda.amazonaws.com"
+			},
+			"Action": "sts:AssumeRole"
+		  },
+		  {
+			"Effect": "Allow",
+			"Principal": {
+			  "Service": "events.amazonaws.com"
+			},
+			  "Action": "sts:AssumeRole"
+		  },
+		  {
+			"Effect": "Allow",
+			"Principal": {
+			  "Service": "xray.amazonaws.com"
+			},
+			"Action": "sts:AssumeRole"
+		  }
+		]
+	  }`
 
+	// Create the Lambda execution role, if necessary
+	if roleArn == "" || err != nil {
 		role, err := svc.CreateRole(&iam.CreateRoleInput{
 			RoleName:                 aegisLambdaRoleName,
 			AssumeRolePolicyDocument: aws.String(iamAssumeRolePolicy),
@@ -347,9 +347,15 @@ func createOrUpdateAegisRole() string {
 			fmt.Println("There was a problem creating a default IAM role for Lambda. Check your configuration.")
 			os.Exit(-1)
 		}
-		roleArn := *role.Role.Arn
+		roleArn = *role.Role.Arn
 		fmt.Printf("%v %v\n", "Created a new execution role for Lambda:", color.GreenString(roleArn))
 	}
+
+	// Update assume role policy
+	_, err = svc.UpdateAssumeRolePolicy(&iam.UpdateAssumeRolePolicyInput{
+		PolicyDocument: aws.String(iamAssumeRolePolicy),
+		RoleName:       aegisLambdaRoleName,
+	})
 
 	// Attach managed policies.
 	// First, AWSLambdaFullAccess

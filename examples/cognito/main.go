@@ -85,6 +85,11 @@ func redirectToCognitoLogout(ctx context.Context, d *aegis.HandlerDependencies, 
 func cognitoCallback(ctx context.Context, d *aegis.HandlerDependencies, req *aegis.APIGatewayProxyRequest, res *aegis.APIGatewayProxyResponse, params url.Values) error {
 	// Exchange code for token
 	tokens, err := d.Services.Cognito.GetTokens(req.QueryStringParameters["code"], []string{})
+	// Depending on Cognito configuration, there could be an error here.
+	// This service is for an OAuth2 with openid flow. Ensure the proper grants are set.
+	if tokens.Error != "" {
+		err = errors.New(tokens.Error)
+	}
 	if err != nil {
 		log.Println("Couldn't get access token", err)
 		res.JSONError(500, err)

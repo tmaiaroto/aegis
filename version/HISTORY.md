@@ -28,6 +28,13 @@ a lightweight set of helpers or framework to help build things faster. It's to b
 and flexible. 1.x will focus on adding more event router/handlers and helper functions.
 Not every possible service will likely ever covered, the focus will be on the common.
 
+## 1.15.2
+
+- Further fixes and enhancements for deploy (retries and longer wait periods after the creation
+  of new IAM roles should hopefully resolve AWS timing issues)
+- Updated `CognitoToken` struct to include `Error` field that handles errors coming back from
+  Cognito when trying to get a JWT, this allows application code to catch and handle them
+
 ## 1.15.1
 
 - Fix for IAM role creation
