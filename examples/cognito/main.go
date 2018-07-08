@@ -86,7 +86,9 @@ func cognitoCallback(ctx context.Context, d *aegis.HandlerDependencies, req *aeg
 	// Exchange code for token
 	tokens, err := d.Services.Cognito.GetTokens(req.QueryStringParameters["code"], []string{})
 	// Depending on Cognito configuration, there could be an error here.
-	// This service is for an OAuth2 with an authorization code flow. Ensure grants are set.
+	// This service is for an OAuth2 with an authorization code flow.
+	// NOTE: tokens.AccessToken is generally used.
+	// If using an openid grant, you may also use tokens.IDToken with ParseAndVerifyJWT() below.
 	if tokens.Error != "" {
 		err = errors.New(tokens.Error)
 	}
@@ -95,7 +97,7 @@ func cognitoCallback(ctx context.Context, d *aegis.HandlerDependencies, req *aeg
 		res.JSONError(500, err)
 	} else {
 		// verify the token
-		_, err := d.Services.Cognito.ParseAndVerifyJWT(tokens.IDToken)
+		_, err := d.Services.Cognito.ParseAndVerifyJWT(tokens.AccessToken)
 		if err == nil {
 			host := req.GetHeader("Host")
 			stage := req.RequestContext.Stage
