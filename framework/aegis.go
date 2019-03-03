@@ -28,6 +28,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
@@ -168,18 +169,24 @@ func (a *Aegis) setAegisVariables(ctx context.Context, evt map[string]interface{
 				// Try to base64 decode it, because API Gateway stage variables may be encoded because
 				// they do not support certain special characters, which is a big problem for sensitive
 				// credentials that often include special characters.
-				// TODO: Find another solution, if possible. May need to pre/suffix variables because
-				// it's actually possible to have a value that's a valid base64 string that isn't
-				// intended to be decoded.
-				// It may ultimately be up to the user to decode. They set the value after all.
-				//
-				// sDec, err := base64.StdEncoding.DecodeString(v)
-				// if err == nil {
-				// 	a.Services.Variables[k] = string(sDec)
-				// }
+				sDec, err := base64.StdEncoding.DecodeString(v)
+				if err == nil && isASCII(string(sDec)) {
+					a.Services.Variables[k] = string(sDec)
+				}
 			}
 		}
 	}
+}
+
+// isASCII is a simple check to help determine if a base64 decode was necessary when reading values
+// from API Gateway stage variables
+func isASCII(s string) bool {
+	for _, c := range s {
+		if c > unicode.MaxASCII {
+			return false
+		}
+	}
+	return true
 }
 
 // aegisHandler configures services and determines how to handle the Lambda event

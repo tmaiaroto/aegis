@@ -43,8 +43,9 @@ func TestAegis(t *testing.T) {
 		"httpMethod": "GET",
 		"path":       "/",
 		"stageVariables": map[string]string{
-			"foo": "bar",
-			"b64": "aGVsbG8gd29ybGQ=",
+			"foo":              "bar",
+			"b64":              "aGVsbG8gd29ybGQ=",
+			"b64FalsePositive": "aegistest",
 		},
 		"requestContext": map[string]interface{}{
 			"stage": "dev",
@@ -79,6 +80,12 @@ func TestAegis(t *testing.T) {
 		a.setAegisVariables(ctx, evt)
 		Convey("Should set variables from API Gateway stage variables", func() {
 			So(a.Variables, ShouldContainKey, "foo")
+			So(a.Variables, ShouldContainKey, "b64FalsePositive")
+			So(a.Variables["b64FalsePositive"], ShouldEqual, "aegistest")
+		})
+		Convey("Should handle base64 encoded values from API Gateway stage variables", func() {
+			So(a.Variables, ShouldContainKey, "b64")
+			So(a.Variables["b64"], ShouldEqual, "hello world")
 		})
 	})
 

@@ -28,6 +28,10 @@ a lightweight set of helpers or framework to help build things faster. It's to b
 and flexible. 1.x will focus on adding more event router/handlers and helper functions.
 Not every possible service will likely ever covered, the focus will be on the common.
 
+## 1.16.1
+
+- Brought back the base64 decoding of API Gateway stage variables
+
 ## 1.16.0
 
 - Fixed an issue where convenience was causing problems with AWS SDK rate limiting, using Cognito
