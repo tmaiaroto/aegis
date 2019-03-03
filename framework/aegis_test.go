@@ -80,11 +80,6 @@ func TestAegis(t *testing.T) {
 		Convey("Should set variables from API Gateway stage variables", func() {
 			So(a.Variables, ShouldContainKey, "foo")
 		})
-
-		Convey("Should handle base64 encoded values from API Gateway stage variables", func() {
-			So(a.Variables, ShouldContainKey, "b64")
-			So(a.Variables["b64"], ShouldEqual, "hello world")
-		})
 	})
 
 	Convey("aegisHandler()", t, func() {
