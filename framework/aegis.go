@@ -168,10 +168,15 @@ func (a *Aegis) setAegisVariables(ctx context.Context, evt map[string]interface{
 				// Try to base64 decode it, because API Gateway stage variables may be encoded because
 				// they do not support certain special characters, which is a big problem for sensitive
 				// credentials that often include special characters.
-				sDec, err := base64.StdEncoding.DecodeString(v)
-				if err == nil {
-					a.Services.Variables[k] = string(sDec)
-				}
+				// TODO: Find another solution, if possible. May need to pre/suffix variables because
+				// it's actually possible to have a value that's a valid base64 string that isn't
+				// intended to be decoded.
+				// It may ultimately be up to the user to decode. They set the value after all.
+				//
+				// sDec, err := base64.StdEncoding.DecodeString(v)
+				// if err == nil {
+				// 	a.Services.Variables[k] = string(sDec)
+				// }
 			}
 		}
 	}
@@ -202,6 +207,7 @@ func (a *Aegis) aegisHandler(ctx context.Context, evt map[string]interface{}) (i
 		a.Tracer.Record("annotation",
 			map[string]interface{}{
 				"CognitoRegion":         cognitoCfg.Region,
+				"CognitoDomain":         cognitoCfg.Domain,
 				"CognitoUserPoolID":     cognitoCfg.PoolID,
 				"CognitoAppClientID":    cognitoCfg.ClientID,
 				"CognitoAppRedirectURI": cognitoCfg.RedirectURI,

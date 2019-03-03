@@ -27,8 +27,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/lambda"
 	"github.com/fatih/color"
-	"github.com/kamilsk/retry"
-	"github.com/kamilsk/retry/strategy"
+	retry "github.com/kamilsk/retry/v3"
+	strategy "github.com/kamilsk/retry/v3/strategy"
 	"github.com/tmaiaroto/aegis/cmd/config"
 	"github.com/tmaiaroto/aegis/cmd/util"
 )

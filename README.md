@@ -52,6 +52,20 @@ There are several types of routers. You can handle incoming HTTP requests via AP
 various HTTP methods and paths. You can handle incoming S3 events. You can handle scheduled Lambda
 invocations using CloudWatch rules. You can even handle invocations from other Lambdas ("RPCs").
 
+#### Building
+
+It's easiest to download a binary to use Aegis, though you may wish to build for your specific platform. 
+In this case, Go Modules is used. Easiest thing to do after cloning is:
+
+```GO111MODULE=on go mod download```
+
+Then build:
+
+```GO111MODULE=on go build```
+
+Unfortunately you can't do a straight `go build` because of one of the packages used. You'll get errors.
+So using Go Modules is the way.
+
 #### Contributing
 
 Please feel free to contribute (see CONTRIBUTING.md). Though outside of actual pull requests with code,

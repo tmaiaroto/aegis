@@ -197,6 +197,7 @@ func Deploy(cmd *cobra.Command, args []string) {
 func build() (string, error) {
 	_ = os.Setenv("GOOS", "linux")
 	_ = os.Setenv("GOARCH", "amd64")
+	_ = os.Setenv("GO111MODULE", "on")
 	path := getExecPath("go")
 	pwd, _ := os.Getwd()
 
@@ -385,6 +386,16 @@ func createOrUpdateAegisRole() string {
 	})
 	if err != nil {
 		fmt.Println("There was a problem attaching AWSXrayFullAccess managed policy to the IAM role for Lambda.")
+		fmt.Println(err)
+	}
+
+	// Then AmazonVPCFullAccess
+	_, err = svc.AttachRolePolicy(&iam.AttachRolePolicyInput{
+		PolicyArn: aws.String("arn:aws:iam::aws:policy/AmazonVPCFullAccess"),
+		RoleName:  aegisLambdaRoleName,
+	})
+	if err != nil {
+		fmt.Println("There was a problem attaching AmazonVPCFullAccess managed policy to the IAM role for Lambda.")
 		fmt.Println(err)
 	}
 

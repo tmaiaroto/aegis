@@ -1,0 +1,209 @@
+# github.com/alecthomas/gometalinter v2.0.11+incompatible
+github.com/alecthomas/gometalinter
+# github.com/alecthomas/units v0.0.0-20151022065526-2efee857e7cf
+github.com/alecthomas/units
+# github.com/aws/aws-lambda-go v0.0.0-20180403032926-16345c95f707
+github.com/aws/aws-lambda-go/lambdacontext
+github.com/aws/aws-lambda-go/events
+github.com/aws/aws-lambda-go/lambda
+github.com/aws/aws-lambda-go/lambda/messages
+# github.com/aws/aws-sdk-go v0.0.0-20180410222159-57564ea051fa
+github.com/aws/aws-sdk-go/aws
+github.com/aws/aws-sdk-go/aws/credentials
+github.com/aws/aws-sdk-go/aws/session
+github.com/aws/aws-sdk-go/service/apigateway
+github.com/aws/aws-sdk-go/service/iam
+github.com/aws/aws-sdk-go/service/lambda
+github.com/aws/aws-sdk-go/service/secretsmanager
+github.com/aws/aws-sdk-go/service/s3
+github.com/aws/aws-sdk-go/aws/awserr
+github.com/aws/aws-sdk-go/service/cloudwatchevents
+github.com/aws/aws-sdk-go/service/ses
+github.com/aws/aws-sdk-go/service/sqs
+github.com/aws/aws-sdk-go/aws/client
+github.com/aws/aws-sdk-go/service/cognitoidentityprovider
+github.com/aws/aws-sdk-go/aws/endpoints
+github.com/aws/aws-sdk-go/internal/sdkio
+github.com/aws/aws-sdk-go/internal/shareddefaults
+github.com/aws/aws-sdk-go/aws/corehandlers
+github.com/aws/aws-sdk-go/aws/credentials/stscreds
+github.com/aws/aws-sdk-go/aws/defaults
+github.com/aws/aws-sdk-go/aws/request
+github.com/aws/aws-sdk-go/aws/awsutil
+github.com/aws/aws-sdk-go/aws/client/metadata
+github.com/aws/aws-sdk-go/aws/signer/v4
+github.com/aws/aws-sdk-go/private/protocol
+github.com/aws/aws-sdk-go/private/protocol/restjson
+github.com/aws/aws-sdk-go/private/protocol/query
+github.com/aws/aws-sdk-go/private/protocol/jsonrpc
+github.com/aws/aws-sdk-go/private/protocol/restxml
+github.com/aws/aws-sdk-go/internal/sdkrand
+github.com/aws/aws-sdk-go/service/sts
+github.com/aws/aws-sdk-go/aws/credentials/ec2rolecreds
+github.com/aws/aws-sdk-go/aws/credentials/endpointcreds
+github.com/aws/aws-sdk-go/aws/ec2metadata
+github.com/aws/aws-sdk-go/private/protocol/rest
+github.com/aws/aws-sdk-go/private/protocol/query/queryutil
+github.com/aws/aws-sdk-go/private/protocol/xml/xmlutil
+github.com/aws/aws-sdk-go/private/protocol/json/jsonutil
+# github.com/aws/aws-xray-sdk-go v1.0.0-rc.3
+github.com/aws/aws-xray-sdk-go/xray
+github.com/aws/aws-xray-sdk-go/header
+github.com/aws/aws-xray-sdk-go/internal/plugins
+github.com/aws/aws-xray-sdk-go/pattern
+github.com/aws/aws-xray-sdk-go/resources
+github.com/aws/aws-xray-sdk-go/strategy/ctxmissing
+github.com/aws/aws-xray-sdk-go/strategy/exception
+github.com/aws/aws-xray-sdk-go/strategy/sampling
+# github.com/awslabs/aws-lambda-go-api-proxy v0.2.0
+github.com/awslabs/aws-lambda-go-api-proxy/core
+# github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e
+github.com/chzyer/readline
+# github.com/cihub/seelog v0.0.0-20170130134532-f561c5e57575
+github.com/cihub/seelog
+github.com/cihub/seelog/archive
+github.com/cihub/seelog/archive/gzip
+github.com/cihub/seelog/archive/tar
+github.com/cihub/seelog/archive/zip
+# github.com/client9/misspell v0.3.4
+github.com/client9/misspell/cmd/misspell
+github.com/client9/misspell
+# github.com/davecgh/go-spew v1.1.1
+github.com/davecgh/go-spew/spew
+# github.com/dgrijalva/jwt-go v3.2.0+incompatible
+github.com/dgrijalva/jwt-go
+# github.com/fatih/color v0.0.0-20170926111411-5df930a27be2
+github.com/fatih/color
+# github.com/fsnotify/fsnotify v1.4.7
+github.com/fsnotify/fsnotify
+# github.com/go-ini/ini v1.42.0
+github.com/go-ini/ini
+# github.com/gobwas/glob v0.0.0-20180402141543-f00a7392b439
+github.com/gobwas/glob
+github.com/gobwas/glob/compiler
+github.com/gobwas/glob/syntax
+github.com/gobwas/glob/match
+github.com/gobwas/glob/syntax/ast
+github.com/gobwas/glob/util/runes
+github.com/gobwas/glob/syntax/lexer
+github.com/gobwas/glob/util/strings
+# github.com/golang/lint v0.0.0-20181026193005-c67002cb31c3
+github.com/golang/lint/golint
+# github.com/google/shlex v0.0.0-20181106134648-c34317bd91bf
+github.com/google/shlex
+# github.com/gopherjs/gopherjs v0.0.0-20181103185306-d547d1d9531e
+github.com/gopherjs/gopherjs/js
+# github.com/gordonklaus/ineffassign v0.0.0-20180909121442-1003c8bd00dc
+github.com/gordonklaus/ineffassign
+# github.com/hashicorp/hcl v0.0.0-20171017181929-23c074d0eceb
+github.com/hashicorp/hcl
+github.com/hashicorp/hcl/hcl/printer
+github.com/hashicorp/hcl/hcl/ast
+github.com/hashicorp/hcl/hcl/parser
+github.com/hashicorp/hcl/hcl/token
+github.com/hashicorp/hcl/json/parser
+github.com/hashicorp/hcl/hcl/scanner
+github.com/hashicorp/hcl/hcl/strconv
+github.com/hashicorp/hcl/json/scanner
+github.com/hashicorp/hcl/json/token
+# github.com/hokaccha/go-prettyjson v0.0.0-20180920040306-f579f869bbfe
+github.com/hokaccha/go-prettyjson
+# github.com/inconshreveable/mousetrap v1.0.0
+github.com/inconshreveable/mousetrap
+# github.com/jhoonb/archivex v0.0.0-20170408192736-be4efa7ec0c3
+github.com/jhoonb/archivex
+# github.com/jmespath/go-jmespath v0.0.0-20180206201540-c2b33e8439af
+github.com/jmespath/go-jmespath
+# github.com/jtolds/gls v4.2.1+incompatible
+github.com/jtolds/gls
+# github.com/juju/ansiterm v0.0.0-20180109212912-720a0952cc2a
+github.com/juju/ansiterm
+github.com/juju/ansiterm/tabwriter
+# github.com/justinas/alice v0.0.0-20171023064455-03f45bd4b7da
+github.com/justinas/alice
+# github.com/lestrrat-go/jwx v0.0.0-20180302000648-0cb38412795e
+github.com/lestrrat-go/jwx/jwk
+github.com/lestrrat-go/jwx/internal/base64
+github.com/lestrrat-go/jwx/jwa
+# github.com/lestrrat-go/pdebug v0.0.0-20180220043849-39f9a71bcabe
+github.com/lestrrat-go/pdebug
+# github.com/lunixbochs/vtclean v0.0.0-20180621232353-2d01aacdc34a
+github.com/lunixbochs/vtclean
+# github.com/magiconair/properties v0.0.0-20171031211101-49d762b9817b
+github.com/magiconair/properties
+# github.com/manifoldco/promptui v0.3.2
+github.com/manifoldco/promptui
+github.com/manifoldco/promptui/list
+github.com/manifoldco/promptui/screenbuf
+# github.com/mattn/go-colorable v0.1.1
+github.com/mattn/go-colorable
+# github.com/mattn/go-isatty v0.0.6
+github.com/mattn/go-isatty
+# github.com/mattn/go-runewidth v0.0.4
+github.com/mattn/go-runewidth
+# github.com/mitchellh/mapstructure v0.0.0-20180220230111-00c29f56e238
+github.com/mitchellh/mapstructure
+# github.com/nicksnyder/go-i18n v1.10.0
+github.com/nicksnyder/go-i18n/i18n
+github.com/nicksnyder/go-i18n/i18n/bundle
+github.com/nicksnyder/go-i18n/i18n/language
+github.com/nicksnyder/go-i18n/i18n/translation
+# github.com/olekukonko/tablewriter v0.0.1
+github.com/olekukonko/tablewriter
+# github.com/pelletier/go-toml v1.1.0
+github.com/pelletier/go-toml
+# github.com/pkg/errors v0.0.0-20180311214515-816c9085562c
+github.com/pkg/errors
+# github.com/sirupsen/logrus v0.0.0-20180329225952-778f2e774c72
+github.com/sirupsen/logrus
+# github.com/smartystreets/assertions v0.0.0-20180301161246-7678a5452ebe
+github.com/smartystreets/assertions
+github.com/smartystreets/assertions/internal/go-render/render
+github.com/smartystreets/assertions/internal/oglematchers
+# github.com/smartystreets/goconvey v0.0.0-20180222194500-ef6db91d284a
+github.com/smartystreets/goconvey/convey
+github.com/smartystreets/goconvey/convey/reporting
+github.com/smartystreets/goconvey/convey/gotest
+# github.com/spf13/afero v1.0.2
+github.com/spf13/afero
+github.com/spf13/afero/mem
+# github.com/spf13/cast v1.1.0
+github.com/spf13/cast
+# github.com/spf13/cobra v0.0.0-20180124073143-f91529fc6092
+github.com/spf13/cobra
+# github.com/spf13/jwalterweatherman v0.0.0-20180109140146-7c0cea34c8ec
+github.com/spf13/jwalterweatherman
+# github.com/spf13/pflag v0.0.0-20171106142849-4c012f6dcd95
+github.com/spf13/pflag
+# github.com/spf13/viper v0.0.0-20171227194143-aafc9e6bc7b7
+github.com/spf13/viper
+# github.com/tdewolff/minify v0.0.0-20180316203417-dfa646129323
+github.com/tdewolff/minify
+github.com/tdewolff/minify/json
+# github.com/tdewolff/parse v0.0.0-20180316054907-c7248c06ec34
+github.com/tdewolff/parse
+github.com/tdewolff/parse/buffer
+github.com/tdewolff/parse/strconv
+github.com/tdewolff/parse/json
+# github.com/tsenart/deadcode v0.0.0-20160724212837-210d2dc333e9
+github.com/tsenart/deadcode
+# github.com/unrolled/secure v1.0.0
+github.com/unrolled/secure
+# golang.org/x/crypto v0.0.0-20180410182641-f70185d77e82
+golang.org/x/crypto/ssh/terminal
+# golang.org/x/lint v0.0.0-20181026193005-c67002cb31c3
+golang.org/x/lint
+# golang.org/x/sys v0.0.0-20190222072716-a9d3bda3a223
+golang.org/x/sys/unix
+golang.org/x/sys/windows
+# golang.org/x/text v0.0.0-20171227012246-e19ae1496984
+golang.org/x/text/transform
+golang.org/x/text/unicode/norm
+# golang.org/x/tools v0.0.0-20181122213734-04b5d21e00f1
+golang.org/x/tools/go/ast/astutil
+golang.org/x/tools/go/gcexportdata
+golang.org/x/tools/go/internal/gcimporter
+# gopkg.in/alecthomas/kingpin.v3-unstable v3.0.0-20180810215634-df19058c872c
+gopkg.in/alecthomas/kingpin.v3-unstable
+# gopkg.in/yaml.v2 v2.0.0
+gopkg.in/yaml.v2

@@ -22,9 +22,15 @@ api:
         poolid:
           key: PoolID
           value: <cognitoExample.PoolID>
+        pooldomain:
+          key: PoolDomain
+          value: <cognitoExample.PoolDomain>
         clientid:
           key: ClientID
           value: <cognitoExample.ClientID>
+        clientsecret:
+          key: ClientSecret
+          value: <cognitoExample.ClientSecret>
         # set the above using Aegis CLI, ex. `aegis secret store cognitoExample PoolID xx`
         # keep in mind that viper is being used to load YAML and while YAML itself is case-sensitive, viper is not
         # so optionally set variables as maps instead of just key value pairs

@@ -38,14 +38,15 @@ The OAuth scopes don't matter.
 
 ### Credentials/code edits
 
-There are only three strings you need to immediately be concerned with in order
-to make this example work. The code needs a `region`, `pool ID`, and `client ID`
-from Cognito. Aegis' CLI has a `secret` command that can help you manage these
-sensitive credentials (and other key/value settings) so you don't need to hard
-code anything (which we would never do, right? right??). The code is set up to
-read these variables referred to as "Aegis variables." Really, they are just
-either Lambda environment variables or API Gateway stage variables. You can
-use either.
+In order to make this example work, you will need a Cognito pool and client.
+You then need to configure some values (and it's recommended to keep them secret).
+Aegis' CLI has a `secret` command that can help you manage these sensitive credentials
+(and other key/value settings) so you don't need to hard code anything (which we would 
+never do, right? right??). The code is set up to read these variables referred to as 
+"Aegis variables." Really, they are just either Lambda environment variables or API 
+Gateway stage variables. You can use either.
+
+You will need the user pool region, ID, domain, user pool client id and secret.
 
 In order to set these values, you'll want to use the `secret` command and
 set corresponding values in the `aegis.yaml`. Open the `aegis.yaml` and look
@@ -63,10 +64,18 @@ commands and provide your own Cognito Pool values.
 
 `aegis secret store cognitoExample ClientID xxxxxx`
 
+`aegis secret store cognitoExample ClientSecret xxxxxx`
+
+`aegis secret store cognitoExample PoolDomain xxxxxx`
+
 The region was actually hard coded in this example because it's not a sensitive
 piece of information, though you can change it if you like. There's a helper
 function that reads the variables no matter if they are Lambda environment
 variables or API Gateway stage variables (which take priority).
+
+Keep in mind that this is what the example uses for config values. You
+could name them differently but, your code will need to set the proper
+fields in the `aegis.CognitoAppClientConfig` struct.
 
 Note that in order to update these values, you must re-deploy. However,
 you could also look at AWS Secrets Manager yourself manually in your code
@@ -75,22 +84,16 @@ an extra request that has to complete before sending a response back to
 the client. It's much faster to read environment/stage variables.
 
 Alternatively, if you want to form a bad habit (or save 40 cents for the month?), 
-you could simply edit three lines in the example code to make it work. Maybe 
-you'll only need to edit two of those if you're deploying in the us-east-1 region.
+you could simply edit a lines in the example code to make it work. Maybe you'll 
+only need to edit two of those if you're deploying in the us-east-1 region.
 
 ```
 Region:   "us-east-1",
 PoolID:   "us-east-1_Xxxxx",
+Domain: "whatever-you-set-or-were-given",
 ClientID: "xxxxx",
+ClientSecret: "xxxxx",
 ```
-
-Though note that the Cognito app client helper does not need the secret key. 
-Since your Lambda is authorized to make Cognito SDK calls, it will retrieve 
-it automatically. This reduces your security risks with accidentally published 
-credentials to a degree. However, it is reccommended to use the AWS Secrets
-Manager along with setting the variables in `aegis.yaml` config to be stored
-on Lambda environment variables or API Gateway stage variables -- both of
-which are encrypted when transmitted over the wire.
 
 ### Deploying
 

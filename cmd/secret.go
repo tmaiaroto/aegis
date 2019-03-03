@@ -62,7 +62,7 @@ var secretStoreCmd = &cobra.Command{
 			if err != nil {
 				if strings.Contains(err.Error(), "ResourceExistsException") {
 					prompt := promptui.Prompt{
-						Label:     args[0] + " already exists, append key/value to this secret?",
+						Label:     args[0] + " already exists, append to or update key/value for this secret?",
 						IsConfirm: true,
 					}
 
@@ -98,10 +98,10 @@ var secretStoreCmd = &cobra.Command{
 							if err != nil {
 								fmt.Println("There was a problem updating the secret.", err)
 							} else {
-								fmt.Println("Successfully appended key/value to secret.")
+								fmt.Println("Successfully updated key/value for secret.")
 							}
 						} else {
-							fmt.Println("There was a problem looking up the existing secret in order to append to it.", err)
+							fmt.Println("There was a problem looking up the existing secret in order to update to it.", err)
 						}
 					}
 

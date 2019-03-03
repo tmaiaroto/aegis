@@ -28,6 +28,16 @@ a lightweight set of helpers or framework to help build things faster. It's to b
 and flexible. 1.x will focus on adding more event router/handlers and helper functions.
 Not every possible service will likely ever covered, the focus will be on the common.
 
+## 1.16.0
+
+- Fixed an issue where convenience was causing problems with AWS SDK rate limiting, using Cognito
+  now requires more values to be set
+- Language changes for CLI `secret` command to more accurately describe what's going on
+- Ensure Aegis builds with `GO111MODULE=on`
+- Removed automatic base64 decoding of Aegis variables, there were false positives
+- Ensure the default `aegis_lambda_role` has appropriate VPC policy in order to configure Lambda
+  functions for VPCs
+
 ## 1.15.2
 
 - Further fixes and enhancements for deploy (retries and longer wait periods after the creation

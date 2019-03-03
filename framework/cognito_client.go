@@ -27,10 +27,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/client"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/cognitoidentityprovider"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/lestrrat-go/jwx/jwk"
 )
@@ -40,8 +37,8 @@ type CognitoAppClient struct {
 	Region                   string
 	UserPoolID               string
 	ClientID                 string
-	UserPoolType             *cognitoidentityprovider.UserPoolType
-	UserPoolClient           *cognitoidentityprovider.UserPoolClientType
+	ClientSecret             string
+	Domain                   string
 	WellKnownJWKs            *jwk.Set
 	BaseURL                  string
 	HostedLoginURL           string
@@ -58,7 +55,9 @@ type CognitoAppClient struct {
 type CognitoAppClientConfig struct {
 	Region            string                 `json:"region"`
 	PoolID            string                 `json:"poolId"`
+	Domain            string                 `json:"domain"`
 	ClientID          string                 `json:"clientId"`
+	ClientSecret      string                 `json:"clientSecret"`
 	RedirectURI       string                 `json:"redirectUri"`
 	LogoutRedirectURI string                 `json:"logoutRedirectUri"`
 	TraceContext      context.Context        `json:"-"`
@@ -75,56 +74,25 @@ type CognitoToken struct {
 	Error        string `json:"error"`
 }
 
-// NewCognitoAppClient returns a new CognitoAppClient interface configured for the given Cognito user pool ID and client ID
-// NOTE: Best to not call this on every event handle because it makes 3 HTTP requests for data, capitalize on container re-use.
+// NewCognitoAppClient returns a new CognitoAppClient interface configured for the given Cognito user pool and client
 func NewCognitoAppClient(cfg *CognitoAppClientConfig) (*CognitoAppClient, error) {
 	var err error
 	c := &CognitoAppClient{
 		Region:            cfg.Region,
 		UserPoolID:        cfg.PoolID,
 		ClientID:          cfg.ClientID,
+		ClientSecret:      cfg.ClientSecret,
+		Domain:            cfg.Domain,
 		RedirectURI:       cfg.RedirectURI,
 		LogoutRedirectURI: cfg.LogoutRedirectURI,
 	}
 
-	// Set the PoolType, it contains a bunch of useful info
-	sess, err := session.NewSession()
-	if err != nil {
-		log.Println("could not get Cognito UserPoolType, session could not be created")
-		return c, err
-	}
-	svc := cognitoidentityprovider.New(sess)
-	// Wrap in XRay so it gets logged and appears in service map
-	cfg.AWSClientTracer(svc.Client)
-
-	// userPoolOutput, err := svc.DescribeUserPool(&cognitoidentityprovider.DescribeUserPoolInput{
-	userPoolOutput, err := svc.DescribeUserPoolWithContext(cfg.TraceContext, &cognitoidentityprovider.DescribeUserPoolInput{
-		UserPoolId: aws.String(c.UserPoolID),
-	})
-	if err == nil {
-		c.UserPoolType = userPoolOutput.UserPool
-	} else {
-		log.Println("Error getting Cognito user pool", err)
-	}
-
-	// Get the client app
-	// TODO: If cfg.TraceContext == nil, use this normal method to get the client. This would mean no tracing.
-	// userPoolClientOutput, err := svc.DescribeUserPoolClient(&cognitoidentityprovider.DescribeUserPoolClientInput{
-	userPoolClientOutput, err := svc.DescribeUserPoolClientWithContext(cfg.TraceContext, &cognitoidentityprovider.DescribeUserPoolClientInput{
-		ClientId:   aws.String(c.ClientID),
-		UserPoolId: aws.String(c.UserPoolID),
-	})
-	if err == nil {
-		c.UserPoolClient = userPoolClientOutput.UserPoolClient
-	} else {
-		log.Println("Error getting Cognito user pool client", err)
-	}
-	if c.UserPoolClient != nil {
+	if c.ClientSecret != "" {
 		// Set the Base64 <client_id>:<client_secret> for basic authorization header
 		var buffer bytes.Buffer
 		buffer.WriteString(c.ClientID)
 		buffer.WriteString(":")
-		buffer.WriteString(aws.StringValue(c.UserPoolClient.ClientSecret))
+		buffer.WriteString(c.ClientSecret)
 		base64AuthStr := b64.StdEncoding.EncodeToString(buffer.Bytes())
 		buffer.Reset()
 
@@ -171,11 +139,11 @@ func (c *CognitoAppClient) getWellKnownJWTKs() error {
 
 // getURLs gets all of the URLs and endpoints for the Cognito client, AWS hosted login/signup pages, token endpoints for oauth2, etc.
 func (c *CognitoAppClient) getURLs() {
-	if c.UserPoolType != nil && c.UserPoolType.Domain != nil {
+	if c.Domain != "" {
 		// Get the base URL
 		var buffer bytes.Buffer
 		buffer.WriteString("https://")
-		buffer.WriteString(aws.StringValue(c.UserPoolType.Domain))
+		buffer.WriteString(c.Domain)
 		buffer.WriteString(".auth.")
 		buffer.WriteString(c.Region)
 		buffer.WriteString(".amazoncognito.com")
