@@ -7,3 +7,6 @@ aegis
 public
 docs/public
 docs/themes
+examples/cognito/aegis_app
+aegis_darwin.tar.gz
+aegis_linux_amd64.tar.gz
