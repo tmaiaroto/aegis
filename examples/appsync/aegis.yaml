@@ -1,0 +1,23 @@
+app:
+  name: Example Aegis Hello World App
+  keepBuildFiles: true
+aws:
+  region: us-east-1
+lambda:
+  description: An example Aegis hello world app
+  functionName: aegis_hello_world_example
+  # A default execution role will be created for you, but you can always use a specific one.
+  # role: arn:aws:iam::12345:role/aegis_lambda_function
+# We don't want an API Gateway in this case, we're using AppSync GraphQL
+# api:
+  # name: Example Aegis Hello World API
+  # description: An example API
+  # A "prod" stage will be created automatically. You can define stages here as well as stage variables.
+  # These stage variables are passed in the event message to your Lambda function.
+  # stages:
+  #   prod:
+  #     name: prod
+  #     variables:
+  #       foo: Bar
+appsync:
+  name: Example AppSync API
