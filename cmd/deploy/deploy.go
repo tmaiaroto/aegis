@@ -27,8 +27,9 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/lambda"
 	"github.com/fatih/color"
-	retry "github.com/kamilsk/retry/v3"
-	strategy "github.com/kamilsk/retry/v3/strategy"
+	breaker "github.com/kamilsk/breaker"
+	retry "github.com/kamilsk/retry/v4"
+	strategy "github.com/kamilsk/retry/v4/strategy"
 	"github.com/tmaiaroto/aegis/cmd/config"
 	"github.com/tmaiaroto/aegis/cmd/util"
 )
@@ -108,7 +109,7 @@ func (d *Deployer) CreateFunction(zipBytes []byte) *string {
 
 		// NOTE: Often when creating a new IAM role, it's not immediately available to use with the Lambda function.
 		// This retry should hopefully provide enough time.
-		err := retry.Retry(retry.WithTimeout(time.Minute), createAction, strategy.Limit(5))
+		err := retry.Retry(breaker.BreakByTimeout(time.Minute), createAction, strategy.Limit(5))
 		if err != nil || functionArn == nil {
 			fmt.Println("There was a problem creating the Lambda function.")
 			fmt.Println(err.Error())
@@ -176,7 +177,7 @@ func (d *Deployer) updateFunction(zipBytes []byte) *string {
 
 	// NOTE: Often when creating a new IAM role, it's not immediately available to use with the Lambda function.
 	// This retry should hopefully provide enough time.
-	err := retry.Retry(retry.WithTimeout(time.Minute), updateAction, strategy.Limit(5))
+	err := retry.Retry(breaker.BreakByTimeout(time.Minute), updateAction, strategy.Limit(5))
 	if err != nil {
 		fmt.Println("There was a problem updating the Lambda function.")
 		fmt.Println(err.Error())

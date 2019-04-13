@@ -20,7 +20,9 @@ require (
 	github.com/jmespath/go-jmespath v0.0.0-20180206201540-c2b33e8439af // indirect
 	github.com/jtolds/gls v4.2.1+incompatible // indirect
 	github.com/justinas/alice v0.0.0-20171023064455-03f45bd4b7da
+	github.com/kamilsk/breaker v1.1.0
 	github.com/kamilsk/retry/v3 v3.4.4
+	github.com/kamilsk/retry/v4 v4.1.0
 	github.com/lestrrat-go/jwx v0.0.0-20180302000648-0cb38412795e
 	github.com/lestrrat-go/pdebug v0.0.0-20180220043849-39f9a71bcabe // indirect
 	github.com/magiconair/properties v0.0.0-20171031211101-49d762b9817b // indirect
