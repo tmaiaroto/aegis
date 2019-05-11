@@ -4,7 +4,7 @@
 
 **[Aegis Documentation](https://tmaiaroto.github.io/aegis/)**
 
-Aegis is both a simple deploy tool and framework. It's primary goal is to help you write
+Aegis is both a simple deploy tool and framework. Its primary goal is to help you write
 microservices in the AWS cloud quickly and easily. They are mutually exclusive tools.
 
 Aegis is not intended to be an infrastructure management tool. It will never be
