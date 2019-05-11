@@ -8,7 +8,7 @@ Aegis is both a simple deploy tool and framework. It's primary goal is to help y
 microservices in the AWS cloud quickly and easily. They are mutually exclusive tools.
 
 Aegis is not intended to be an infrastructure management tool. It will never be
-as feature rich as tools like [Terraform](https://www.terraform.io). It's goal is
+as feature rich as tools like [Terraform](https://www.terraform.io). Its goal is
 to assist in the development of microservices - not the maintenance of infrastructure.
 
 Likewise the framework is rather lightweight as well. It may never have helpers and
