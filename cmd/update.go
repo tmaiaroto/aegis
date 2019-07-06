@@ -59,7 +59,7 @@ func Update(cmd *cobra.Command, args []string) {
 	// It is possible to pass a specific zip file from the config instead of building a new one (why would one? who knows, but I liked the pattern of using cfg)
 	if cfg.Lambda.SourceZip == "" {
 		// Build the Go app in the current directory (for AWS architecture).
-		appPath, err := build()
+		appPath, err := build(&cfg.App.BuildEnvVars)
 		if err != nil {
 			fmt.Println("There was a problem building the Go app for the Lambda function.")
 			fmt.Println(err.Error())

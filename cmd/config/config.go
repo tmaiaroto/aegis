@@ -27,6 +27,7 @@ type DeploymentConfig struct {
 		Name           string
 		KeepBuildFiles bool
 		BuildFileName  string
+		BuildEnvVars map[string]string
 	}
 	AWS struct {
 		Region          string

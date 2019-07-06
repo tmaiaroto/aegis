@@ -24,6 +24,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -76,7 +77,7 @@ func Deploy(cmd *cobra.Command, args []string) {
 	// It is possible to pass a specific zip file from the config instead of building a new one (why would one? who knows, but I liked the pattern of using cfg)
 	if cfg.Lambda.SourceZip == "" {
 		// Build the Go app in the current directory (for AWS architecture).
-		appPath, err := build()
+		appPath, err := build(&cfg.App.BuildEnvVars)
 		if err != nil {
 			fmt.Println("There was a problem building the Go app for the Lambda function.")
 			fmt.Println(err.Error())
@@ -194,10 +195,20 @@ func Deploy(cmd *cobra.Command, args []string) {
 }
 
 // build runs `go build` in the current directory and returns the binary file path to include in the Lambda function zip file.
-func build() (string, error) {
+func build(buildEnvVars *map[string]string) (string, error) {
 	_ = os.Setenv("GOOS", "linux")
 	_ = os.Setenv("GOARCH", "amd64")
-	_ = os.Setenv("GO111MODULE", "on")
+	// Don't set Go modules on by default, set in aegis.yaml
+	// _ = os.Setenv("GO111MODULE", "on")
+	if buildEnvVars != nil {
+		for k, v := range *buildEnvVars {
+			if k != "" {
+				fmt.Printf("Setting environment variable: %s=%s\n", strings.ToUpper(k), v)
+				_ = os.Setenv(strings.ToUpper(k), v)
+			}
+		}
+		fmt.Println("")
+	}
 	path := getExecPath("go")
 	pwd, _ := os.Getwd()
 
@@ -346,6 +357,7 @@ func createOrUpdateAegisRole() string {
 		})
 		if err != nil {
 			fmt.Println("There was a problem creating a default IAM role for Lambda. Check your configuration.")
+			fmt.Println(err)
 			os.Exit(-1)
 		}
 		roleArn = *role.Role.Arn
