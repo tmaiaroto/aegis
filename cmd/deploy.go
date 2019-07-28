@@ -215,6 +215,8 @@ func build(buildEnvVars *map[string]string) (string, error) {
 	// Try to build a smaller binary.
 	// This won't work on Windows. Though Windows remains untested in general, let's try this and fall back.
 	cmd := exec.Command("sh", "-c", path+` build -ldflags="-w -s" -o `+aegisAppName)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
 		// If it failed, just build without all the fancy flags. The binary size will be a little larger though.
 		// This should work on Windows. Right? TODO: Test. Better yet, figure out how to build Cmd with flags.
