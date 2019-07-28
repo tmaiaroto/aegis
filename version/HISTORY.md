@@ -28,6 +28,11 @@ a lightweight set of helpers or framework to help build things faster. It's to b
 and flexible. 1.x will focus on adding more event router/handlers and helper functions.
 Not every possible service will likely ever covered, the focus will be on the common.
 
+## 1.16.3
+
+- Added output from `go build` command when running `aegis deploy`
+- Pulled out `GO111MODULE=on` build env var and now allow `aegis.yaml` to define 
+
 ## 1.16.2
 
 - Updated retry package dependency (fixes #40)
