@@ -1,6 +1,8 @@
 app:
   name: Example Aegis App
   keepBuildFiles: false
+  # buildEnvVars:
+  #   GO111MODULE: "on"
 aws:
   region: us-east-1
 lambda:
